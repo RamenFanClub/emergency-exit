@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - identity-service
+          - vault-service
+          - wishes-service
+          - guardian-service
+          - pulse-service
+          - notification-service
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          cd ${{ matrix.service }}
+          pip install -r requirements.txt
+
+      - name: Lint
+        run: |
+          cd ${{ matrix.service }}
+          pip install ruff
+          ruff check app/
+
+      - name: Type check
+        run: |
+          cd ${{ matrix.service }}
+          pip install mypy
+          mypy app/ --ignore-missing-imports
+
+      - name: Unit tests
+        run: |
+          cd ${{ matrix.service }}
+          pytest tests/unit/ -v --cov=app --cov-report=term-missing --cov-fail-under=80
+
+      - name: Integration tests
+        run: |
+          cd ${{ matrix.service }}
+          MONGO_URI=mongodb://localhost:27017 pytest tests/integration/ -v
+        env:
+          MONGO_URI: mongodb://localhost:27017

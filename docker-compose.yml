@@ -1,0 +1,104 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: changeme
+    healthcheck:
+      test: mongosh --eval "db.adminCommand('ping')"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  identity-service:
+    build: ./identity-service
+    ports:
+      - "8001:8001"
+    env_file: .env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  vault-service:
+    build: ./vault-service
+    ports:
+      - "8002:8002"
+    env_file: .env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  wishes-service:
+    build: ./wishes-service
+    ports:
+      - "8003:8003"
+    env_file: .env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  guardian-service:
+    build: ./guardian-service
+    ports:
+      - "8004:8004"
+    env_file: .env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  pulse-service:
+    build: ./pulse-service
+    ports:
+      - "8005:8005"
+    env_file: .env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8006:8006"
+    env_file: .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
