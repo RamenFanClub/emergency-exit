@@ -148,11 +148,27 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <div style="font-size:13px;color:var(--ov);font-weight:600;" id="d-sum">0 assets · 0 wishes</div>
         <div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div>
       </div>
-      <div class="card" style="display:flex;align-items:center;gap:14px;">
-        <div style="width:50px;height:50px;border-radius:50%;background:var(--w);display:flex;align-items:center;justify-content:center;border:2px solid var(--ab);flex-shrink:0;"><span class="m mf" style="font-size:24px;color:var(--ac);">favorite</span></div>
-        <div>
-          <div style="font-family:var(--fh);font-weight:700;font-size:15px;color:var(--p);">Next Security Check</div>
-          <div style="display:flex;align-items:center;gap:5px;margin-top:2px;"><span class="m" style="font-size:13px;color:var(--p);">calendar_today</span><span id="d-next" style="font-weight:700;color:var(--p);font-size:13px;">Not set — tap Settings</span></div>
+      <!-- Vitality Pulse + Next Check-in combined -->
+      <div class="cardw">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div class="vr" onclick="checkin()" style="width:100px;height:100px;flex-shrink:0;">
+            <div class="vc" style="width:78px;height:78px;">
+              <span class="m mf" style="font-size:28px;color:var(--ac);">favorite</span>
+              <span class="vl" style="font-size:8px;">TAP TO CONFIRM</span>
+            </div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-family:var(--fh);font-weight:800;font-size:16px;color:var(--p);margin-bottom:4px;">I'm Alive</div>
+            <div style="font-size:12px;color:var(--ov);margin-bottom:8px;" id="lc-lbl">Last confirmed: never</div>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <span class="m" style="font-size:13px;color:var(--p);">calendar_today</span>
+              <span style="font-size:12px;font-weight:700;color:var(--p);">Next: <span id="d-next">Not set</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
+              <span class="m" style="font-size:13px;color:var(--ac);">timer</span>
+              <span style="font-size:12px;font-weight:700;color:var(--ac);"><span id="d-days">—</span> days remaining</span>
+            </div>
+          </div>
         </div>
       </div>
       <button class="gbtn" onclick="go('ledger')"><div class="ib"><span class="m mf" style="font-size:28px;color:#fff;">shield</span></div><div class="tb"><span class="big">Asset Ledger</span><span class="sm">View all your recorded assets</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
@@ -181,7 +197,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;"><span class="m" style="font-size:19px;color:#fff;">add</span></div><div><div style="font-family:var(--fh);font-size:16px;font-weight:800;color:#fff;">New Instruction</div><div style="font-size:12px;color:rgba(255,255,255,.7);">Add a request or directive</div></div></div>
         <button class="pab" onclick="openM('wm')" style="background:rgba(255,255,255,.18);color:#fff;font-size:14px;font-weight:800;font-family:var(--fh);">START NOW</button>
       </div>
-      <!-- Will & Legal -->
       <div class="card">
         <div class="sh" style="margin-bottom:12px;"><span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">gavel</span>Will & Legal Documents</span><span class="tag tw" id="will-badge">Not recorded</span></div>
         <div class="will-card" id="will-summary">
@@ -192,25 +207,57 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           <button class="upload-btn" onclick="openM('sdm')"><span class="m">attach_file</span>Attach document</button>
         </div>
       </div>
-      <!-- All wishes grouped by category -->
       <div id="w-content"><div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No wishes recorded yet.</div></div>
       <div class="ss"><span class="m mf" style="color:var(--ac);font-size:15px;">eco</span><span>Status: Safe & Sound</span></div>
     </div>
-    <!-- KIN -->
+    <!-- CONTACT -->
     <div id="s-kin" class="scr">
-      <div class="ph">Circle of Trust</div><div class="ps">Your legacy guardians and digital sanctuary protocols.</div>
-      <div class="card"><div class="sh" style="margin-bottom:12px;"><span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">group</span>Trusted Kin</span><button class="ob" onclick="openM('km')"><span class="m" style="font-size:15px;">add</span>Add Guardian</button></div><div id="k-list"><div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No guardians added yet.</div></div></div>
-      <div class="card"><div class="st" style="margin-bottom:12px;"><span class="m mf" style="font-size:17px;color:var(--sec);">shield</span>Notification Protocol</div><div class="pb"><p>If no activity is detected after <strong style="color:#fff;" id="g-disp">48H</strong>, we begin the following sequence:</p><div class="ps2"><div class="pst"><div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5);">Step 1</div><div style="font-family:var(--fh);font-size:14px;font-weight:700;color:#fff;margin-top:2px;">3 Daily Pings</div></div><div class="pst"><div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5);">Step 2</div><div style="font-family:var(--fh);font-size:14px;font-weight:700;color:#fff;margin-top:2px;">Kin Contacted</div></div></div><button class="pab">PROTOCOL ACTIVE</button></div></div>
-      <div class="cardw"><div class="st" style="margin-bottom:12px;font-size:14px;"><span class="m" style="font-size:16px;color:var(--sec);">timer</span>Next Check-in</div><div class="nc"><div><div style="font-family:var(--fh);font-size:28px;font-weight:800;color:var(--p);" id="k-days">14</div><div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sec);">days remaining</div></div><button class="ncb" onclick="checkin()"><span class="m mf" style="font-size:20px;color:#fff;">check_circle</span></button></div></div>
+      <div class="ph">Contacts</div><div class="ps">People to notify and how to reach them.</div>
+      <div class="card">
+        <div class="sh" style="margin-bottom:12px;"><span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">group</span>My Contacts</span><button class="ob" onclick="openM('km')"><span class="m" style="font-size:15px;">add</span>Add Contact</button></div>
+        <div id="k-list"><div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No contacts added yet.</div></div>
+      </div>
+      <!-- Notification Sequence -->
+      <div class="card">
+        <div class="st" style="margin-bottom:12px;"><span class="m mf" style="font-size:17px;color:var(--sec);">sort</span>Notification Sequence</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="to" id="seq-order" onclick="setSeq('in_order')" style="flex:1;text-align:center;">In order</button>
+          <button class="to" id="seq-all" onclick="setSeq('all_at_once')" style="flex:1;text-align:center;">All at once</button>
+        </div>
+        <div style="font-size:13px;color:var(--ov);line-height:1.5;" id="seq-desc">Contacts will be notified one by one in the order listed above. If the first contact does not respond, the next contact is notified.</div>
+      </div>
     </div>
-    <!-- CONFIG -->
+    <!-- SETTINGS -->
     <div id="s-config" class="scr">
-      <div class="ph">Settings</div><div class="ps">Digital sanctuary pulse parameters.</div>
-      <div class="cardw"><div class="vw"><div class="vr" onclick="checkin()"><div class="vc"><span class="m mf" style="font-size:36px;color:var(--ac);">favorite</span><span class="vl">TAP TO CONFIRM</span></div></div><div style="margin-top:14px;text-align:center;"><div style="font-family:var(--fh);font-size:15px;font-weight:700;color:var(--p);">I'm Alive</div><div style="font-size:12px;color:var(--ov);margin-top:2px;" id="lc-lbl">Last confirmed: never</div></div></div></div>
-      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">pulse_alert</span>Pulse Frequency</div><div style="background:var(--w);border-radius:12px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);">Custom Interval</span><div class="tg"><button class="to" id="tw" onclick="setU('weeks')">Weeks</button><button class="to on" id="tm" onclick="setU('months')">Months</button></div></div><div class="cc"><button class="cb" onclick="adj(-1)">−</button><div><div class="cv" id="fc">2</div><div class="cu" id="fu">Months</div></div><button class="cb" onclick="adj(1)">+</button></div></div></div>
-      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m" style="font-size:17px;color:var(--sec);">hourglass_bottom</span>Grace Period</div><div style="background:var(--w);border-radius:12px;padding:14px;"><div class="sl-wrap"><div class="sl-lbl"><span>12H</span><span style="color:var(--ac);" id="gl">48H (REC.)</span><span>72H</span></div><input type="range" id="gs" min="12" max="72" step="12" value="48" oninput="updG(this.value)"/></div></div></div>
+      <div class="ph">Settings</div><div class="ps">Configure your check-in schedule and alerts.</div>
+      <!-- Pulse Frequency -->
+      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">pulse_alert</span>Check-in Frequency</div><div style="background:var(--w);border-radius:12px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);">Custom Interval</span><div class="tg"><button class="to" id="tw" onclick="setU('weeks')">Weeks</button><button class="to on" id="tm" onclick="setU('months')">Months</button></div></div><div class="cc"><button class="cb" onclick="adj(-1)">−</button><div><div class="cv" id="fc">2</div><div class="cu" id="fu">Months</div></div><button class="cb" onclick="adj(1)">+</button></div></div></div>
+      <!-- Grace Period in Days -->
+      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m" style="font-size:17px;color:var(--sec);">hourglass_bottom</span>Grace Period</div>
+        <div style="background:var(--w);border-radius:12px;padding:14px;">
+          <div style="font-size:12px;color:var(--ov);margin-bottom:10px;">How many days after a missed check-in before contacts are alerted?</div>
+          <div class="cc"><button class="cb" onclick="adjGP(-1)">−</button><div><div class="cv" id="gp-val">3</div><div class="cu">Days</div></div><button class="cb" onclick="adjGP(1)">+</button></div>
+        </div>
+      </div>
+      <!-- Notification Protocol -->
+      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">notifications_active</span>Notification Protocol</div>
+        <div style="font-size:12px;color:var(--ov);margin-bottom:12px;">What happens after the grace period expires?</div>
+        <div class="ri" onclick="setProto('ping_then_notify')" id="proto-1">
+          <div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">schedule_send</span><div><span style="font-weight:600;font-size:14px;color:var(--p);display:block;">Ping me first, then notify contacts</span><span style="font-size:11px;color:var(--ov);">3 daily reminders to me, then alert contacts</span></div></div>
+          <div class="rd on" id="rp-1"></div>
+        </div>
+        <div class="ri" onclick="setProto('notify_immediately')" id="proto-2">
+          <div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">forward_to_inbox</span><div><span style="font-weight:600;font-size:14px;color:var(--p);display:block;">Notify contacts immediately</span><span style="font-size:11px;color:var(--ov);">Skip pings, alert contacts right away</span></div></div>
+          <div class="rd" id="rp-2"></div>
+        </div>
+        <div class="ri" onclick="setProto('escalate')" id="proto-3">
+          <div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">escalator</span><div><span style="font-weight:600;font-size:14px;color:var(--p);display:block;">Escalate gradually</span><span style="font-size:11px;color:var(--ov);">Notify first contact, wait 24h, then next</span></div></div>
+          <div class="rd" id="rp-3"></div>
+        </div>
+      </div>
+      <!-- Verification -->
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">verified_user</span>Verification</div><div class="ri" onclick="setV('face')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">face</span><span style="font-weight:600;font-size:15px;color:var(--p);">FaceID / Biometrics</span></div><div class="rd on" id="rf"></div></div><div class="ri" onclick="setV('pin')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">password</span><span style="font-weight:600;font-size:15px;color:var(--p);">Secure Passcode</span></div><div class="rd" id="rp2"></div></div></div>
-      <div class="ib2"><span class="m" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span><p>Missed check-ins after <strong id="ig">48H</strong> will grant access to <strong id="ik">0 Kin members</strong>.</p></div>
+      <div class="ib2"><span class="m" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span><p>Missed check-ins after <strong id="ig">3 days</strong> will grant access to <strong id="ik">0 contacts</strong>.</p></div>
       <button class="cfb" onclick="saveCfg()">Confirm Settings</button>
     </div>
   </div>
@@ -227,12 +274,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <div id="wm" class="mo"><div class="ms"><div class="mh"></div><div class="mt" id="wm-title">Record a Wish</div><input type="hidden" id="wm-edit-id" value=""/><div class="fi"><label>Category</label><select id="wc2"><option>Funeral & Service</option><option>Medical / end of life care</option><option>Guardian for children</option><option>Pet care</option><option>Business succession</option><option>Digital accounts</option><option>Personal message</option><option>Charitable giving</option><option>Other</option></select></div><div class="fi"><label>Wish</label><input id="wt" type="text" placeholder="e.g. I would like to be cremated"/></div><div class="fi"><label>Details</label><textarea id="wd" placeholder="Add any additional context or instructions..."></textarea></div><div class="fi"><label>Priority</label><select id="wp"><option value="high">High — must be followed</option><option value="medium" selected>Medium — strongly preferred</option><option value="low">Low — would be nice</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveW()" id="wm-save-btn">Save Wish</button></div></div></div>
 <div id="wlm" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Will Details</div><div class="fi"><label>Will status</label><select id="wl-status"><option value="signed">Signed and legally witnessed</option><option value="draft">Draft — not yet signed</option><option value="none">No Will exists yet</option></select></div><div class="fi"><label>Date signed</label><input id="wl-date" type="date"/></div><div class="fi"><label>Solicitor / law firm</label><input id="wl-solicitor" type="text" placeholder="e.g. Smith & Associates, Melbourne"/></div><div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sec);margin-bottom:8px;">Where is the original Will stored?</div><div class="fi"><label>Primary location</label><input id="wl-loc1" type="text" placeholder="e.g. Safe at home — study, top shelf"/></div><div class="fi"><label>Secondary location</label><input id="wl-loc2" type="text" placeholder="e.g. Solicitor's office, copy with executor"/></div><div class="fi"><label>Additional notes</label><textarea id="wl-notes" placeholder="Any other instructions for finding or executing the Will..."></textarea></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveWill()">Save Will details</button></div></div></div>
 <div id="sdm" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Attach Document</div><div class="fi"><label>Document type</label><select id="sd-type"><option>Statement of Wishes</option><option>Enduring Power of Attorney</option><option>Advance Health Directive</option><option>Guardianship Nomination</option><option>Funeral Pre-arrangement</option><option>Business Succession Plan</option><option>Other</option></select></div><div class="fi"><label>Document name</label><input id="sd-name" type="text" placeholder="e.g. Statement of Wishes — 2024"/></div><div class="fi"><label>Where is this document stored?</label><input id="sd-loc" type="text" placeholder="e.g. Google Drive, home safe, solicitor"/></div><div class="fi"><label>Notes</label><textarea id="sd-notes" placeholder="Any additional context..."></textarea></div><div style="background:var(--sl);border-radius:10px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;"><span class="m" style="font-size:18px;color:var(--sec);">info</span><span style="font-size:12px;color:var(--ov);line-height:1.4;">File uploads will be available when the app connects to secure cloud storage. For now, record where the document is located.</span></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveSupp()">Save document</button></div></div></div>
-<div id="km" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Add Guardian</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>First Name</label><input id="kf" type="text" placeholder="Jane"/></div><div class="fi"><label>Last Name</label><input id="kl" type="text" placeholder="Smith"/></div></div><div class="fi"><label>Relationship</label><input id="kr" type="text" placeholder="e.g. Spouse, Child, Solicitor"/></div><div class="fi"><label>Email</label><input id="ke" type="email" placeholder="jane@email.com"/></div><div class="fi"><label>Phone</label><input id="kp" type="tel" placeholder="+61 4xx xxx xxx"/></div><div class="fi"><label>Access Level</label><select id="ka2"><option value="executor">Executor — full + account details</option><option value="full">Full — all assets & wishes</option><option value="wishes">Wishes only</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveK()">Add Guardian</button></div></div></div>
+<div id="km" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Add Contact</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>First Name</label><input id="kf" type="text" placeholder="Jane"/></div><div class="fi"><label>Last Name</label><input id="kl" type="text" placeholder="Smith"/></div></div><div class="fi"><label>Relationship</label><input id="kr" type="text" placeholder="e.g. Spouse, Child, Solicitor"/></div><div class="fi"><label>Email</label><input id="ke" type="email" placeholder="jane@email.com"/></div><div class="fi"><label>Phone</label><input id="kp" type="tel" placeholder="+61 4xx xxx xxx"/></div><div class="fi"><label>Notify via</label><select id="k-notify"><option value="email">Email</option><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option><option value="email_and_sms">Email + SMS</option></select></div><div class="fi"><label>Access Level</label><select id="ka2"><option value="executor">Executor — full + account details</option><option value="full">Full — all assets & wishes</option><option value="wishes">Wishes only</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveK()">Add Contact</button></div></div></div>
 <div id="toast" class="toast"></div>
 <script>
-let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:48,v:'face',log:[]};
-function load(){try{const d=localStorage.getItem('ee_v2');if(d){const p=JSON.parse(d);S={...S,...p};}}catch(e){}}
-function save(){try{localStorage.setItem('ee_v2',JSON.stringify(S));}catch(e){}render();}
+let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[]};
+function load(){try{const d=localStorage.getItem('ee_v3');if(d){const p=JSON.parse(d);S={...S,...p};}}catch(e){}}
+function save(){try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){}render();}
 function go(s){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));document.getElementById('s-'+s).classList.add('on');document.getElementById('n-'+s).classList.add('on');document.querySelector('.body').scrollTop=0;}
 function openM(id,cat){if(id==='wm'){document.getElementById('wm-edit-id').value='';document.getElementById('wm-title').textContent='Record a Wish';document.getElementById('wm-save-btn').textContent='Save Wish';['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wp').value='medium';}if(cat&&id==='wm')document.getElementById('wc2').value=cat;document.getElementById(id).classList.add('on');}
 function closeM(){document.querySelectorAll('.mo').forEach(e=>e.classList.remove('on'));}
@@ -244,28 +291,35 @@ function delW(id){S.wishes=S.wishes.filter(w=>w.id!==id);log('Wish removed');sav
 function saveWill(){S.will={status:document.getElementById('wl-status').value,date:document.getElementById('wl-date').value,solicitor:document.getElementById('wl-solicitor').value,loc1:document.getElementById('wl-loc1').value,loc2:document.getElementById('wl-loc2').value,notes:document.getElementById('wl-notes').value};log('Will details recorded');closeM();save();toast('Will details saved ✓');}
 function saveSupp(){const n=document.getElementById('sd-name').value.trim();if(!n){toast('Please enter a document name');return;}if(!S.suppDocs)S.suppDocs=[];S.suppDocs.push({id:Date.now(),type:document.getElementById('sd-type').value,name:n,loc:document.getElementById('sd-loc').value,notes:document.getElementById('sd-notes').value});log('Document recorded: '+n);closeM();['sd-name','sd-loc','sd-notes'].forEach(i=>document.getElementById(i).value='');save();toast('Document saved ✓');}
 function delSupp(id){S.suppDocs=S.suppDocs.filter(d=>d.id!==id);log('Document removed');save();toast('Removed');}
-function saveK(){const f=document.getElementById('kf').value.trim();if(!f){toast('Please enter a first name');return;}S.kin.push({id:Date.now(),first:f,last:document.getElementById('kl').value.trim(),rel:document.getElementById('kr').value,email:document.getElementById('ke').value,phone:document.getElementById('kp').value,access:document.getElementById('ka2').value});log('Guardian added: '+f);closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');save();toast('Guardian added ✓');}
+function saveK(){const f=document.getElementById('kf').value.trim();if(!f){toast('Please enter a first name');return;}S.kin.push({id:Date.now(),first:f,last:document.getElementById('kl').value.trim(),rel:document.getElementById('kr').value,email:document.getElementById('ke').value,phone:document.getElementById('kp').value,notifyVia:document.getElementById('k-notify').value,access:document.getElementById('ka2').value,order:S.kin.length+1});log('Contact added: '+f);closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');save();toast('Contact added ✓');}
 function delA(id){S.assets=S.assets.filter(a=>a.id!==id);log('Asset removed');save();toast('Removed');}
-function delK(id){S.kin=S.kin.filter(k=>k.id!==id);log('Guardian removed');save();toast('Removed');}
+function delK(id){S.kin=S.kin.filter(k=>k.id!==id);S.kin.forEach((k,i)=>k.order=i+1);log('Contact removed');save();toast('Removed');}
+function moveK(id,dir){const idx=S.kin.findIndex(k=>k.id===id);if(idx<0)return;const ni=idx+dir;if(ni<0||ni>=S.kin.length)return;[S.kin[idx],S.kin[ni]]=[S.kin[ni],S.kin[idx]];S.kin.forEach((k,i)=>k.order=i+1);save();}
 function checkin(){S.lastCheckin=Date.now();log('Check-in confirmed — alive');save();toast('You\'re confirmed alive ✓');}
 let fUnit='months',fCount=2;
 function setU(u){fUnit=u;document.getElementById('tw').classList.toggle('on',u==='weeks');document.getElementById('tm').classList.toggle('on',u==='months');document.getElementById('fu').textContent=u.charAt(0).toUpperCase()+u.slice(1);S.fu=u;}
 function adj(d){fCount=Math.max(1,Math.min(24,fCount+d));document.getElementById('fc').textContent=fCount;S.fc=fCount;}
-function updG(v){S.gp=parseInt(v);const l=v+'H'+(parseInt(v)===48?' (REC.)':'');document.getElementById('gl').textContent=l;document.getElementById('ig').textContent=v+'H';document.getElementById('g-disp').textContent=v+'H';}
+function adjGP(d){S.gp=Math.max(1,Math.min(30,S.gp+d));document.getElementById('gp-val').textContent=S.gp;save();}
 function setV(v){S.v=v;document.getElementById('rf').className='rd'+(v==='face'?' on':'');document.getElementById('rp2').className='rd'+(v==='pin'?' on':'');}
+function setSeq(s){S.notifySeq=s;save();toast('Sequence updated ✓');}
+function setProto(p){S.notifyProto=p;save();toast('Protocol updated ✓');}
 function saveCfg(){S.fc=fCount;S.fu=fUnit;save();toast('Settings saved ✓');}
 function log(msg){S.log.unshift({msg,time:new Date().toLocaleString()});if(S.log.length>20)S.log.pop();}
-function comp(){const c=[{d:S.assets.length>0,t:'Add at least one asset'},{d:S.assets.some(a=>a.beneficiary),t:'Assign a beneficiary to an asset'},{d:S.wishes.length>0,t:'Record at least one wish'},{d:!!S.will,t:'Record your Will details'},{d:S.kin.length>0,t:'Add at least one guardian'},{d:S.kin.some(k=>k.access==='executor'),t:'Designate an executor'},{d:!!S.lastCheckin,t:'Complete your first check-in'}];return{pct:Math.round(c.filter(x=>x.d).length/c.length*100),tips:c.filter(x=>!x.d).slice(0,3).map(x=>x.t)};}
+function comp(){const c=[{d:S.assets.length>0,t:'Add at least one asset'},{d:S.assets.some(a=>a.beneficiary),t:'Assign a beneficiary to an asset'},{d:S.wishes.length>0,t:'Record at least one wish'},{d:!!S.will,t:'Record your Will details'},{d:S.kin.length>0,t:'Add at least one contact'},{d:S.kin.some(k=>k.access==='executor'),t:'Designate an executor'},{d:!!S.lastCheckin,t:'Complete your first check-in'}];return{pct:Math.round(c.filter(x=>x.d).length/c.length*100),tips:c.filter(x=>!x.d).slice(0,3).map(x=>x.t)};}
 const icons={'Bank account':'account_balance','Property':'home','Investment':'trending_up','Superannuation':'savings','Life insurance':'security','Vehicle':'directions_car','Cryptocurrency':'currency_bitcoin','Business':'business','Personal item':'diamond','Digital account':'cloud','Other':'category'};
 const accCol={executor:'td',full:'ts',wishes:'ta'};
 const willStatusLabel={signed:'Signed & witnessed',draft:'Draft — not signed',none:'No Will yet'};
+const notifyIcons={email:'email',sms:'sms',whatsapp:'chat',email_and_sms:'mark_email_read'};
+const notifyLabels={email:'Email',sms:'SMS',whatsapp:'WhatsApp',email_and_sms:'Email + SMS'};
 function render(){
   const{pct,tips}=comp();
   document.getElementById('d-sum').textContent=S.assets.length+' asset'+(S.assets.length!==1?'s':'')+' · '+S.wishes.length+' wish'+(S.wishes.length!==1?'es':'');
   document.getElementById('cp-lbl').textContent=pct+'%';document.getElementById('cp-bar').style.width=pct+'%';
   document.getElementById('cp-tips').innerHTML=tips.length===0?'<div style="color:var(--ac);font-size:13px;font-weight:600;padding:2px 0;">Vault complete — well done!</div>':tips.map(t=>'<div class="ct"><span class="m" style="font-size:14px;color:var(--ac);flex-shrink:0;">arrow_circle_right</span><span>'+t+'</span></div>').join('');
-  if(S.lastCheckin){const dU=S.fu==='months'?(S.fc||2)*30:(S.fc||2)*7;const nd=new Date(S.lastCheckin+dU*86400000);document.getElementById('d-next').textContent=nd.toLocaleDateString('en-AU',{day:'numeric',month:'short'})+' · '+nd.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});}else document.getElementById('d-next').textContent='Not set — tap Settings';
+  // Vault check-in
+  if(S.lastCheckin){const dU=S.fu==='months'?(S.fc||2)*30:(S.fc||2)*7;const nd=new Date(S.lastCheckin+dU*86400000);document.getElementById('d-next').textContent=nd.toLocaleDateString('en-AU',{day:'numeric',month:'short'});const dl=Math.max(0,Math.ceil(dU-(Date.now()-S.lastCheckin)/86400000));document.getElementById('d-days').textContent=dl;const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);document.getElementById('lc-lbl').textContent=ago===0?'Confirmed today':'Confirmed '+ago+' day'+(ago!==1?'s':'')+' ago';}else{document.getElementById('d-next').textContent='Not set';document.getElementById('d-days').textContent='—';}
   document.getElementById('d-act').innerHTML=S.log.length===0?'<div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No activity yet</div>':S.log.slice(0,5).map(l=>'<div class="ai"><div class="aico"><span class="m">history</span></div><div><div style="font-weight:700;font-size:13px;color:var(--p);line-height:1.2;">'+l.msg+'</div><div style="font-size:11px;color:var(--ov);margin-top:1px;">'+l.time+'</div></div></div>').join('');
+  // Ledger
   const cats=['Bank account','Property','Investment','Superannuation','Life insurance','Vehicle','Cryptocurrency','Business','Personal item','Digital account','Other'];
   const lel=document.getElementById('l-content');
   if(!S.assets.length){lel.innerHTML='<div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No assets recorded yet.</div>';}
@@ -276,20 +330,28 @@ function render(){
   if(S.will){wb.textContent=willStatusLabel[S.will.status]||S.will.status;wb.className='tag '+(S.will.status==='signed'?'tw':'ts');wtd.textContent=S.will.solicitor?'Will held by '+S.will.solicitor:'Will details recorded';wld.textContent=S.will.loc1||'Location not specified';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit</span> Edit Will details';}else{wb.textContent='Not recorded';wb.className='tag ts';wtd.textContent='No Will recorded yet';wld.textContent='Tap below to add your Will details';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit_note</span> Record Will details';}
   const sd=document.getElementById('supp-docs'),docs=S.suppDocs||[];
   sd.innerHTML=docs.map(d=>'<div class="attach-row"><span class="m mf" style="font-size:18px;color:var(--ac);">description</span><div style="flex:1;"><div class="attach-name">'+d.name+'</div><div class="attach-size">'+d.type+(d.loc?' · '+d.loc:'')+'</div></div><button onclick="delSupp('+d.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div>').join('');
-  // Wishes — grouped by category like Ledger
+  // Wishes
   const wishCats=['Funeral & Service','Medical / end of life care','Guardian for children','Pet care','Business succession','Digital accounts','Personal message','Charitable giving','Other'];
   const wishIcons={'Funeral & Service':'church','Medical / end of life care':'medical_services','Guardian for children':'family_restroom','Pet care':'pets','Business succession':'business','Digital accounts':'devices','Personal message':'mail','Charitable giving':'volunteer_activism','Other':'category'};
   const priColors={high:'td',medium:'ts',low:'ta'};
   const wel=document.getElementById('w-content');
   if(!S.wishes.length){wel.innerHTML='<div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No wishes recorded yet.</div>';}
   else{const ac2=wishCats.filter(c=>S.wishes.some(w=>w.category===c));wel.innerHTML=ac2.map(cat=>{const items=S.wishes.filter(w=>w.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(wishIcons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(wishIcons[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+(w.details?w.details.substring(0,40)+(w.details.length>40?'...':''):w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(priColors[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');}
-  // Kin
-  document.getElementById('k-list').innerHTML=S.kin.length===0?'<div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No guardians added yet.</div>':S.kin.map(k=>'<div class="kc"><div class="kt"><div class="ka">'+((k.first[0]||'')+(k.last?k.last[0]:'')).toUpperCase()+'</div><div style="flex:1;"><div style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--p);line-height:1;">'+k.first+' '+k.last+'</div><div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);margin-top:2px;">'+(k.rel||'Guardian')+'</div></div><span class="tag '+(accCol[k.access]||'ts')+'">'+(k.access==='executor'?'Executor':k.access==='full'?'Full':'Wishes')+'</span></div><div style="display:flex;gap:14px;"><span style="font-size:12px;font-weight:600;color:var(--p);display:flex;align-items:center;gap:3px;cursor:pointer;"><span class="m" style="font-size:13px;">manage_accounts</span>Manage</span><span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK('+k.id+')"><span class="m" style="font-size:13px;">person_remove</span>Remove</span></div></div>').join('');
-  document.getElementById('ik').textContent=S.kin.length+' Kin member'+(S.kin.length!==1?'s':'');
-  if(S.lastCheckin){const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);document.getElementById('lc-lbl').textContent=ago===0?'Confirmed today':'Confirmed '+ago+' day'+(ago!==1?'s':'')+' ago';}
+  // Contacts
+  document.getElementById('k-list').innerHTML=S.kin.length===0?'<div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No contacts added yet.</div>':S.kin.map((k,i)=>'<div class="kc"><div class="kt"><div class="ka">'+((k.first[0]||'')+(k.last?k.last[0]:'')).toUpperCase()+'</div><div style="flex:1;"><div style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--p);line-height:1;">'+k.first+' '+k.last+'</div><div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);margin-top:2px;">'+(k.rel||'Contact')+'</div></div><span class="tag '+(accCol[k.access]||'ts')+'">'+(k.access==='executor'?'Executor':k.access==='full'?'Full':'Wishes')+'</span></div><div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;"><span class="m" style="font-size:14px;color:var(--sec);">'+(notifyIcons[k.notifyVia]||'email')+'</span><span style="font-size:11px;color:var(--ov);">Notify via '+(notifyLabels[k.notifyVia]||'Email')+'</span></div><div style="display:flex;gap:10px;align-items:center;"><span style="font-size:11px;font-weight:700;color:var(--sec);background:var(--sl);padding:3px 10px;border-radius:99px;">#'+(i+1)+'</span><button onclick="moveK('+k.id+',-1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_upward</span></button><button onclick="moveK('+k.id+',1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_downward</span></button><span style="flex:1;"></span><span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK('+k.id+')"><span class="m" style="font-size:13px;">delete</span>Remove</span></div></div>').join('');
+  // Notification sequence
+  document.getElementById('seq-order').className='to'+(S.notifySeq==='in_order'?' on':'');
+  document.getElementById('seq-all').className='to'+(S.notifySeq==='all_at_once'?' on':'');
+  document.getElementById('seq-desc').textContent=S.notifySeq==='in_order'?'Contacts will be notified one by one in the order listed. If the first does not respond, the next is notified.':'All contacts will be notified simultaneously when the grace period expires.';
+  // Settings
   fCount=S.fc||2;fUnit=S.fu||'months';document.getElementById('fc').textContent=fCount;document.getElementById('fu').textContent=fUnit.charAt(0).toUpperCase()+fUnit.slice(1);document.getElementById('tw').classList.toggle('on',fUnit==='weeks');document.getElementById('tm').classList.toggle('on',fUnit==='months');
-  const gv=S.gp||48;document.getElementById('gs').value=gv;document.getElementById('gl').textContent=gv+'H'+(gv===48?' (REC.)':'');document.getElementById('ig').textContent=gv+'H';document.getElementById('g-disp').textContent=gv+'H';setV(S.v||'face');
-  if(S.lastCheckin){const dU=S.fu==='months'?(S.fc||2)*30:(S.fc||2)*7;const dl=Math.max(0,Math.ceil(dU-(Date.now()-S.lastCheckin)/86400000));document.getElementById('k-days').textContent=dl;}
+  document.getElementById('gp-val').textContent=S.gp||3;
+  document.getElementById('ig').textContent=(S.gp||3)+' day'+(S.gp!==1?'s':'');
+  document.getElementById('ik').textContent=S.kin.length+' contact'+(S.kin.length!==1?'s':'');
+  setV(S.v||'face');
+  document.getElementById('rp-1').className='rd'+(S.notifyProto==='ping_then_notify'?' on':'');
+  document.getElementById('rp-2').className='rd'+(S.notifyProto==='notify_immediately'?' on':'');
+  document.getElementById('rp-3').className='rd'+(S.notifyProto==='escalate'?' on':'');
 }
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);}
 load();render();
