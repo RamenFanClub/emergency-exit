@@ -158,7 +158,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
             </div>
           </div>
           <div style="flex:1;">
-            <div style="font-family:var(--fh);font-weight:800;font-size:16px;color:var(--p);margin-bottom:4px;">I'm Alive</div>
+            <div style="font-family:var(--fh);font-weight:800;font-size:16px;color:var(--p);margin-bottom:4px;">Alive &amp; well</div>
             <div style="font-size:12px;color:var(--ov);margin-bottom:8px;" id="lc-lbl">Last confirmed: never</div>
             <div style="display:flex;align-items:center;gap:5px;">
               <span class="m" style="font-size:13px;color:var(--p);">calendar_today</span>
@@ -208,7 +208,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
       <div id="w-content"><div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No wishes recorded yet.</div></div>
-      <div class="ss"><span class="m mf" style="color:var(--ac);font-size:15px;">eco</span><span>Status: Safe & Sound</span></div>
+      
     </div>
     <!-- CONTACT -->
     <div id="s-kin" class="scr">
@@ -217,15 +217,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <div class="sh" style="margin-bottom:12px;"><span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">group</span>My Contacts</span><button class="ob" onclick="openM('km')"><span class="m" style="font-size:15px;">add</span>Add Contact</button></div>
         <div id="k-list"><div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No contacts added yet.</div></div>
       </div>
-      <!-- Notification Sequence -->
-      <div class="card">
-        <div class="st" style="margin-bottom:12px;"><span class="m mf" style="font-size:17px;color:var(--sec);">sort</span>Notification Sequence</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button class="to" id="seq-order" onclick="setSeq('in_order')" style="flex:1;text-align:center;">In order</button>
-          <button class="to" id="seq-all" onclick="setSeq('all_at_once')" style="flex:1;text-align:center;">All at once</button>
-        </div>
-        <div style="font-size:13px;color:var(--ov);line-height:1.5;" id="seq-desc">Contacts will be notified one by one in the order listed above. If the first contact does not respond, the next contact is notified.</div>
-      </div>
+
     </div>
     <!-- SETTINGS -->
     <div id="s-config" class="scr">
@@ -301,7 +293,7 @@ function setU(u){fUnit=u;document.getElementById('tw').classList.toggle('on',u==
 function adj(d){fCount=Math.max(1,Math.min(24,fCount+d));document.getElementById('fc').textContent=fCount;S.fc=fCount;}
 function adjGP(d){S.gp=Math.max(1,Math.min(30,S.gp+d));document.getElementById('gp-val').textContent=S.gp;save();}
 function setV(v){S.v=v;document.getElementById('rf').className='rd'+(v==='face'?' on':'');document.getElementById('rp2').className='rd'+(v==='pin'?' on':'');}
-function setSeq(s){S.notifySeq=s;save();toast('Sequence updated ✓');}
+
 function setProto(p){S.notifyProto=p;save();toast('Protocol updated ✓');}
 function saveCfg(){S.fc=fCount;S.fu=fUnit;save();toast('Settings saved ✓');}
 function log(msg){S.log.unshift({msg,time:new Date().toLocaleString()});if(S.log.length>20)S.log.pop();}
@@ -340,9 +332,6 @@ function render(){
   // Contacts
   document.getElementById('k-list').innerHTML=S.kin.length===0?'<div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No contacts added yet.</div>':S.kin.map((k,i)=>'<div class="kc"><div class="kt"><div class="ka">'+((k.first[0]||'')+(k.last?k.last[0]:'')).toUpperCase()+'</div><div style="flex:1;"><div style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--p);line-height:1;">'+k.first+' '+k.last+'</div><div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);margin-top:2px;">'+(k.rel||'Contact')+'</div></div><span class="tag '+(accCol[k.access]||'ts')+'">'+(k.access==='executor'?'Executor':k.access==='full'?'Full':'Wishes')+'</span></div><div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;"><span class="m" style="font-size:14px;color:var(--sec);">'+(notifyIcons[k.notifyVia]||'email')+'</span><span style="font-size:11px;color:var(--ov);">Notify via '+(notifyLabels[k.notifyVia]||'Email')+'</span></div><div style="display:flex;gap:10px;align-items:center;"><span style="font-size:11px;font-weight:700;color:var(--sec);background:var(--sl);padding:3px 10px;border-radius:99px;">#'+(i+1)+'</span><button onclick="moveK('+k.id+',-1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_upward</span></button><button onclick="moveK('+k.id+',1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_downward</span></button><span style="flex:1;"></span><span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK('+k.id+')"><span class="m" style="font-size:13px;">delete</span>Remove</span></div></div>').join('');
   // Notification sequence
-  document.getElementById('seq-order').className='to'+(S.notifySeq==='in_order'?' on':'');
-  document.getElementById('seq-all').className='to'+(S.notifySeq==='all_at_once'?' on':'');
-  document.getElementById('seq-desc').textContent=S.notifySeq==='in_order'?'Contacts will be notified one by one in the order listed. If the first does not respond, the next is notified.':'All contacts will be notified simultaneously when the grace period expires.';
   // Settings
   fCount=S.fc||2;fUnit=S.fu||'months';document.getElementById('fc').textContent=fCount;document.getElementById('fu').textContent=fUnit.charAt(0).toUpperCase()+fUnit.slice(1);document.getElementById('tw').classList.toggle('on',fUnit==='weeks');document.getElementById('tm').classList.toggle('on',fUnit==='months');
   document.getElementById('gp-val').textContent=S.gp||3;
