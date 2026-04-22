@@ -207,6 +207,27 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           <button class="upload-btn" onclick="openM('sdm')"><span class="m">attach_file</span>Attach document</button>
         </div>
       </div>
+      <!-- Statement of Wishes nudge -->
+      <div class="cardw" id="sow-nudge">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(216,90,48,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="m mf" style="font-size:22px;color:#d85a30;">priority_high</span></div>
+          <div style="flex:1;">
+            <div style="font-family:var(--fh);font-size:15px;font-weight:700;color:var(--p);margin-bottom:4px;">Statement of Wishes</div>
+            <div style="font-size:13px;color:var(--ov);line-height:1.5;margin-bottom:10px;">This is the most important document your contacts will receive. It tells them exactly what to do — step by step. Record where yours is stored, or create one and add it here.</div>
+            <button class="upload-btn" onclick="openM('sdm','Statement of Wishes')" style="border-color:rgba(216,90,48,.35);color:#d85a30;"><span class="m" style="font-size:18px;">description</span>Record Statement of Wishes</button>
+          </div>
+        </div>
+      </div>
+      <!-- Statement of Wishes confirmed -->
+      <div class="cardw" id="sow-done" style="display:none;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(45,138,122,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="m mf" style="font-size:22px;color:var(--ac);">task_alt</span></div>
+          <div style="flex:1;">
+            <div style="font-family:var(--fh);font-size:15px;font-weight:700;color:var(--p);">Statement of Wishes</div>
+            <div style="font-size:13px;color:var(--ac);font-weight:600;" id="sow-loc">Recorded</div>
+          </div>
+        </div>
+      </div>
       <div id="w-content"><div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No wishes recorded yet.</div></div>
       
     </div>
@@ -273,7 +294,7 @@ let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu
 function load(){try{const d=localStorage.getItem('ee_v3');if(d){const p=JSON.parse(d);S={...S,...p};}}catch(e){}}
 function save(){try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){}render();}
 function go(s){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));document.getElementById('s-'+s).classList.add('on');document.getElementById('n-'+s).classList.add('on');document.querySelector('.body').scrollTop=0;}
-function openM(id,cat){if(id==='wm'){document.getElementById('wm-edit-id').value='';document.getElementById('wm-title').textContent='Record a Wish';document.getElementById('wm-save-btn').textContent='Save Wish';['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wp').value='medium';}if(cat&&id==='wm')document.getElementById('wc2').value=cat;document.getElementById(id).classList.add('on');}
+function openM(id,cat){if(id==='wm'){document.getElementById('wm-edit-id').value='';document.getElementById('wm-title').textContent='Record a Wish';document.getElementById('wm-save-btn').textContent='Save Wish';['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wp').value='medium';}if(cat&&id==='wm')document.getElementById('wc2').value=cat;if(cat&&id==='sdm')document.getElementById('sd-type').value=cat;document.getElementById(id).classList.add('on');}
 function closeM(){document.querySelectorAll('.mo').forEach(e=>e.classList.remove('on'));}
 document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeM();}));
 function saveA(){const n=document.getElementById('an').value.trim();if(!n){toast('Please enter an asset name');return;}S.assets.push({id:Date.now(),name:n,category:document.getElementById('ac2').value,value:parseFloat(document.getElementById('av').value)||0,details:document.getElementById('adet').value,beneficiary:document.getElementById('ab2').value,notes:document.getElementById('ano').value});log('Asset added: '+n);closeM();['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');save();toast('Asset saved ✓');}
@@ -297,7 +318,7 @@ function setV(v){S.v=v;document.getElementById('rf').className='rd'+(v==='face'?
 function setProto(p){S.notifyProto=p;save();toast('Protocol updated ✓');}
 function saveCfg(){S.fc=fCount;S.fu=fUnit;save();toast('Settings saved ✓');}
 function log(msg){S.log.unshift({msg,time:new Date().toLocaleString()});if(S.log.length>20)S.log.pop();}
-function comp(){const c=[{d:S.assets.length>0,t:'Add at least one asset'},{d:S.assets.some(a=>a.beneficiary),t:'Assign a beneficiary to an asset'},{d:S.wishes.length>0,t:'Record at least one wish'},{d:!!S.will,t:'Record your Will details'},{d:S.kin.length>0,t:'Add at least one contact'},{d:S.kin.some(k=>k.access==='executor'),t:'Designate an executor'},{d:!!S.lastCheckin,t:'Complete your first check-in'}];return{pct:Math.round(c.filter(x=>x.d).length/c.length*100),tips:c.filter(x=>!x.d).slice(0,3).map(x=>x.t)};}
+function comp(){const sow=(S.suppDocs||[]).some(d=>d.type==='Statement of Wishes');const c=[{d:S.assets.length>0,t:'Add at least one asset'},{d:S.assets.some(a=>a.beneficiary),t:'Assign a beneficiary to an asset'},{d:S.wishes.length>0,t:'Record at least one wish'},{d:!!S.will,t:'Record your Will details'},{d:sow,t:'Record your Statement of Wishes'},{d:S.kin.length>0,t:'Add at least one contact'},{d:S.kin.some(k=>k.access==='executor'),t:'Designate an executor'},{d:!!S.lastCheckin,t:'Complete your first check-in'}];return{pct:Math.round(c.filter(x=>x.d).length/c.length*100),tips:c.filter(x=>!x.d).slice(0,3).map(x=>x.t)};}
 const icons={'Bank account':'account_balance','Property':'home','Investment':'trending_up','Superannuation':'savings','Life insurance':'security','Vehicle':'directions_car','Cryptocurrency':'currency_bitcoin','Business':'business','Personal item':'diamond','Digital account':'cloud','Other':'category'};
 const accCol={executor:'td',full:'ts',wishes:'ta'};
 const willStatusLabel={signed:'Signed & witnessed',draft:'Draft — not signed',none:'No Will yet'};
@@ -322,6 +343,11 @@ function render(){
   if(S.will){wb.textContent=willStatusLabel[S.will.status]||S.will.status;wb.className='tag '+(S.will.status==='signed'?'tw':'ts');wtd.textContent=S.will.solicitor?'Will held by '+S.will.solicitor:'Will details recorded';wld.textContent=S.will.loc1||'Location not specified';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit</span> Edit Will details';}else{wb.textContent='Not recorded';wb.className='tag ts';wtd.textContent='No Will recorded yet';wld.textContent='Tap below to add your Will details';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit_note</span> Record Will details';}
   const sd=document.getElementById('supp-docs'),docs=S.suppDocs||[];
   sd.innerHTML=docs.map(d=>'<div class="attach-row"><span class="m mf" style="font-size:18px;color:var(--ac);">description</span><div style="flex:1;"><div class="attach-name">'+d.name+'</div><div class="attach-size">'+d.type+(d.loc?' · '+d.loc:'')+'</div></div><button onclick="delSupp('+d.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div>').join('');
+  // Statement of Wishes nudge
+  const sowDoc=(S.suppDocs||[]).find(d=>d.type==='Statement of Wishes');
+  document.getElementById('sow-nudge').style.display=sowDoc?'none':'block';
+  document.getElementById('sow-done').style.display=sowDoc?'block':'none';
+  if(sowDoc)document.getElementById('sow-loc').textContent=sowDoc.loc?'Stored at: '+sowDoc.loc:'Location recorded';
   // Wishes
   const wishCats=['Funeral & Service','Medical / end of life care','Guardian for children','Pet care','Business succession','Digital accounts','Personal message','Charitable giving','Other'];
   const wishIcons={'Funeral & Service':'church','Medical / end of life care':'medical_services','Guardian for children':'family_restroom','Pet care':'pets','Business succession':'business','Digital accounts':'devices','Personal message':'mail','Charitable giving':'volunteer_activism','Other':'category'};
