@@ -1,13 +1,40 @@
 # Emergency Exit — Project Context for Claude
 
+## How to start a new chat
+
+Always begin a new chat with:
+1. Upload the current `index.html` from GitHub
+2. Say: "We are continuing work on Emergency Exit. Here is the current index.html."
+3. Then describe what you want to change
+
+This gives Claude the current state of the app without needing to re-read this entire file.
+
+---
+
 ## What is this project?
 
-**Emergency Exit** is a personal digital legacy vault app that helps users prepare for sudden death by recording assets, documenting final wishes, storing Will and legal document details, monitoring liveness via periodic check-ins, and automatically notifying nominated family members if the user stops responding.
+**Emergency Exit** is a personal digital legacy vault app that helps users prepare for sudden death by recording assets, documenting final wishes, storing Will and legal document details, monitoring liveness via periodic check-ins, and automatically notifying nominated contacts if the user stops responding.
 
-The app targets everyday Australians (non-technical users) and is being built for:
+Target market: everyday Australians (non-technical users).
+
+Planned platforms:
 - **iOS** (Apple App Store)
 - **Android** (Google Play Store)
-- **Web** (mobile-optimised browser, deployed via GitHub Pages)
+- **Web** (mobile-optimised browser, currently deployed via GitHub Pages)
+
+---
+
+## Repository & Deployment
+
+- **GitHub:** `https://github.com/RamenFanClub/emergency-exit`
+- **Live site:** `https://ramenfanclub.github.io/emergency-exit`
+- **Deployment:** Push to `main` branch → GitHub Pages serves from `/ (root)` → live in ~60 seconds
+- **Key files:**
+  - `index.html` — the entire frontend app (root, served by GitHub Pages)
+  - `frontend/index.html` — duplicate kept in sync with root
+  - `CLAUDE.md` — this file
+  - `docs/` — Technical Blueprint and Feature Register
+  - `*-service/` — 7 backend microservice skeletons (not yet implemented)
 
 ---
 
@@ -21,10 +48,10 @@ The app targets everyday Australians (non-technical users) and is being built fo
 - **Gradient:** `linear-gradient(135deg, #002147, #003366)`
 - **Fonts:** Manrope (headlines, 800 weight) + Public Sans (body)
 - **Design rules:**
-  - No 1px borders for sectioning — use background colour shifts instead
+  - No 1px borders for sectioning — use background colour shifts
   - Minimum tap target: 48×48dp
   - Rounded cards (`border-radius: 16px`)
-  - Ambient shadows only (blur 24–48px, opacity 4–6%)
+  - Ambient shadows only
   - No pure black — use `#002147` for dark tones
 
 ---
@@ -33,16 +60,16 @@ The app targets everyday Australians (non-technical users) and is being built fo
 
 ### Current (prototype)
 - Single-file HTML/CSS/JavaScript (`index.html`)
-- localStorage for data persistence (key: `ee_v2`)
+- localStorage for data persistence (key: `ee_v3`)
 - Hosted on GitHub Pages
 
 ### Planned (production)
-- **Frontend:** React Native (shared codebase for iOS + Android)
-- **Web:** React (same component logic)
-- **Backend:** Python (FastAPI) for check-in scheduling, email/SMS alerts
-- **Database:** Encrypted cloud storage (AES-256, zero-knowledge)
-- **Notifications:** Email (SendGrid), SMS, native push notifications
-- **Auth:** Biometric (Face ID / Touch ID), PIN, 2FA
+- **Frontend:** React Native (iOS + Android) + React (web)
+- **Backend:** Python FastAPI microservices
+- **Database:** MongoDB (one DB per service)
+- **Message broker:** RabbitMQ (domain events between services)
+- **Notifications:** Email (SendGrid), SMS (Twilio), WhatsApp, push
+- **Auth:** Biometric (Face ID / Touch ID), PIN, JWT + MFA
 
 ---
 
@@ -50,229 +77,239 @@ The app targets everyday Australians (non-technical users) and is being built fo
 
 ### 1. Vault (Dashboard)
 - Hero headline: "Your legacy is securely anchored"
-- Asset + wish count summary
-- Status badge (Active / Overdue / Alert Sent)
-- Next security check date
+- Asset + wish count summary with Active status badge
+- **Vitality Pulse** — animated pulsing heart, tap to confirm "Alive & well"
+- Next check-in date + days remaining countdown (combined with Vitality Pulse in one card)
+- Last confirmed timestamp shown below pulse
 - Asset Ledger CTA (full-width gradient button)
 - Compact pill buttons: **Add Asset** (navy) + **My Wishes** (grey-blue)
-- Vault completeness percentage + progress bar + actionable tips
+- Vault completeness % with progress bar + actionable tips (8 checks)
 - Recent activity log
 
 ### 2. Ledger (Asset Register)
 - Record New Asset CTA (gradient button)
 - Assets grouped by category with icons
-- Categories: Bank account, Property, Investment, Superannuation, Life insurance, Vehicle, Cryptocurrency, Business, Personal item, Digital account, Other
+- Categories (11): Bank account, Property, Investment, Superannuation, Life insurance, Vehicle, Cryptocurrency, Business, Personal item, Digital account, Other
 - Per asset: name, category, estimated value, details (free-text), beneficiary, notes
+- Delete button per asset
 - Legacy completeness % shown in info box
 
-### 3. My Wishes (formerly "Legacy Wishes")
+### 3. My Wishes
 - New Instruction CTA (dark gradient card with START NOW button)
-- **Will & Legal Documents** section:
-  - Will status badge (Not recorded / Draft / Signed & witnessed)
-  - Will details: status, date signed, solicitor/law firm, primary storage location, secondary location, notes
-  - Supplementary Documents: attach records with type, name, storage location, notes
-  - Document types: Statement of Wishes, Enduring Power of Attorney, Advance Health Directive, Guardianship Nomination, Funeral Pre-arrangement, Business Succession Plan, Other
-- **Funeral & Service** section — wish items with teal checkmarks
-- **Digital Handover** section — Social Media Accounts, Photo Archives Access
-- **Scheduled Messages** section — personal messages with active count badge
-- Wish form fields: Category, Wish (generic label), Details (generic placeholder), Priority
-- Status strip: "Status: Safe & Sound"
+- **Will & Legal Documents** section (always at top):
+  - Will status badge: Not recorded / Draft / Signed & witnessed
+  - Will details: status, date signed, solicitor, primary location, secondary location, notes
+  - Supplementary Documents list with delete per item
+  - Attach document button
+- **Statement of Wishes prompt** (orange accent card — prominent nudge):
+  - Shows when Statement of Wishes has NOT been recorded
+  - Transforms to green confirmation card when recorded, showing storage location
+  - Tapping opens Attach Document modal with "Statement of Wishes" pre-selected
+- **Wishes grouped by category** (like Ledger):
+  - Shows only categories that have at least one wish
+  - Each wish: title, details preview, priority badge (high/medium/low), edit + delete
+  - Edit opens modal pre-filled with existing data
+- Wish categories (9): Funeral & Service, Medical / end of life care, Guardian for children, Pet care, Business succession, Digital accounts, Personal message, Charitable giving, Other
+- Wish form fields: Category, Wish, Details, Priority
 
-### 4. Kin (Circle of Trust)
-- Guardian cards with initials avatar, name, role badge, access level
-- Access levels: Executor (full + account details), Full (all assets & wishes), Wishes only
-- Notification Protocol card (dark gradient): "3 Daily Pings → Kin Contacted"
-- Next check-in countdown (days remaining) with confirm button
+### 4. Contact
+- Title: "Contacts", subtitle: "People to notify and how to reach them"
+- Section: "My Contacts" with Add Contact button
+- Contact cards showing:
+  - Initials avatar (navy gradient)
+  - Full name + relationship
+  - Access level badge (Executor / Full / Wishes)
+  - Notify via icon + label (Email / SMS / WhatsApp / Email+SMS)
+  - Sequence number (#1, #2...) with up/down arrows to reorder
+  - Remove button
+- Add Contact modal fields: First name, Last name, Relationship, Email, Phone, Notify via, Access level
 
-### 5. Config (Check-in Settings)
-- **Vitality Pulse** — large pulsing animated circle, tap to confirm alive
-- Pulse Frequency — stepper (1–24 Weeks or Months)
-- Grace Period — slider (12H → 72H, recommended 48H)
-- Verification — FaceID/Biometrics or Secure Passcode (radio toggle)
-- Info box: "Missed check-ins after Xh will grant access to N Kin members"
-- Confirm Configuration button
+### 5. Settings
+- **Check-in Frequency** — stepper (1–24 Weeks or Months)
+- **Grace Period** — stepper in days (1–30 days, default 3)
+- **Notification Protocol** — 3 radio options:
+  - "Ping me first, then notify contacts" (default)
+  - "Notify contacts immediately"
+  - "Escalate gradually" (notify first contact, wait 24h, then next)
+- **Verification** — FaceID/Biometrics or Secure Passcode
+- Info box: "Missed check-ins after X days will grant access to N contacts"
+- Confirm Settings button
 
 ---
 
 ## Navigation
 
-Bottom tab bar (5 tabs, fixed, rounded top corners):
+Bottom tab bar (5 tabs, rounded top corners):
+
 | Tab | Icon | Screen |
 |-----|------|--------|
-| Vault | `shield` (filled when active) | Dashboard |
+| Vault | `shield` | Dashboard |
 | Ledger | `account_balance` | Asset Register |
 | Wishes | `auto_stories` | My Wishes |
-| Kin | `family_history` | Circle of Trust |
-| Config | `settings_suggest` | Check-in Settings |
+| Contact | `family_history` | Contacts |
+| Settings | `settings_suggest` | Settings |
 
-Active tab: white icon/label on navy background pill.
-Inactive tabs: navy at 35% opacity.
+Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 
 ---
 
 ## Key UI Patterns
 
-- **Modals:** Bottom-sheet style, slide up from bottom, drag handle at top, tap outside to dismiss
-- **Gradient buttons:** Full-width, 18px padding, border-bottom 3px rgba(0,0,0,0.22) for depth, active scale(0.97)
-- **Compact action buttons:** Pill-shaped (`border-radius: 9999px`), side by side in a row, 10px vertical padding
-- **Cards:** `border-radius: 16px`, surface-low background (`#f2f4f6`) or white with ambient shadow
-- **Tags/badges:** Uppercase, 10px, pill-shaped — Active (teal), Secure (blue-grey), Dark (navy), Will (teal border)
-- **Toast notifications:** Fixed, centred, navy pill, auto-dismiss after 2.4s
-- **Upload buttons:** Dashed border, teal hover state, used for Will details and supplementary documents
-- **Icons:** Google Material Symbols Outlined font
+- **Modals:** Bottom-sheet, drag handle at top, tap outside to dismiss
+- **Gradient buttons:** Full-width, 18px padding, 3px border-bottom for depth, active scale(0.97)
+- **Compact action buttons:** Pill-shaped, side by side, 10px vertical padding
+- **Cards:** `border-radius: 16px`, `#f2f4f6` or white with ambient shadow
+- **Tags/badges:** Uppercase, 10px, pill-shaped
+- **Toast notifications:** Fixed, centred, navy pill, auto-dismiss 2.4s
+- **Stepper controls:** − value + (used for frequency and grace period)
+- **Icons:** Google Material Symbols Outlined
 
 ---
 
 ## Data Model
 
 ```javascript
-// Stored in localStorage key: 'ee_v2'
+// localStorage key: 'ee_v3'
 {
   assets: [{
-    id: timestamp,
-    name: string,
-    category: string,       // one of 11 categories
-    value: number,          // AUD
-    details: string,        // free-text (replaces old location + ref fields)
-    beneficiary: string,
-    notes: string
+    id: timestamp, name: string, category: string,
+    value: number, details: string, beneficiary: string, notes: string
   }],
   wishes: [{
-    id: timestamp,
-    category: string,       // one of 9 categories
-    title: string,          // labelled "Wish" in the UI
-    details: string,
-    priority: 'high' | 'medium' | 'low'
+    id: timestamp, category: string, title: string,
+    details: string, priority: 'high' | 'medium' | 'low'
   }],
-  will: {                   // null if not recorded
+  will: {
     status: 'signed' | 'draft' | 'none',
-    date: string,           // date signed (ISO format)
-    solicitor: string,      // solicitor or law firm name
-    loc1: string,           // primary storage location
-    loc2: string,           // secondary storage location
-    notes: string
-  },
-  suppDocs: [{              // supplementary legal documents
+    date: string, solicitor: string,
+    loc1: string, loc2: string, notes: string
+  } | null,
+  suppDocs: [{
     id: timestamp,
-    type: string,           // one of 7 document types
-    name: string,
-    loc: string,            // where the document is stored
-    notes: string
+    type: 'Statement of Wishes' | 'Enduring Power of Attorney' |
+          'Advance Health Directive' | 'Guardianship Nomination' |
+          'Funeral Pre-arrangement' | 'Business Succession Plan' | 'Other',
+    name: string, loc: string, notes: string
   }],
   kin: [{
-    id: timestamp,
-    first: string,
-    last: string,
-    rel: string,            // relationship
-    email: string,
-    phone: string,
-    access: 'executor' | 'full' | 'wishes'
+    id: timestamp, first: string, last: string, rel: string,
+    email: string, phone: string,
+    notifyVia: 'email' | 'sms' | 'whatsapp' | 'email_and_sms',
+    access: 'executor' | 'full' | 'wishes',
+    order: number
   }],
   lastCheckin: timestamp | null,
-  fc: number,               // frequency count (e.g. 2)
-  fu: 'weeks' | 'months',   // frequency unit
-  gp: number,               // grace period in hours (12–72)
-  v: 'face' | 'pin',        // verification method
+  fc: number,               // frequency count (1–24)
+  fu: 'weeks' | 'months',
+  gp: number,               // grace period in DAYS (1–30, default 3)
+  v: 'face' | 'pin',
+  notifyProto: 'ping_then_notify' | 'notify_immediately' | 'escalate',
   log: [{ msg: string, time: string }]
 }
 ```
 
 ---
 
-## Completeness Score Logic
+## Completeness Score — 8 Checks (~12.5% each)
 
-7 checks, each worth ~14.3%:
 1. At least one asset recorded
 2. At least one asset has a beneficiary assigned
 3. At least one wish recorded
 4. Will details recorded
-5. At least one guardian added
-6. At least one guardian has access level "executor"
-7. First check-in completed
+5. Statement of Wishes recorded (suppDocs includes type === 'Statement of Wishes')
+6. At least one contact added
+7. At least one contact has access level "executor"
+8. First check-in completed
 
 ---
 
-## Feature Register
+## Contact Notification — Emergency Exit Package
 
-A separate Word document (`Emergency_Exit_Feature_Register.docx`) tracks all features across 8 categories with Live / In Progress / Planned status:
+When the grace period expires, contacts receive a self-contained package. No app, no login required.
 
-1. Asset Register
-2. My Wishes (renamed from "Legacy Wishes")
-3. Check-in & Liveness Detection
-4. Circle of Trust (Family Contacts)
-5. Dashboard & Overview
-6. Mobile App & Platform
-7. Security & Data Privacy
-8. Export & Legal Integration
+**What they receive:**
 
-**When adding a new feature:** Update both the app AND regenerate the feature register document so they stay in sync.
+1. **Notification message** (via email/SMS/WhatsApp) — warm tone, explains the situation
+2. **Personal letter** — written by the user for this specific contact, embedded in email body
+3. **Emergency Exit PDF** — attached to the email, works offline, can be printed
+
+**PDF sections** (filtered by contact's access level):
+- Personal message from the user
+- Action checklist (auto-generated from vault data)
+- Will & legal documents (solicitor, locations, supplementary docs)
+- Asset register (Executor sees account details; Full sees names/values; Wishes-only skips this)
+- Wishes grouped by category with priority flags
+- Key people to contact (other contacts + solicitor)
+
+**Statement of Wishes** is referenced prominently — contacts are told where to find the user's detailed step-by-step instructions.
+
+**Design principle:** PDF works offline. Watermarked with contact name + date. Does not depend on Emergency Exit servers staying online.
 
 ---
 
-## Deployment
+## Terminology — Always Use These Words
 
-- **Hosting:** GitHub Pages (free, public repo)
-- **URL pattern:** `https://USERNAME.github.io/emergency-exit`
-- **Deployment flow:** Edit index.html → commit in VS Code → push to GitHub → live within 60 seconds
-- **Repository files:** `index.html`, `CLAUDE.md`, `README.md`
+| Use | Never use |
+|-----|-----------|
+| Contact | Guardian, Kin, Trusted Kin |
+| My Contacts | Circle of Trust |
+| Settings | Config, Configuration |
+| My Wishes | Legacy Wishes |
+| Wish (field label) | Title |
+| Alive & well (check-in label) | I'm Alive |
+| Contact (nav tab) | Kin |
+| Settings (nav tab) | Config |
+
+---
+
+## Microservices Architecture (Skeleton — Phase 2+)
+
+| Service | Port | Database |
+|---------|------|----------|
+| api-gateway | 8000 | — |
+| identity-service | 8001 | ee_identity |
+| vault-service | 8002 | ee_vault |
+| wishes-service | 8003 | ee_wishes |
+| guardian-service | 8004 | ee_guardian |
+| pulse-service | 8005 | ee_pulse |
+| notification-service | 8006 | — |
+
+CI is running but tests fail (expected — services are skeleton only, not yet implemented).
 
 ---
 
 ## Coding Conventions
 
-- **CSS variables** for all colours (short aliases like `--p`, `--ac`, `--sec`)
-- **Short CSS class names** to keep file size small (e.g. `.scr`, `.ni`, `.mo`, `.fi`)
-- **No hardcoded hex values** in component styles — always reference variables
-- **Mobile-first** — max-width 430px, touch targets min 48px
-- **No zoom** — `user-scalable=no` on viewport
-- **Smooth scroll** with `-webkit-overflow-scrolling: touch`
-- **Transitions:** `transform 0.1s` on buttons (active scale), `all 0.18s` on nav items
-- **Animation:** CSS keyframes only for the Vitality Pulse ring (`pr`)
-- All monetary values displayed with `Math.round().toLocaleString()` — never raw floats
-- **State loading:** Use spread operator `S={...S,...parsed}` to safely merge saved state with new default fields
+- CSS variables for all colours (`--p`, `--ac`, `--sec`, etc.)
+- Short class names (`.scr`, `.ni`, `.mo`, `.fi`) to keep file size small
+- Mobile-first — max-width 430px, touch targets min 48px
+- State loading: `S={...S,...parsed}` to safely merge new default fields
+- Monetary values: always `Math.round().toLocaleString()` — never raw floats
+- localStorage key is `ee_v3` (not ee_v2)
+- When editing index.html, always update BOTH `./index.html` AND `./frontend/index.html`
 
 ---
 
-## Planned Backend (FastAPI / Python)
-
-```
-/api/checkin          POST  — record a check-in, reset timer
-/api/checkin/status   GET   — return current status + days remaining
-/api/assets           GET / POST / DELETE
-/api/wishes           GET / POST / DELETE
-/api/will             GET / PUT — will details
-/api/documents        GET / POST / DELETE — supplementary documents
-/api/kin              GET / POST / DELETE
-/api/notify           POST  — trigger manual notification to kin
-/api/config           GET / PUT — frequency, grace period, verif method
-```
-
-Scheduled jobs (APScheduler or Celery):
-- Daily: check if any user has missed check-in + grace period → send email/SMS
-- On overdue: send 3 daily pings to user → then notify kin
-
----
-
-## Australian Context
-
-- Currency: AUD (`$`)
-- Date format: `dd/mm/yyyy` (en-AU locale)
-- Superannuation is a key asset category (mandatory in AU)
-- Legal references: Enduring Power of Attorney, Advance Health Directive, Guardianship Nomination, Will, Death Benefit Nomination, Funeral Pre-arrangement
-- Phone format: `+61 4xx xxx xxx`
-- Jurisdiction: Australian law (state-based estate law)
-
----
-
-## What NOT to do
+## What NOT to Do
 
 - Do not use Inter, Roboto, or Arial — always Manrope + Public Sans
-- Do not use pure black (`#000000`) — use `#002147` for dark text
-- Do not add 1px borders between sections — use background colour shifts
-- Do not use `position: fixed` inside iframe-rendered widgets
-- Do not use `localStorage` in Claude.ai artifact widgets (use in-memory state) — only in the standalone `index.html`
-- Do not make tap targets smaller than 48×48dp
-- Do not render monetary values as raw floats — always round and format
-- Do not use "Legacy Wishes" — the screen is now called "My Wishes"
-- Do not use "Title" as the wish field label — use "Wish" with generic placeholders
-- Do not use separate location/ref fields for assets — use a single "Details" textarea instead
+- Do not use pure black — use `#002147`
+- Do not use the old terminology (Guardian, Kin, Config, Legacy Wishes, Circle of Trust)
+- Do not use "Title" as the wish field label — use "Wish"
+- Do not use separate location/ref fields for assets — single "Details" textarea
+- Do not render monetary values as raw floats
+- Do not forget to update BOTH index.html files (root and `frontend/`)
+- Do not use grace period in hours — it is in days
+- Do not use `ee_v2` as localStorage key — it is `ee_v3`
+- Do not remove the Statement of Wishes prompt — it is a key UX nudge
+
+---
+
+## End-of-Chat Checklist
+
+- [ ] Download the new `index.html`
+- [ ] Did anything structural change? Update `CLAUDE.md`
+- [ ] Replace files in VS Code (`./index.html` AND `./frontend/index.html`)
+- [ ] `git add -A`
+- [ ] `git commit -m "describe what changed"`
+- [ ] `git push`
