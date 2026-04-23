@@ -75,7 +75,7 @@ Planned platforms:
 
 ## App Structure — 5 Screens
 
-### 1. Vault (Dashboard)
+### 1. Home (Dashboard)
 - Hero headline: "Your legacy is securely anchored"
 - Asset + wish count summary with Active status badge
 - **Vitality Pulse** — animated pulsing heart, tap to confirm "Alive & well"
@@ -83,8 +83,9 @@ Planned platforms:
 - Last confirmed timestamp shown below pulse
 - Asset Ledger CTA (full-width gradient button)
 - Compact pill buttons: **Add Asset** (navy) + **My Wishes** (grey-blue)
-- Vault completeness % with progress bar + actionable tips (8 checks)
+- Home completeness % with progress bar + actionable tips (8 checks)
 - Recent activity log
+- Screen ID: `s-home` | Nav ID: `n-home`
 
 ### 2. Ledger (Asset Register)
 - Record New Asset CTA (gradient button)
@@ -141,13 +142,13 @@ Planned platforms:
 
 Bottom tab bar (5 tabs, rounded top corners):
 
-| Tab | Icon | Screen |
-|-----|------|--------|
-| Vault | `shield` | Dashboard |
-| Ledger | `account_balance` | Asset Register |
-| Wishes | `auto_stories` | My Wishes |
-| Contact | `family_history` | Contacts |
-| Settings | `settings_suggest` | Settings |
+| Tab | Icon | Screen ID | Nav ID |
+|-----|------|-----------|--------|
+| Home | `shield` | `s-home` | `n-home` |
+| Ledger | `account_balance` | `s-ledger` | `n-ledger` |
+| Wishes | `auto_stories` | `s-wishes` | `n-wishes` |
+| Contact | `family_history` | `s-kin` | `n-kin` |
+| Settings | `settings_suggest` | `s-config` | `n-config` |
 
 Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 
@@ -251,6 +252,7 @@ When the grace period expires, contacts receive a self-contained package. No app
 
 | Use | Never use |
 |-----|-----------|
+| Home | Vault |
 | Contact | Guardian, Kin, Trusted Kin |
 | My Contacts | Circle of Trust |
 | Settings | Config, Configuration |
@@ -286,6 +288,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - State loading: `S={...S,...parsed}` to safely merge new default fields
 - Monetary values: always `Math.round().toLocaleString()` — never raw floats
 - localStorage key is `ee_v3` (not ee_v2)
+- Home screen uses `id="s-home"` and nav uses `id="n-home"`
 - When editing index.html, always update BOTH `./index.html` AND `./frontend/index.html`
 
 ---
@@ -294,7 +297,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 
 - Do not use Inter, Roboto, or Arial — always Manrope + Public Sans
 - Do not use pure black — use `#002147`
-- Do not use the old terminology (Guardian, Kin, Config, Legacy Wishes, Circle of Trust)
+- Do not use the old terminology (Vault, Guardian, Kin, Config, Legacy Wishes, Circle of Trust)
 - Do not use "Title" as the wish field label — use "Wish"
 - Do not use separate location/ref fields for assets — single "Details" textarea
 - Do not render monetary values as raw floats
@@ -302,6 +305,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - Do not use grace period in hours — it is in days
 - Do not use `ee_v2` as localStorage key — it is `ee_v3`
 - Do not remove the Statement of Wishes prompt — it is a key UX nudge
+- Do not use `s-vault` or `n-vault` as element IDs — they are now `s-home` and `n-home`
 
 ---
 
