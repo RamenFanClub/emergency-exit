@@ -309,6 +309,70 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 
 ---
 
+## Feature Backlog — User Stories
+
+Features are prioritised using MoSCoW: **Must** (ship or the product doesn't work), **Should** (high value, planned soon), **Could** (nice-to-have, future), **Won't** (out of scope for now).
+
+Status key: `idea` → `specified` → `in-progress` → `done`
+
+### Must Have — Core Product Loop
+
+These features complete the vault → heartbeat → delivery loop. Without them, Emergency Exit is just another document vault.
+
+| ID | User Story | Priority | Status | Notes |
+|----|-----------|----------|--------|-------|
+| F01 | As a user, I want the app to automatically notify my contacts if I miss a check-in and the grace period expires, so that my loved ones are alerted without relying on someone else to act. | Must | idea | This is the #1 differentiator. Requires backend (notification-service). |
+| F02 | As a contact, I want to receive a self-contained PDF with the user's assets, wishes, and legal document locations filtered to my access level, so I can act immediately without needing an app or login. | Must | idea | Offline-capable PDF. Watermarked with contact name + date. |
+| F03 | As a user, I want to write a personal letter for each contact that is included in their notification, so they receive a human message alongside the practical information. | Must | idea | Embedded in email body, not just the PDF. |
+| F04 | As a user, I want my data encrypted at rest and in transit, so that sensitive financial and legal information is protected from unauthorised access. | Must | idea | Current prototype uses plain localStorage. Production needs AES-256 or equivalent. |
+| F05 | As a user, I want to receive reminders (push notification, email, or SMS) when my check-in is due, so I don't accidentally miss one and trigger a false alarm. | Must | idea | Critical for preventing false positives. Configurable reminder frequency. |
+
+### Should Have — High Value, Near-Term
+
+| ID | User Story | Priority | Status | Notes |
+|----|-----------|----------|--------|-------|
+| F06 | As a user, I want to test the notification flow with a "dry run" that sends a sample email to myself or a chosen contact, so I can verify everything works before it's needed for real. | Should | idea | Builds user trust. Reduces anxiety about "will this actually work?" |
+| F07 | As a user, I want a guided onboarding flow that walks me through the most important setup steps on first use, so I don't feel overwhelmed by the number of sections. | Should | idea | Completeness score already nudges — but first-time UX needs more hand-holding. |
+| F08 | As a user, I want to export or back up my vault data to a file I control, so I'm not entirely dependent on Emergency Exit's servers or storage. | Should | idea | JSON or encrypted export. Aligns with "your data, your control" philosophy. |
+| F09 | As a user, I want an auto-generated action checklist in the PDF delivery package that tells my contacts what to do first, second, third, so they aren't overwhelmed by raw data. | Should | idea | E.g. "1. Contact solicitor at Smith & Associates. 2. Locate Will in home safe..." |
+| F10 | As a user, I want to record my digital accounts (email, social media, subscriptions) and what should happen to each one, so my contacts can close or transfer them. | Should | idea | Separate from financial assets. Inspired by GoodTrust's account closure feature. |
+| F11 | As a contact receiving a notification, I want to see a clear explanation of what Emergency Exit is and why I'm receiving this message, so I understand the context without confusion or alarm. | Should | idea | Warm, human-toned message. Not robotic. First impression matters enormously. |
+| F19 | As a user, I want the app to passively detect that I'm alive based on phone activity (unlocks, movement, app usage), so I don't have to manually check in every time. | Should | idea | Reduces check-in fatigue — the #1 engagement risk. Manual check-in becomes fallback. Requires native mobile APIs (iOS/Android), not possible in browser-only prototype. |
+| F20 | As a user, I want the app to capture only the minimum information my contacts need to locate an asset (e.g. "ANZ Savings Account" not full BSB/account numbers), so I feel safe using the app without exposing sensitive financial details. | Should | idea | Design philosophy: Emergency Exit is a *map*, not a *copy*. Reduces security liability, lowers encryption burden, increases user trust. Revisit asset form fields and placeholder text. |
+| F21 | As a user, I want to record where my documents are stored (e.g. "solicitor's office", "Google Drive") rather than uploading them, so the app uses minimal storage and I don't duplicate sensitive files. | Should | idea | App already does this partially via suppDocs location field. Formalise as primary approach. Position as "your documents stay where they are — we just tell people where to look." |
+
+### Could Have — Future Value
+
+| ID | User Story | Priority | Status | Notes |
+|----|-----------|----------|--------|-------|
+| F12 | As a user, I want to generate a physical Emergency Access Card (QR code) that I can store in my wallet or safe, so my contacts have a backup way to access my vault if digital notifications fail. | Could | idea | Inspired by Evaheld's QR card. Good offline redundancy. |
+| F13 | As a user, I want to record an Advance Care Directive within the app, so my medical wishes are stored alongside my other legacy documents. | Could | idea | Relevant for Australian market. Evaheld already does this well — consider whether to compete or integrate. |
+| F14 | As a user, I want the app to remind me periodically (e.g. every 6 months) to review and update my vault data, so my information stays current as my life changes. | Could | idea | Separate from check-in reminders. "Life audit" nudge — new baby, moved house, etc. |
+| F15 | As a user, I want to nominate a backup check-in method (e.g. if I don't respond to push notifications, try SMS, then email), so the system has multiple ways to reach me before alerting contacts. | Could | idea | Reduces false alarms. Escalation ladder for the user, not just contacts. |
+| F16 | As a user, I want to record video or audio messages for my contacts, so they receive something more personal than text. | Could | idea | Emotional value is high. Storage and delivery complexity is also high. Consider post-MVP. |
+| F17 | As a user, I want to see a "What my contacts will receive" preview screen, so I can verify the output before it's ever needed. | Could | idea | Builds confidence. Shows the PDF and email exactly as contacts would see it. |
+| F18 | As a user, I want to grant a trusted person "vault editor" access so they can help me fill in details (e.g. elderly parent's adult child helping set up), so the app works for people who aren't comfortable doing it alone. | Could | idea | Delegate setup use case. Common in aged care context. |
+
+### Won't Have (for now)
+
+| ID | Feature | Why not |
+|----|---------|---------|
+| W01 | Legal Will creation (drafting a legally binding Will inside the app) | Emergency Exit records *where* your Will is — it doesn't replace a solicitor. Liability risk is too high. |
+| W02 | Account closure automation (automatically closing social media, bank accounts) | Requires API integrations with every platform. GoodTrust does this and it's their core business. Not our lane. |
+| W03 | AI-generated legacy stories or memory capture | Evaheld's territory. Emergency Exit is practical and action-oriented, not sentimental. Stay in lane. |
+| W04 | Cryptocurrency wallet management or key storage | Extremely high security risk. Users should use purpose-built crypto custody solutions. We just record that the asset exists. |
+
+---
+
+### How to use this backlog
+
+- **Adding a new feature:** Add a row with the next ID number (F22, F23...), write the user story, set priority and status to `idea`.
+- **When building:** Move status to `specified` once requirements are clear, `in-progress` when coding, `done` when shipped.
+- **Re-prioritising:** Change the MoSCoW priority and move the row to the correct section. Add a note explaining why.
+- **Removing a feature:** Move it to "Won't Have" with an explanation. Never delete — context matters.
+
+---
+
 ## End-of-Chat Checklist
 
 - [ ] Download the new `index.html`
