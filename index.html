@@ -26,9 +26,7 @@ html,body{height:100%;background:#f8f9fb;font-family:var(--fb);color:var(--os);-
 .mf{font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 40;}
 .ph{font-family:var(--fh);font-weight:800;font-size:28px;color:var(--p);letter-spacing:-.5px;line-height:1.15;margin-bottom:4px;}
 .ps{font-size:15px;font-weight:500;color:var(--ov);margin-bottom:20px;line-height:1.4;}
-/* F27: .card = grey background = informational/contextual content */
 .card{background:var(--sl);border-radius:var(--rc);padding:16px;margin-bottom:14px;}
-/* F27: .cardw = white + shadow = interactive/primary content */
 .cardw{background:var(--w);border-radius:var(--rc);padding:16px;margin-bottom:14px;box-shadow:var(--cs);}
 .gbtn{background:var(--g);border:none;border-radius:var(--rb);padding:18px 20px;display:flex;align-items:center;gap:14px;width:100%;cursor:pointer;text-align:left;box-shadow:0 4px 16px rgba(0,33,71,.28);border-bottom:3px solid rgba(0,0,0,.22);transition:transform .1s;margin-bottom:10px;}
 .gbtn:active{transform:scale(.97);}
@@ -87,7 +85,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .pab{background:rgba(255,255,255,.13);border:none;border-radius:10px;padding:12px;width:100%;color:rgba(255,255,255,.75);font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;}
 .cfb{background:var(--g);border:none;border-radius:var(--rb);padding:18px;width:100%;font-family:var(--fh);font-size:17px;font-weight:800;color:#fff;cursor:pointer;box-shadow:0 4px 16px rgba(0,33,71,.28);border-bottom:3px solid rgba(0,0,0,.2);transition:transform .1s;}
 .cfb:active{transform:scale(.97);}
-/* F27: info boxes stay grey — they are purely informational */
 .ib2{background:rgba(0,33,71,.04);border:1px dashed rgba(0,33,71,.18);border-radius:12px;padding:14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;}
 .ib2 p{font-size:13px;color:var(--ov);line-height:1.5;}
 .ss{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--al);border:1px solid var(--ab);border-radius:var(--rp);padding:10px 20px;margin-bottom:16px;}
@@ -113,11 +110,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .ct span{font-size:13px;color:var(--ov);}
 .nc{display:flex;align-items:center;justify-content:space-between;background:var(--w);border-radius:var(--rc);padding:14px 16px;}
 .ncb{width:40px;height:40px;border-radius:50%;background:var(--p);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-/* F26: .ob is the standard secondary action button used in all section headers */
 .ob{background:none;border:1.5px solid var(--p);border-radius:var(--rp);padding:8px 14px;font-size:13px;font-weight:700;color:var(--p);cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--fb);}
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--p);color:#fff;border-radius:var(--rp);padding:11px 22px;font-size:13px;font-weight:700;z-index:300;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
-/* F26: Home quick-action pills — kept as-is since they are primary actions (not section header adds) */
 .qa{display:flex;gap:8px;margin-bottom:12px;}
 .qb{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;border-radius:var(--rp);border:none;cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;transition:transform .1s;flex:1;}
 .qb:active{transform:scale(.96);}
@@ -155,6 +150,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .empty-state .empty-cta{background:var(--p);border:none;border-radius:var(--rp);padding:11px 24px;font-family:var(--fb);font-size:13px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;gap:7px;transition:transform .1s;}
 .empty-state .empty-cta:active{transform:scale(.96);}
 .empty-state .empty-cta .m{font-size:16px;color:#fff;}
+
+/* F30: Pulse de-emphasis — applied when completeness < 40% */
+/* Transition makes the shift smooth rather than a jarring jump */
+#pulse-card{transition:opacity .4s ease, transform .4s ease;}
+#pulse-card.pulse-dimmed{opacity:0.45;transform:scale(0.97);}
+/* When dimmed, the completeness card gets a subtle highlight ring to draw attention */
+#completeness-card.pulse-dimmed-focus{box-shadow:0 0 0 2px var(--ab), 0 2px 12px rgba(25,28,30,.07);}
 </style>
 </head>
 <body>
@@ -168,22 +170,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   </div>
   <div class="body">
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- HOME SCREEN                                                      -->
-    <!-- F27: Vitality Pulse card → .cardw (interactive — user taps it)  -->
-    <!-- F27: Completeness card → .cardw (primary, calls to action)       -->
-    <!-- F27: Recent Activity card → .cardw (primary content area)        -->
-    <!-- F26: "View Ledger" in Recent Activity header → .ob (already was) -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- HOME SCREEN -->
     <div id="s-home" class="scr on">
       <div style="font-family:var(--fh);font-weight:800;font-size:23px;color:var(--p);letter-spacing:-.4px;line-height:1.2;">Everything is <span style="color:var(--ac);">in order.</span></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;margin-bottom:6px;">
         <div style="font-size:13px;color:var(--ov);font-weight:600;" id="d-sum">0 assets · 0 wishes</div>
         <div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div>
       </div>
 
-      <!-- F27: .cardw — user taps this card to check in (interactive) -->
-      <div class="cardw">
+      <!-- F31: Privacy note — device-only storage reassurance -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;">
+        <span class="m mf" style="font-size:13px;color:var(--ac);">lock</span>
+        <span style="font-size:11px;color:var(--sec);font-weight:600;">Your information is stored on this device only — it never leaves your phone.</span>
+      </div>
+
+      <!-- F30: Vitality Pulse card — id added for JS targeting -->
+      <div class="cardw" id="pulse-card">
         <div style="display:flex;align-items:center;gap:16px;">
           <div class="vr" onclick="checkin()" style="width:100px;height:100px;flex-shrink:0;">
             <div class="vc" style="width:78px;height:78px;">
@@ -204,53 +206,43 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
             </div>
           </div>
         </div>
+        <!-- F30: Contextual hint shown only when pulse is dimmed (vault not ready) -->
+        <div id="pulse-hint" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--sh);">
+          <div style="font-size:12px;color:var(--sec);line-height:1.5;text-align:center;">Complete your vault below before your first check-in — so your contacts receive everything they need.</div>
+        </div>
       </div>
 
       <button class="gbtn" onclick="go('ledger')"><div class="ib"><span class="m mf" style="font-size:28px;color:#fff;">shield</span></div><div class="tb"><span class="big">Asset Ledger</span><span class="sm">View all your recorded assets</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
       <div class="qa"><button class="qb qbp" onclick="openM('am')"><span class="m">add_moderator</span>Add Asset</button><button class="qb qbs" onclick="go('wishes')"><span class="m">auto_stories</span>My Wishes</button></div>
 
-      <!-- F27: .cardw — primary, shows completeness progress and actionable tips -->
-      <div class="cardw">
+      <!-- F30: Completeness card — id added for JS targeting -->
+      <div class="cardw" id="completeness-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font-family:var(--fh);font-size:14px;font-weight:700;color:var(--p);">Home completeness</span><span id="cp-lbl" style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--ac);">0%</span></div>
         <div class="cbw"><div class="cbf" id="cp-bar" style="width:0%"></div></div>
         <div id="cp-tips"></div>
       </div>
 
-      <!-- F27: .cardw — primary content area with navigation action -->
       <div class="cardw">
-        <!-- F26: "View Ledger" is an .ob button — section header secondary action -->
         <div class="sh"><span style="font-family:var(--fh);font-size:16px;font-weight:700;color:var(--p);">Recent Activity</span><button onclick="go('ledger')" class="ob" style="padding:5px 10px;font-size:11px;">View Ledger</button></div>
         <div id="d-act"><div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No activity yet</div></div>
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- LEDGER SCREEN                                                    -->
-    <!-- F27: The outer wrapper uses no card — content rendered by JS     -->
-    <!-- F27: Info box (.ib2) stays grey — informational only            -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- LEDGER SCREEN -->
     <div id="s-ledger" class="scr">
       <div class="ph">Asset Ledger</div>
       <div class="ps">A record of what you have, so the right people know where to find it.</div>
       <button class="gbtn" onclick="openM('am')"><div class="ib"><span class="m" style="font-size:24px;color:#fff;">add_circle</span></div><div class="tb"><span class="big">Record New Asset</span><span class="sm">Add anything your people should know about</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
       <div id="l-content"></div>
-      <!-- F27: .ib2 uses grey/dashed style — purely informational, not interactive -->
       <div class="ib2"><span class="m mf" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">verified_user</span><p>Your legacy is <strong id="l-pct">0%</strong> documented.</p></div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- MY WISHES SCREEN                                                 -->
-    <!-- F27: Will & Legal Documents → .card (grouped informational area) -->
-    <!-- F27: SOW nudge → .cardw (interactive — has a CTA button)         -->
-    <!-- F27: SOW done → .cardw (primary status confirmation)             -->
-    <!-- F26: "Attach document" in supp docs header → .ob button          -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- MY WISHES SCREEN -->
     <div id="s-wishes" class="scr">
       <div class="ph">My Wishes</div>
       <div class="ps">What matters to you, written down so it's not forgotten.</div>
       <button class="gbtn" onclick="openM('wm')"><div class="ib"><span class="m" style="font-size:24px;color:#fff;">edit_note</span></div><div class="tb"><span class="big">New Instruction</span><span class="sm">Record something you'd like carried out</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
 
-      <!-- F27: .card — this is an informational grouping container (Will + Supp Docs) -->
       <div class="card">
         <div class="sh" style="margin-bottom:12px;">
           <span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">gavel</span>Will & Legal Documents</span>
@@ -261,7 +253,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           <button class="upload-btn" onclick="openM('wlm')"><span class="m">edit_note</span>Record Will details</button>
         </div>
         <div style="margin-top:12px;">
-          <!-- F26: "Attach document" — secondary add action in section header → .ob -->
           <div class="sh" style="margin-bottom:8px;">
             <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sec);">Supplementary Documents</div>
             <button class="ob" onclick="openM('sdm')" style="padding:6px 12px;font-size:11px;"><span class="m" style="font-size:13px;">add</span>Attach</button>
@@ -270,19 +261,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
 
-      <!-- F27: .cardw — interactive; has a CTA button the user must tap to act -->
+      <!-- F32: SOW nudge card — added plain-language explanation of SOW vs Will -->
       <div class="cardw" id="sow-nudge">
         <div style="display:flex;align-items:flex-start;gap:12px;">
           <div style="width:44px;height:44px;border-radius:12px;background:rgba(216,90,48,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="m mf" style="font-size:22px;color:#d85a30;">priority_high</span></div>
           <div style="flex:1;">
             <div style="font-family:var(--fh);font-size:15px;font-weight:700;color:var(--p);margin-bottom:4px;">Statement of Wishes</div>
-            <div style="font-size:13px;color:var(--ov);line-height:1.5;margin-bottom:10px;">This is the most important document your contacts will receive. It tells them exactly what to do — step by step. Record where yours is stored, or create one and add it here.</div>
+            <div style="font-size:13px;color:var(--ov);line-height:1.5;margin-bottom:8px;">This is the most important document your contacts will receive. It tells them exactly what to do — step by step.</div>
+            <!-- F32: Plain-language clarification of SOW vs Will -->
+            <div style="background:rgba(0,33,71,.04);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;gap:8px;align-items:flex-start;">
+              <span class="m" style="font-size:15px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span>
+              <span style="font-size:12px;color:var(--sec);line-height:1.5;">A Statement of Wishes is a plain-language document — separate from your Will — that tells your people exactly what to do and where to find everything. Your Will is a legal document; this is the practical guide alongside it.</span>
+            </div>
             <button class="upload-btn" onclick="openM('sdm','Statement of Wishes')" style="border-color:rgba(216,90,48,.35);color:#d85a30;"><span class="m" style="font-size:18px;">description</span>Record Statement of Wishes</button>
           </div>
         </div>
       </div>
 
-      <!-- F27: .cardw — primary status card (confirmed action) -->
       <div class="cardw" id="sow-done" style="display:none;">
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="width:44px;height:44px;border-radius:12px;background:rgba(45,138,122,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="m mf" style="font-size:22px;color:var(--ac);">task_alt</span></div>
@@ -296,19 +291,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <div id="w-content"></div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- CONTACT SCREEN                                                   -->
-    <!-- F27: Outer wrapper → .card (informational grouping container)    -->
-    <!-- F26: "Add Contact" in section header → .ob (already was)         -->
-    <!-- Contact cards (.kc) now use .cardw via JS render                 -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- CONTACT SCREEN -->
     <div id="s-kin" class="scr">
       <div class="ph">Contacts</div>
       <div class="ps">People to notify and how to reach them.</div>
-
-      <!-- F27: .card — informational grouping container for the contacts list -->
       <div class="card">
-        <!-- F26: "Add Contact" → .ob button in section header -->
         <div class="sh" style="margin-bottom:12px;">
           <span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">group</span>My Contacts</span>
           <button class="ob" onclick="openM('km')"><span class="m" style="font-size:15px;">add</span>Add Contact</button>
@@ -317,14 +304,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- SETTINGS SCREEN                                                  -->
-    <!-- F27: All setting sections → .card (informational/config areas)   -->
-    <!-- F27: Info box (.ib2) stays grey — purely informational           -->
-    <!-- Settings uses .card throughout — these are config panels, not    -->
-    <!--   interactive primary content. The .cfb button is the primary    -->
-    <!--   interactive action (gradient, full-width), not the card itself. -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- SETTINGS SCREEN -->
     <div id="s-config" class="scr">
       <div class="ph">Settings</div>
       <div class="ps">Set how often you check in and what happens if you don't.</div>
@@ -351,7 +331,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">verified_user</span>Verification</div><div class="ri" onclick="setV('face')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">face</span><span style="font-weight:600;font-size:15px;color:var(--p);">FaceID / Biometrics</span></div><div class="rd on" id="rf"></div></div><div class="ri" onclick="setV('pin')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">password</span><span style="font-weight:600;font-size:15px;color:var(--p);">Secure Passcode</span></div><div class="rd" id="rp2"></div></div></div>
-      <!-- F27: .ib2 stays grey — informational only, no user action required -->
       <div class="ib2"><span class="m" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span><p>Missed check-ins after <strong id="ig">3 days</strong> will grant access to <strong id="ik">0 contacts</strong>.</p></div>
       <button class="cfb" onclick="saveCfg()">Confirm Settings</button>
     </div>
@@ -529,6 +508,17 @@ function generatePDF(kinId) {
 
 function render(){
   const{pct,tips}=comp();
+
+  // F30: Apply pulse de-emphasis when completeness < 40%
+  // 40% = roughly 3 of 7 checks done — user has something meaningful in the vault
+  const pulseCard=document.getElementById('pulse-card');
+  const completenessCard=document.getElementById('completeness-card');
+  const pulseHint=document.getElementById('pulse-hint');
+  const isDimmed=pct<40;
+  pulseCard.classList.toggle('pulse-dimmed',isDimmed);
+  completenessCard.classList.toggle('pulse-dimmed-focus',isDimmed);
+  pulseHint.style.display=isDimmed?'block':'none';
+
   document.getElementById('d-sum').textContent=S.assets.length+' asset'+(S.assets.length!==1?'s':'')+' · '+S.wishes.length+' wish'+(S.wishes.length!==1?'es':'');
   document.getElementById('cp-lbl').textContent=pct+'%';document.getElementById('cp-bar').style.width=pct+'%';
   document.getElementById('cp-tips').innerHTML=tips.length===0?'<div style="color:var(--ac);font-size:13px;font-weight:600;padding:2px 0;">Home complete — well done!</div>':tips.map(t=>'<div class="ct"><span class="m" style="font-size:14px;color:var(--ac);flex-shrink:0;">arrow_circle_right</span><span>'+t+'</span></div>').join('');
@@ -542,8 +532,6 @@ function render(){
     lel.innerHTML='<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">account_balance</span></div><div class="empty-title">No assets yet — and that\'s okay</div><div class="empty-sub">Start with one, even something small like a bank account. You can always add more later.</div><button class="empty-cta" onclick="openM(\'am\')"><span class="m">add</span>Record your first asset</button></div>';
   }else{
     const ac=cats.filter(c=>S.assets.some(a=>a.category===c));
-    // F27: Asset category groups use .card (grey) — informational grouping container
-    // F26: Each category group already has a consistent header pattern (no add button here — add is the .gbtn at top)
     lel.innerHTML=ac.map(cat=>{const items=S.assets.filter(a=>a.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(icons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(a=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(icons[a.category]||'category')+'</span></div><div class="lib"><div class="lit">'+a.name+'</div><div class="lis">'+(a.details?a.details.substring(0,40)+(a.details.length>40?'...':''):a.category)+(a.beneficiary?' · '+a.beneficiary:'')+'</div></div><div style="display:flex;align-items:center;gap:6px;">'+(a.value?'<span style="font-size:12px;font-weight:700;color:var(--p);">$'+Math.round(a.value).toLocaleString()+'</span>':'')+'<button onclick="editA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');
   }
   document.getElementById('l-pct').textContent=pct+'%';
@@ -567,12 +555,10 @@ function render(){
     wel.innerHTML='<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">auto_stories</span></div><div class="empty-title">No wishes recorded yet</div><div class="empty-sub">What would you like your people to know? Start with something that matters to you — it doesn\'t have to be everything at once.</div><button class="empty-cta" onclick="openM(\'wm\')"><span class="m">add</span>Record your first wish</button></div>';
   }else{
     const ac2=wishCats.filter(c=>S.wishes.some(w=>w.category===c));
-    // F27: Wish category groups use .card (grey) — informational grouping container
     wel.innerHTML=ac2.map(cat=>{const items=S.wishes.filter(w=>w.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(wishIcons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(wishIcons[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+(w.details?w.details.substring(0,40)+(w.details.length>40?'...':''):w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(priColors[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');
   }
 
   // Contacts render
-  // F27: Individual contact cards (.kc) have their own white+shadow style — correctly interactive
   document.getElementById('k-list').innerHTML=S.kin.length===0
     ?'<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">group</span></div><div class="empty-title">No contacts added yet</div><div class="empty-sub">Who should be contacted if something happens to you? Add someone you trust — you can always update this later.</div><button class="empty-cta" onclick="openM(\'km\')"><span class="m">add</span>Add your first contact</button></div>'
     :S.kin.map((k,i)=>{

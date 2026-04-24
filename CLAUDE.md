@@ -81,7 +81,11 @@ Planned platforms:
 ### 1. Home (Dashboard)
 - Hero headline: "Your legacy is securely anchored"
 - Asset + wish count summary with Active status badge
+- **Privacy note** (F31): Small teal lock icon line below summary — "Your information is stored on this device only — it never leaves your phone." Update this copy when backend cloud storage launches.
 - **Vitality Pulse** — animated pulsing heart, tap to confirm "Alive & well"
+  - Fades to 45% opacity and scales down when completeness < 40% (F30)
+  - Completeness card gets teal highlight ring when pulse is dimmed (F30)
+  - Contextual hint appears inside pulse card when dimmed (F30)
 - Next check-in date + days remaining countdown (combined with Vitality Pulse in one card)
 - Last confirmed timestamp shown below pulse
 - Asset Ledger CTA (full-width gradient button)
@@ -107,6 +111,7 @@ Planned platforms:
   - Attach document button (`.ob` style in section header)
 - **Statement of Wishes prompt** (orange accent card — prominent nudge):
   - Shows when Statement of Wishes has NOT been recorded
+  - Includes plain-language info box explaining SOW vs Will (F32): "A Statement of Wishes is a plain-language document — separate from your Will — that tells your people exactly what to do and where to find everything. Your Will is a legal document; this is the practical guide alongside it."
   - Transforms to green confirmation card when recorded, showing storage location
   - Tapping opens Attach Document modal with "Statement of Wishes" pre-selected
 - **Wishes grouped by category** (like Ledger):
@@ -167,7 +172,7 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 - **Compact action buttons:** Pill-shaped, side by side, 10px vertical padding
 - **Cards:** `border-radius: 16px`, `#f2f4f6` or white with ambient shadow
 - **Card background rule (F27):** `.cardw` (white + shadow) = interactive or primary sections. `.card` (grey) = informational or contextual grouping containers. Never mix these up.
-- **Secondary add-action buttons (F26):** All "add" actions in section headers use `.ob` style (navy outlined pill). The only exceptions are the Home screen quick-action pills (`.qb`) which are primary actions, not section header adds.
+- **Secondary add-action buttons (F26):** All "add" actions in section headers use `.ob` style (navy outlined pill button). The only exceptions are the Home screen quick-action pills (`.qb`) which are primary actions, not section header adds.
 - **Tags/badges:** Uppercase, 10px, pill-shaped
 - **Toast notifications:** Fixed, centred, navy pill, auto-dismiss 2.4s
 - **Stepper controls:** − value + (used for frequency and grace period)
@@ -175,6 +180,7 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 - **Letter button:** Teal-tinted outlined style (`.letter-btn`), changes label to "Edit" once a letter exists
 - **Letter status pill:** Teal "Letter written" or orange "No letter yet" — rendered inside the contact card header row
 - **Preview button:** Outlined style (navy border, near-transparent background) at the bottom of each contact card
+- **Pulse de-emphasis (F30):** CSS classes `pulse-dimmed` (on `#pulse-card`) and `pulse-dimmed-focus` (on `#completeness-card`) are toggled by `render()` when `pct < 40`. Do not remove these IDs from the HTML elements.
 
 ---
 
@@ -323,6 +329,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - When editing index.html, always update BOTH `./index.html` AND `./frontend/index.html`
 - jsPDF loaded via CDN in `<head>` — access via `window.jspdf.jsPDF`
 - New contacts are initialised with `letter: ''` so the field is always present
+- `#pulse-card` and `#completeness-card` IDs on Home are required for F30 JS logic — do not remove
 
 ---
 
@@ -343,6 +350,8 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - Do not remove the personal letter prompt from the letter modal — it sets the right emotional tone for users
 - Do not use `.cardw` for informational/contextual containers — use `.card` (grey). `.cardw` is reserved for interactive or primary content only (F27).
 - Do not use non-`.ob` styles for secondary add-action buttons in section headers (F26). The only exception is the Home screen quick-action pills (`.qb`).
+- Do not remove `id="pulse-card"` or `id="completeness-card"` from Home screen — required for F30 pulse de-emphasis logic.
+- Do not remove the privacy note line (F31) from Home without updating copy to reflect cloud storage.
 
 ---
 
@@ -404,9 +413,9 @@ These features address UX audit findings: visual consistency, tone of voice, emp
 | F27 | As a user, I want card backgrounds (grey vs white) to follow a clear visual rule, so the screen hierarchy makes sense at a glance. | Should | done | Rule enforced across all screens: `.cardw` (white + shadow) = interactive or primary sections; `.card` (grey) = informational or contextual grouping containers. Rule also documented in Key UI Patterns and What NOT to Do sections of this file. |
 | F28 | As a user, I want section headers to follow a consistent layout pattern across all screens, so the app feels cohesive. | Should | done | Home activity header changed from text-link to `.ob` button. All section headers now use `.sh` row with consistent left/right elements. |
 | F29 | As a user, I want to see my contacts' email and phone number on their card, so I can verify the details are correct without opening anything. | Should | done | Compact email and phone lines added below notification method on contact cards, with mail/phone icons and text overflow handling. |
-| F30 | As a user, I want the Vitality Pulse to be less prominent until I've set up my vault, so I'm guided toward adding content first rather than checking in to an empty vault. | Should | specified | De-emphasise pulse when completeness < 40%. Promote completeness card + top tip as the primary Home element for new users. |
-| F31 | As a user, I want a brief privacy note on the Home screen or Settings, so I feel confident about where my sensitive data is stored. | Should | specified | Add: "Your information is stored on this device only. It never leaves your phone unless you choose to share it." Update when backend launches. |
-| F32 | As a user, I want the Statement of Wishes nudge to include a brief plain-language explanation of what it is (and how it differs from a Will), so I understand why it matters. | Should | specified | Add clarifying sentence: "A Statement of Wishes is a plain-language document — separate from your Will — that tells your people exactly what to do and where to find everything." |
+| F30 | As a user, I want the Vitality Pulse to be less prominent until I've set up my vault, so I'm guided toward adding content first rather than checking in to an empty vault. | Should | done | Pulse card (`#pulse-card`) fades to 45% opacity and scales slightly when completeness < 40%. Completeness card (`#completeness-card`) gains a teal highlight ring. A contextual hint appears inside the pulse card when dimmed. CSS classes `pulse-dimmed` and `pulse-dimmed-focus` toggled in `render()`. Threshold: pct < 40 (roughly 3 of 7 checks). |
+| F31 | As a user, I want a brief privacy note on the Home screen or Settings, so I feel confident about where my sensitive data is stored. | Should | done | Small teal lock icon + line added below the asset/wish count on Home: "Your information is stored on this device only — it never leaves your phone." **Update this copy when backend cloud storage launches.** |
+| F32 | As a user, I want the Statement of Wishes nudge to include a brief plain-language explanation of what it is (and how it differs from a Will), so I understand why it matters. | Should | done | Grey info box added inside SOW nudge card: "A Statement of Wishes is a plain-language document — separate from your Will — that tells your people exactly what to do and where to find everything. Your Will is a legal document; this is the practical guide alongside it." |
 | F33 | As a user, I want the check-in label to say "Tap to check in" instead of "TAP TO CONFIRM", so it feels like a gentle habit rather than a transactional confirmation. | Should | done | Micro-label on Vitality Pulse changed to "TAP TO CHECK IN". |
 | F34 | As a user, I want all delete actions across the app to look and behave the same way, so destructive actions are predictable. | Could | specified | Currently: assets use icon only, contacts use text + icon ("Remove"), docs use icon only. Standardise to icon-only, same size and colour everywhere. |
 | F35 | As a user, I want Settings to auto-save all changes consistently (not a mix of auto-save and manual confirm), so I don't wonder whether my changes were saved. | Could | specified | Currently: notification protocol auto-saves on tap; frequency/grace period require "Confirm Settings" button. Switch everything to auto-save with toast feedback. |
