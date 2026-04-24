@@ -135,6 +135,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .preview-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:10px;border:1.5px solid rgba(0,33,71,.18);background:rgba(0,33,71,.03);cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--p);transition:all .18s;margin-top:10px;}
 .preview-btn:active{background:rgba(0,33,71,.07);transform:scale(.98);}
 .preview-btn .m{font-size:16px;color:var(--ac);}
+
+/* Letter button — warm teal tint to feel personal/emotional */
+.letter-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:10px;border:1.5px solid var(--ab);background:var(--al);cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--ac);transition:all .18s;margin-top:8px;}
+.letter-btn:active{background:rgba(45,138,122,.18);transform:scale(.98);}
+.letter-btn .m{font-size:16px;color:var(--ac);}
+.letter-btn.written{background:rgba(45,138,122,.08);border-color:rgba(45,138,122,.3);}
+
+/* Letter status pill on contact card */
+.letter-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:var(--rp);}
+.letter-pill.done{background:rgba(45,138,122,.12);color:var(--ac);border:1px solid var(--ab);}
+.letter-pill.missing{background:rgba(216,90,48,.08);color:#d85a30;border:1px solid rgba(216,90,48,.25);}
+
+/* Letter textarea in modal — slightly taller, evokes writing */
+#lt{min-height:160px;line-height:1.6;font-size:15px;}
 </style>
 </head>
 <body>
@@ -279,21 +293,80 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div class="ni" id="n-config" onclick="go('config')"><span class="m">settings_suggest</span><span class="l">Settings</span></div>
   </nav>
 </div>
+
 <!-- MODALS -->
 <div id="am" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Record New Asset</div><div class="fi"><label>Asset Name</label><input id="an" type="text" placeholder="e.g. ANZ Savings Account"/></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>Category</label><select id="ac2"><option>Bank account</option><option>Property</option><option>Investment</option><option>Superannuation</option><option>Life insurance</option><option>Vehicle</option><option>Cryptocurrency</option><option>Business</option><option>Personal item</option><option>Digital account</option><option>Other</option></select></div><div class="fi"><label>Est. Value ($)</label><input id="av" type="number" placeholder="0"/></div></div><div class="fi"><label>Details</label><textarea id="adet" placeholder="e.g. Account held at ANZ Bank, BSB 123-456, account ending 4421..."></textarea></div><div class="fi"><label>Beneficiary</label><input id="ab2" type="text" placeholder="e.g. Jane Smith (spouse)"/></div><div class="fi"><label>Notes</label><textarea id="ano" placeholder="Additional instructions..."></textarea></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveA()">Save Asset</button></div></div></div>
+
 <div id="wm" class="mo"><div class="ms"><div class="mh"></div><div class="mt" id="wm-title">Record a Wish</div><input type="hidden" id="wm-edit-id" value=""/><div class="fi"><label>Category</label><select id="wc2"><option>Funeral & Service</option><option>Medical / end of life care</option><option>Guardian for children</option><option>Pet care</option><option>Business succession</option><option>Digital accounts</option><option>Personal message</option><option>Charitable giving</option><option>Other</option></select></div><div class="fi"><label>Wish</label><input id="wt" type="text" placeholder="e.g. I would like to be cremated"/></div><div class="fi"><label>Details</label><textarea id="wd" placeholder="Add any additional context or instructions..."></textarea></div><div class="fi"><label>Priority</label><select id="wp"><option value="high">High — must be followed</option><option value="medium" selected>Medium — strongly preferred</option><option value="low">Low — would be nice</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveW()" id="wm-save-btn">Save Wish</button></div></div></div>
+
 <div id="wlm" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Will Details</div><div class="fi"><label>Will status</label><select id="wl-status"><option value="signed">Signed and legally witnessed</option><option value="draft">Draft — not yet signed</option><option value="none">No Will exists yet</option></select></div><div class="fi"><label>Date signed</label><input id="wl-date" type="date"/></div><div class="fi"><label>Solicitor / law firm</label><input id="wl-solicitor" type="text" placeholder="e.g. Smith & Associates, Melbourne"/></div><div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sec);margin-bottom:8px;">Where is the original Will stored?</div><div class="fi"><label>Primary location</label><input id="wl-loc1" type="text" placeholder="e.g. Safe at home — study, top shelf"/></div><div class="fi"><label>Secondary location</label><input id="wl-loc2" type="text" placeholder="e.g. Solicitor's office, copy with executor"/></div><div class="fi"><label>Additional notes</label><textarea id="wl-notes" placeholder="Any other instructions for finding or executing the Will..."></textarea></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveWill()">Save Will details</button></div></div></div>
+
 <div id="sdm" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Attach Document</div><div class="fi"><label>Document type</label><select id="sd-type"><option>Statement of Wishes</option><option>Enduring Power of Attorney</option><option>Advance Health Directive</option><option>Guardianship Nomination</option><option>Funeral Pre-arrangement</option><option>Business Succession Plan</option><option>Other</option></select></div><div class="fi"><label>Document name</label><input id="sd-name" type="text" placeholder="e.g. Statement of Wishes — 2024"/></div><div class="fi"><label>Where is this document stored?</label><input id="sd-loc" type="text" placeholder="e.g. Google Drive, home safe, solicitor"/></div><div class="fi"><label>Notes</label><textarea id="sd-notes" placeholder="Any additional context..."></textarea></div><div style="background:var(--sl);border-radius:10px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;"><span class="m" style="font-size:18px;color:var(--sec);">info</span><span style="font-size:12px;color:var(--ov);line-height:1.4;">File uploads will be available when the app connects to secure cloud storage. For now, record where the document is located.</span></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveSupp()">Save document</button></div></div></div>
+
 <div id="km" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Add Contact</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>First Name</label><input id="kf" type="text" placeholder="Jane"/></div><div class="fi"><label>Last Name</label><input id="kl" type="text" placeholder="Smith"/></div></div><div class="fi"><label>Relationship</label><input id="kr" type="text" placeholder="e.g. Spouse, Child, Solicitor"/></div><div class="fi"><label>Email</label><input id="ke" type="email" placeholder="jane@email.com"/></div><div class="fi"><label>Phone</label><input id="kp" type="tel" placeholder="+61 4xx xxx xxx"/></div><div class="fi"><label>Notify via</label><select id="k-notify"><option value="email">Email</option><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option><option value="email_and_sms">Email + SMS</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveK()">Add Contact</button></div></div></div>
+
+<!-- F03: Personal Letter Modal -->
+<div id="lm" class="mo">
+  <div class="ms">
+    <div class="mh"></div>
+    <input type="hidden" id="lm-kin-id" value=""/>
+    <div class="mt" id="lm-title">Write a personal letter</div>
+    <!-- Warm prompt to encourage writing -->
+    <div style="background:var(--al);border:1px solid var(--ab);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;">
+      <span class="m mf" style="font-size:18px;color:var(--ac);flex-shrink:0;margin-top:1px;">favorite</span>
+      <p style="font-size:13px;color:var(--ov);line-height:1.5;">This letter will appear on the first page of the package <strong id="lm-name-hint">this person</strong> receives. Write whatever feels right — it doesn't need to be perfect.</p>
+    </div>
+    <div class="fi">
+      <label>Your letter</label>
+      <textarea id="lt" placeholder="Dear [Name],&#10;&#10;If you're reading this, I want you to know…"></textarea>
+    </div>
+    <div class="mr">
+      <button class="cxb" onclick="closeM()">Cancel</button>
+      <button class="cfb" onclick="saveLetter()">Save Letter</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
+
 <script>
 let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[]};
 function load(){try{const d=localStorage.getItem('ee_v3');if(d){const p=JSON.parse(d);S={...S,...p};}}catch(e){}}
 function save(){try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){}render();}
 function go(s){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));document.getElementById('s-'+s).classList.add('on');document.getElementById('n-'+s).classList.add('on');document.querySelector('.body').scrollTop=0;}
-function openM(id,cat){if(id==='wm'){document.getElementById('wm-edit-id').value='';document.getElementById('wm-title').textContent='Record a Wish';document.getElementById('wm-save-btn').textContent='Save Wish';['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wp').value='medium';}if(cat&&id==='wm')document.getElementById('wc2').value=cat;if(cat&&id==='sdm')document.getElementById('sd-type').value=cat;document.getElementById(id).classList.add('on');}
+function openM(id,cat){
+  if(id==='wm'){document.getElementById('wm-edit-id').value='';document.getElementById('wm-title').textContent='Record a Wish';document.getElementById('wm-save-btn').textContent='Save Wish';['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wp').value='medium';}
+  if(cat&&id==='wm')document.getElementById('wc2').value=cat;
+  if(cat&&id==='sdm')document.getElementById('sd-type').value=cat;
+  document.getElementById(id).classList.add('on');
+}
 function closeM(){document.querySelectorAll('.mo').forEach(e=>e.classList.remove('on'));}
 document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeM();}));
+
+// F03: Open letter modal for a specific contact
+function openLetter(kinId){
+  const k=S.kin.find(x=>x.id===kinId);
+  if(!k)return;
+  document.getElementById('lm-kin-id').value=kinId;
+  document.getElementById('lm-title').textContent='Write a letter to '+k.first;
+  document.getElementById('lm-name-hint').textContent=k.first;
+  document.getElementById('lt').value=k.letter||'';
+  document.getElementById('lm').classList.add('on');
+}
+
+// F03: Save letter to the contact object
+function saveLetter(){
+  const kinId=parseInt(document.getElementById('lm-kin-id').value);
+  const text=document.getElementById('lt').value.trim();
+  const k=S.kin.find(x=>x.id===kinId);
+  if(!k)return;
+  k.letter=text;
+  log('Personal letter '+(text?'saved':'cleared')+' for '+k.first+' '+k.last);
+  closeM();
+  save();
+  toast(text?'Letter saved ✓':'Letter cleared');
+}
+
 function saveA(){const n=document.getElementById('an').value.trim();if(!n){toast('Please enter an asset name');return;}S.assets.push({id:Date.now(),name:n,category:document.getElementById('ac2').value,value:parseFloat(document.getElementById('av').value)||0,details:document.getElementById('adet').value,beneficiary:document.getElementById('ab2').value,notes:document.getElementById('ano').value});log('Asset added: '+n);closeM();['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');save();toast('Asset saved ✓');}
 function saveW(){const t=document.getElementById('wt').value.trim();if(!t){toast('Please enter a wish');return;}const editId=document.getElementById('wm-edit-id').value;if(editId){const idx=S.wishes.findIndex(w=>w.id===parseInt(editId));if(idx>=0){S.wishes[idx].category=document.getElementById('wc2').value;S.wishes[idx].title=t;S.wishes[idx].details=document.getElementById('wd').value;S.wishes[idx].priority=document.getElementById('wp').value;log('Wish updated: '+t);}}else{S.wishes.push({id:Date.now(),category:document.getElementById('wc2').value,title:t,details:document.getElementById('wd').value,priority:document.getElementById('wp').value});log('Wish recorded: '+t);}closeM();['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wm-edit-id').value='';save();toast(editId?'Wish updated ✓':'Wish recorded ✓');}
 function editW(id){const w=S.wishes.find(x=>x.id===id);if(!w)return;document.getElementById('wm-edit-id').value=id;document.getElementById('wc2').value=w.category;document.getElementById('wt').value=w.title;document.getElementById('wd').value=w.details||'';document.getElementById('wp').value=w.priority||'medium';document.getElementById('wm-title').textContent='Edit Wish';document.getElementById('wm-save-btn').textContent='Update Wish';document.getElementById('wm').classList.add('on');}
@@ -301,7 +374,7 @@ function delW(id){S.wishes=S.wishes.filter(w=>w.id!==id);log('Wish removed');sav
 function saveWill(){S.will={status:document.getElementById('wl-status').value,date:document.getElementById('wl-date').value,solicitor:document.getElementById('wl-solicitor').value,loc1:document.getElementById('wl-loc1').value,loc2:document.getElementById('wl-loc2').value,notes:document.getElementById('wl-notes').value};log('Will details recorded');closeM();save();toast('Will details saved ✓');}
 function saveSupp(){const n=document.getElementById('sd-name').value.trim();if(!n){toast('Please enter a document name');return;}if(!S.suppDocs)S.suppDocs=[];S.suppDocs.push({id:Date.now(),type:document.getElementById('sd-type').value,name:n,loc:document.getElementById('sd-loc').value,notes:document.getElementById('sd-notes').value});log('Document recorded: '+n);closeM();['sd-name','sd-loc','sd-notes'].forEach(i=>document.getElementById(i).value='');save();toast('Document saved ✓');}
 function delSupp(id){S.suppDocs=S.suppDocs.filter(d=>d.id!==id);log('Document removed');save();toast('Removed');}
-function saveK(){const f=document.getElementById('kf').value.trim();if(!f){toast('Please enter a first name');return;}S.kin.push({id:Date.now(),first:f,last:document.getElementById('kl').value.trim(),rel:document.getElementById('kr').value,email:document.getElementById('ke').value,phone:document.getElementById('kp').value,notifyVia:document.getElementById('k-notify').value,order:S.kin.length+1});log('Contact added: '+f);closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');save();toast('Contact added ✓');}
+function saveK(){const f=document.getElementById('kf').value.trim();if(!f){toast('Please enter a first name');return;}S.kin.push({id:Date.now(),first:f,last:document.getElementById('kl').value.trim(),rel:document.getElementById('kr').value,email:document.getElementById('ke').value,phone:document.getElementById('kp').value,notifyVia:document.getElementById('k-notify').value,order:S.kin.length+1,letter:''});log('Contact added: '+f);closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');save();toast('Contact added ✓');}
 function delA(id){S.assets=S.assets.filter(a=>a.id!==id);log('Asset removed');save();toast('Removed');}
 function delK(id){S.kin=S.kin.filter(k=>k.id!==id);S.kin.forEach((k,i)=>k.order=i+1);log('Contact removed');save();toast('Removed');}
 function moveK(id,dir){const idx=S.kin.findIndex(k=>k.id===id);if(idx<0)return;const ni=idx+dir;if(ni<0||ni>=S.kin.length)return;[S.kin[idx],S.kin[ni]]=[S.kin[ni],S.kin[idx]];S.kin.forEach((k,i)=>k.order=i+1);save();}
@@ -333,10 +406,9 @@ function generatePDF(kinId) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = 210, H = 297;
   const ML = 20, MR = 20, MT = 20;
-  const CW = W - ML - MR; // content width = 170mm
+  const CW = W - ML - MR;
   let y = MT;
 
-  // ── colour palette ──
   const NAVY  = [0, 33, 71];
   const TEAL  = [45, 138, 122];
   const GREY  = [84, 101, 125];
@@ -344,7 +416,6 @@ function generatePDF(kinId) {
   const WHITE = [255, 255, 255];
   const RED   = [186, 26, 26];
 
-  // ── helpers ──
   function setFont(size, weight, color) {
     doc.setFontSize(size);
     doc.setFont('helvetica', weight || 'normal');
@@ -355,7 +426,6 @@ function generatePDF(kinId) {
     doc.rect(x, fy, w, h, 'F');
   }
   function wrap(text, maxW) {
-    // jsPDF splitTextToSize wraps text to fit width
     return doc.splitTextToSize(text || '', maxW);
   }
   function checkPage(needed) {
@@ -391,18 +461,11 @@ function generatePDF(kinId) {
   // ════════════════════════════════════════════════
   // PAGE 1 — COVER
   // ════════════════════════════════════════════════
-
-  // Navy header band
   fillRect(0, 0, W, 52, NAVY);
-
-  // Watermark stripe
   doc.setFillColor(0, 45, 94);
   doc.rect(0, 46, W, 6, 'F');
-
   setFont(9, 'normal', [180, 200, 220]);
   doc.text('EMERGENCY EXIT — CONFIDENTIAL PACKAGE', ML, 51);
-
-  // Title block
   setFont(22, 'bold', WHITE);
   doc.text('Emergency Exit', ML, 22);
   setFont(11, 'normal', [180, 200, 220]);
@@ -428,34 +491,52 @@ function generatePDF(kinId) {
   doc.text(introLines, ML + 5, y + 13);
   y += 36;
 
-  // ── Personal Letter placeholder ──
+  // ── F03: Personal Letter section ──
+  // Shows the real letter if written; placeholder if not
   sectionHeader('Personal Letter');
-  fillRect(ML, y, CW, 38, [248, 249, 251]);
-  doc.setDrawColor(200, 210, 220);
-  doc.setLineWidth(0.4);
-  doc.rect(ML, y, CW, 38);
-  setFont(9, 'italic', GREY);
-  doc.text('[ A personal letter from the vault holder will appear here once written. ]', ML + 4, y + 8);
-  setFont(8, 'normal', GREY);
-  const letterNote = wrap(
-    'To add a personal letter for this contact, return to the Emergency Exit app, open their contact card, and tap "Write personal letter".',
-    CW - 8
-  );
-  doc.text(letterNote, ML + 4, y + 16);
-  y += 46;
+
+  if (k.letter && k.letter.trim()) {
+    // Render the actual letter with a warm card style
+    const letterLines = wrap(k.letter.trim(), CW - 16);
+    const letterHeight = Math.max(40, letterLines.length * 5.5 + 20);
+    checkPage(letterHeight);
+
+    // Soft card background
+    fillRect(ML, y, CW, letterHeight, [248, 249, 251]);
+    doc.setDrawColor(...TEAL);
+    doc.setLineWidth(1.2);
+    doc.line(ML, y, ML, y + letterHeight); // teal left accent
+
+    // Italic letter body
+    setFont(10, 'italic', NAVY);
+    doc.text(letterLines, ML + 7, y + 10);
+    y += letterHeight + 8;
+  } else {
+    // Placeholder shown when no letter written
+    fillRect(ML, y, CW, 38, [248, 249, 251]);
+    doc.setDrawColor(200, 210, 220);
+    doc.setLineWidth(0.4);
+    doc.rect(ML, y, CW, 38);
+    setFont(9, 'italic', GREY);
+    doc.text('[ A personal letter from the vault holder will appear here once written. ]', ML + 4, y + 8);
+    setFont(8, 'normal', GREY);
+    const letterNote = wrap(
+      'To add a personal letter for this contact, return to the Emergency Exit app, open their contact card, and tap "Write personal letter".',
+      CW - 8
+    );
+    doc.text(letterNote, ML + 4, y + 16);
+    y += 46;
+  }
 
   // ─────────────────────────────────────────
   // PAGE 2 — ACTION CHECKLIST
   // ─────────────────────────────────────────
   doc.addPage();
   y = MT;
-
-  // Page header stripe
   fillRect(0, 0, W, 14, NAVY);
   setFont(8, 'normal', WHITE);
   doc.text('EMERGENCY EXIT  ·  ACTION CHECKLIST', ML, 9);
   y = 22;
-
   setFont(16, 'bold', NAVY);
   doc.text('What to do first', ML, y);
   y += 5;
@@ -463,7 +544,6 @@ function generatePDF(kinId) {
   doc.text('Work through these steps in order. Take your time.', ML, y);
   y += 12;
 
-  // Build checklist dynamically from vault data
   const steps = [];
   if (S.will && S.will.solicitor) steps.push('Contact the solicitor: ' + S.will.solicitor);
   if (S.will && S.will.loc1) steps.push('Locate the original Will: ' + S.will.loc1);
@@ -475,12 +555,10 @@ function generatePDF(kinId) {
 
   steps.forEach((step, i) => {
     checkPage(14);
-    // Circle number
     doc.setFillColor(...TEAL);
     doc.circle(ML + 5, y + 3.5, 4, 'F');
     setFont(8, 'bold', WHITE);
     doc.text(String(i + 1), ML + 5, y + 5.5, { align: 'center' });
-    // Step text
     setFont(9.5, 'normal', NAVY);
     const stepLines = wrap(step, CW - 16);
     doc.text(stepLines, ML + 13, y + 5);
@@ -497,7 +575,6 @@ function generatePDF(kinId) {
   setFont(8, 'normal', WHITE);
   doc.text('EMERGENCY EXIT  ·  WILL & LEGAL DOCUMENTS', ML, 9);
   y = 22;
-
   setFont(16, 'bold', NAVY);
   doc.text('Will & Legal Documents', ML, y);
   y += 12;
@@ -526,7 +603,6 @@ function generatePDF(kinId) {
       doc.setDrawColor(...LGREY);
       doc.setLineWidth(0.3);
       doc.rect(ML, y, CW, 18);
-      // Teal left accent
       fillRect(ML, y, 3, 18, TEAL);
       setFont(9, 'bold', NAVY);
       doc.text(d.name, ML + 7, y + 6);
@@ -546,7 +622,6 @@ function generatePDF(kinId) {
   setFont(8, 'normal', WHITE);
   doc.text('EMERGENCY EXIT  ·  ASSET REGISTER', ML, 9);
   y = 22;
-
   setFont(16, 'bold', NAVY);
   doc.text('Asset Register', ML, y);
   y += 6;
@@ -560,7 +635,6 @@ function generatePDF(kinId) {
     doc.text('No assets have been recorded.', ML + 4, y + 9);
     y += 22;
   } else {
-    // Group by category
     const cats = [...new Set(S.assets.map(a => a.category))];
     cats.forEach(cat => {
       const items = S.assets.filter(a => a.category === cat);
@@ -572,12 +646,10 @@ function generatePDF(kinId) {
         doc.setLineWidth(0.3);
         doc.rect(ML, y, CW, 28);
         fillRect(ML, y, 3, 28, NAVY);
-
         let ay = y + 6;
         setFont(10, 'bold', NAVY);
         doc.text(a.name, ML + 7, ay);
         ay += 5;
-
         if (a.value) {
           setFont(9, 'bold', TEAL);
           doc.text('$' + Math.round(a.value).toLocaleString(), ML + 7, ay);
@@ -586,7 +658,7 @@ function generatePDF(kinId) {
         if (a.details) {
           setFont(8, 'normal', GREY);
           const dl = wrap(a.details, CW - 14);
-          doc.text(dl.slice(0, 2), ML + 7, ay); // max 2 lines in card
+          doc.text(dl.slice(0, 2), ML + 7, ay);
           ay += dl.slice(0, 2).length * 4;
         }
         if (a.beneficiary) {
@@ -608,7 +680,6 @@ function generatePDF(kinId) {
   setFont(8, 'normal', WHITE);
   doc.text('EMERGENCY EXIT  ·  MY WISHES', ML, 9);
   y = 22;
-
   setFont(16, 'bold', NAVY);
   doc.text('My Wishes', ML, y);
   y += 6;
@@ -628,16 +699,13 @@ function generatePDF(kinId) {
       sectionHeader(cat);
       S.wishes.filter(w => w.category === cat).forEach(w => {
         checkPage(26);
-        // Priority badge
         const pc = priColor[w.priority] || GREY;
         fillRect(ML, y, 22, 7, pc);
         setFont(6.5, 'bold', WHITE);
         doc.text((w.priority || 'medium').toUpperCase(), ML + 2, y + 4.8);
-
         setFont(10, 'bold', NAVY);
         doc.text(w.title, ML + 26, y + 5);
         y += 10;
-
         if (w.details) {
           setFont(8.5, 'normal', GREY);
           const dl = wrap(w.details, CW);
@@ -659,7 +727,6 @@ function generatePDF(kinId) {
   setFont(8, 'normal', WHITE);
   doc.text('EMERGENCY EXIT  ·  KEY CONTACTS', ML, 9);
   y = 22;
-
   setFont(16, 'bold', NAVY);
   doc.text('Key People to Contact', ML, y);
   y += 12;
@@ -676,21 +743,17 @@ function generatePDF(kinId) {
       doc.setDrawColor(...LGREY);
       doc.setLineWidth(0.3);
       doc.rect(ML, y, CW, 26);
-
-      // Avatar circle
       doc.setFillColor(...NAVY);
       doc.circle(ML + 10, y + 13, 7, 'F');
       const initials = ((contact.first[0] || '') + (contact.last ? contact.last[0] : '')).toUpperCase();
       setFont(8, 'bold', WHITE);
       doc.text(initials, ML + 10, y + 15.5, { align: 'center' });
-
       setFont(10, 'bold', NAVY);
       doc.text(contact.first + ' ' + contact.last, ML + 22, y + 8);
       setFont(8, 'normal', GREY);
       doc.text(contact.rel || 'Contact', ML + 22, y + 13);
       if (contact.email) { setFont(8, 'normal', TEAL); doc.text(contact.email, ML + 22, y + 18); }
       if (contact.phone) { setFont(8, 'normal', GREY); doc.text(contact.phone, ML + 22, y + 22); }
-
       y += 30;
     });
   }
@@ -710,9 +773,6 @@ function generatePDF(kinId) {
     doc.text('Page ' + i + ' of ' + totalPages, W - MR, H - 5, { align: 'right' });
   }
 
-  // ─────────────────────────────────────────
-  // SAVE
-  // ─────────────────────────────────────────
   const fname = 'Emergency-Exit-' + k.first + '-' + k.last + '.pdf';
   doc.save(fname);
   log('Package previewed for ' + k.first + ' ' + k.last);
@@ -748,10 +808,16 @@ function render(){
   if(!S.wishes.length){wel.innerHTML='<div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No wishes recorded yet.</div>';}
   else{const ac2=wishCats.filter(c=>S.wishes.some(w=>w.category===c));wel.innerHTML=ac2.map(cat=>{const items=S.wishes.filter(w=>w.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(wishIcons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(wishIcons[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+(w.details?w.details.substring(0,40)+(w.details.length>40?'...':''):w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(priColors[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');}
 
-  // ── Contact cards with Preview Package button ──
+  // ── Contact cards with letter status + buttons ──
   document.getElementById('k-list').innerHTML=S.kin.length===0
     ?'<div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No contacts added yet.</div>'
-    :S.kin.map((k,i)=>`
+    :S.kin.map((k,i)=>{
+      const hasLetter=!!(k.letter&&k.letter.trim());
+      const letterPill=hasLetter
+        ?`<span class="letter-pill done"><span class="m mf" style="font-size:10px;font-variation-settings:'FILL' 1,'wght' 700,'GRAD' 0,'opsz' 24;">mail</span>Letter written</span>`
+        :`<span class="letter-pill missing"><span class="m" style="font-size:10px;">mail</span>No letter yet</span>`;
+      const letterBtnLabel=hasLetter?'Edit personal letter':'Write personal letter';
+      return `
       <div class="kc">
         <div class="kt">
           <div class="ka">${((k.first[0]||'')+(k.last?k.last[0]:'')).toUpperCase()}</div>
@@ -759,6 +825,7 @@ function render(){
             <div style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--p);line-height:1;">${k.first} ${k.last}</div>
             <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);margin-top:2px;">${k.rel||'Contact'}</div>
           </div>
+          ${letterPill}
         </div>
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;">
           <span class="m" style="font-size:14px;color:var(--sec);">${notifyIcons[k.notifyVia]||'email'}</span>
@@ -771,11 +838,16 @@ function render(){
           <span style="flex:1;"></span>
           <span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK(${k.id})"><span class="m" style="font-size:13px;">delete</span>Remove</span>
         </div>
+        <button class="letter-btn ${hasLetter?'written':''}" onclick="openLetter(${k.id})">
+          <span class="m" style="font-size:16px;">${hasLetter?'edit':'edit_note'}</span>
+          ${letterBtnLabel}
+        </button>
         <button class="preview-btn" onclick="generatePDF(${k.id})">
           <span class="m" style="font-size:16px;color:var(--ac);">draft</span>
           Preview what ${k.first} will receive
         </button>
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
   fCount=S.fc||2;fUnit=S.fu||'months';document.getElementById('fc').textContent=fCount;document.getElementById('fu').textContent=fUnit.charAt(0).toUpperCase()+fUnit.slice(1);document.getElementById('tw').classList.toggle('on',fUnit==='weeks');document.getElementById('tm').classList.toggle('on',fUnit==='months');
   document.getElementById('gp-val').textContent=S.gp||3;

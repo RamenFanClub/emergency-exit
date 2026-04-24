@@ -122,9 +122,11 @@ Planned platforms:
 - Contact cards showing:
   - Initials avatar (navy gradient)
   - Full name + relationship
+  - **Letter status pill** — teal "Letter written" badge or orange "No letter yet" badge
   - Notify via icon + label (Email / SMS / WhatsApp / Email+SMS)
   - Sequence number (#1, #2...) with up/down arrows to reorder
   - Remove button
+  - **"Write personal letter" / "Edit personal letter" button** — teal-tinted, opens letter modal
   - **"Preview what [Name] will receive" button** — generates and downloads a per-contact PDF package
 - Add Contact modal fields: First name, Last name, Relationship, Email, Phone, Notify via
 - **All contacts receive the full package — there are no access level tiers**
@@ -168,6 +170,8 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 - **Toast notifications:** Fixed, centred, navy pill, auto-dismiss 2.4s
 - **Stepper controls:** − value + (used for frequency and grace period)
 - **Icons:** Google Material Symbols Outlined
+- **Letter button:** Teal-tinted outlined style (`.letter-btn`), changes label to "Edit" once a letter exists
+- **Letter status pill:** Teal "Letter written" or orange "No letter yet" — rendered inside the contact card header row
 - **Preview button:** Outlined style (navy border, near-transparent background) at the bottom of each contact card
 
 ---
@@ -201,7 +205,8 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
     id: timestamp, first: string, last: string, rel: string,
     email: string, phone: string,
     notifyVia: 'email' | 'sms' | 'whatsapp' | 'email_and_sms',
-    order: number
+    order: number,
+    letter: string   // F03: personal letter written by vault owner for this contact (may be empty string)
     // Note: no access field — all contacts receive the full package
   }],
   lastCheckin: timestamp | null,
@@ -239,7 +244,7 @@ When the grace period expires, contacts receive a self-contained package. No app
 3. **Emergency Exit PDF** — attached to the email, works offline, can be printed
 
 **PDF structure (6 pages, generated client-side via jsPDF):**
-- **Page 1 — Cover:** Contact's name, generation date, intro note, personal letter placeholder
+- **Page 1 — Cover:** Contact's name, generation date, intro note, personal letter (rendered in italic with teal accent if written; placeholder text if not yet written)
 - **Page 2 — Action Checklist:** Auto-generated steps from vault data (solicitor, Will location, Statement of Wishes location)
 - **Page 3 — Will & Legal Documents:** Will details + all supplementary documents
 - **Page 4 — Asset Register:** All assets grouped by category, full detail (name, value, details, beneficiary)
@@ -253,7 +258,22 @@ When the grace period expires, contacts receive a self-contained package. No app
 
 **Design principle:** PDF works offline. Does not depend on Emergency Exit servers staying online.
 
-**Preview feature (F17):** The vault owner can tap "Preview what [Name] will receive" on any contact card to generate and download the PDF immediately. This lets them verify the output before it's ever needed for real.
+**Preview feature (F17):** The vault owner can tap "Preview what [Name] will receive" on any contact card to generate and download the PDF immediately.
+
+**Personal letter feature (F03):** Each contact can have a unique personal letter written by the vault owner. The letter appears on Page 1 of their PDF package, rendered in italic with a teal left-accent bar. If no letter is written, the placeholder copy remains. Contact cards show a status pill: teal "Letter written" or orange "No letter yet". The write/edit button is teal-tinted to signal emotional significance.
+
+---
+
+## Modals
+
+| ID | Purpose |
+|----|---------|
+| `am` | Add Asset |
+| `wm` | Add / Edit Wish |
+| `wlm` | Will Details |
+| `sdm` | Attach Supplementary Document |
+| `km` | Add Contact |
+| `lm` | Write / Edit Personal Letter (F03) — fields: `#lm-kin-id` (hidden, stores contact id), `#lt` (textarea) |
 
 ---
 
@@ -300,6 +320,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - Home screen uses `id="s-home"` and nav uses `id="n-home"`
 - When editing index.html, always update BOTH `./index.html` AND `./frontend/index.html`
 - jsPDF loaded via CDN in `<head>` — access via `window.jspdf.jsPDF`
+- New contacts are initialised with `letter: ''` so the field is always present
 
 ---
 
@@ -317,6 +338,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - Do not remove the Statement of Wishes prompt — it is a key UX nudge
 - Do not use `s-vault` or `n-vault` as element IDs — they are now `s-home` and `n-home`
 - **Do not reintroduce contact access levels (Executor / Full / Wishes only) — deliberately removed. All contacts receive the full package.**
+- Do not remove the personal letter prompt from the letter modal — it sets the right emotional tone for users
 
 ---
 
@@ -334,7 +356,7 @@ These features complete the vault → heartbeat → delivery loop. Without them,
 |----|-----------|----------|--------|-------|
 | F01 | As a user, I want the app to automatically notify my contacts if I miss a check-in and the grace period expires, so that my loved ones are alerted without relying on someone else to act. | Must | idea | This is the #1 differentiator. Requires backend (notification-service). |
 | F02 | As a contact, I want to receive a self-contained PDF with the user's assets, wishes, and legal document locations, so I can act immediately without needing an app or login. | Must | done | All contacts receive the full package — no access level tiers. 6-page A4 PDF generated client-side via jsPDF. Preview button on each contact card ("Preview what [Name] will receive"). Also delivers F17. |
-| F03 | As a user, I want to write a personal letter for each contact that is included in their notification, so they receive a human message alongside the practical information. | Must | idea | PDF currently shows a placeholder where the letter will appear. |
+| F03 | As a user, I want to write a personal letter for each contact that is included in their notification, so they receive a human message alongside the practical information. | Must | done | Letter stored as `k.letter` (string) on each contact object. Letter modal (`#lm`) with warm UX prompt. Status pill on contact card (teal "Letter written" / orange "No letter yet"). Letter button changes label to "Edit" once written. PDF Page 1 renders actual letter text in italic with teal accent bar; placeholder copy shown if not yet written. |
 | F04 | As a user, I want my data encrypted at rest and in transit, so that sensitive financial and legal information is protected from unauthorised access. | Must | idea | Current prototype uses plain localStorage. Production needs AES-256 or equivalent. |
 | F05 | As a user, I want to receive reminders (push notification, email, or SMS) when my check-in is due, so I don't accidentally miss one and trigger a false alarm. | Must | idea | Critical for preventing false positives. Configurable reminder frequency. |
 
