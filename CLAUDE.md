@@ -386,6 +386,35 @@ These features complete the vault → heartbeat → delivery loop. Without them,
 | F17 | As a user, I want to see a "What my contacts will receive" preview screen, so I can verify the output before it's ever needed. | Could | done | Delivered as part of F02. "Preview what [Name] will receive" button on each contact card. |
 | F18 | As a user, I want to grant a trusted person "vault editor" access so they can help me fill in details (e.g. elderly parent's adult child helping set up), so the app works for people who aren't comfortable doing it alone. | Could | idea | Delegate setup use case. Common in aged care context. |
 
+### UX Improvements — Consistency, Tone & Journey
+
+These features address UX audit findings: visual consistency, tone of voice, empty states, and user journey friction.
+
+| ID | User Story | Priority | Status | Notes |
+|----|-----------|----------|--------|-------|
+| F22 | As a user, I want the primary CTA on every screen to use the same visual pattern (gradient button), so the app feels consistent and I always know where to tap first. | Must | specified | Asset Ledger (Home) uses `.gbtn`; New Instruction (Wishes) uses a dark card with nested button. Standardise to `.gbtn` everywhere. |
+| F23 | As a first-time user, I want encouraging empty states with a clear next step and warm copy, so I feel guided rather than confronted by blank screens. | Must | specified | Current empty states are plain grey text ("No assets recorded yet."). Replace with icon + warm headline + one-liner + CTA button on Ledger, Wishes, and Contact screens. |
+| F24 | As a user, I want all screen subtitles and headlines to use calm, grounded language instead of marketing-speak, so the app feels like a trusted guide rather than a sales pitch. | Must | specified | Specific rewrites: Ledger subtitle → "A record of what you have, so the right people know where to find it." / Wishes subtitle → "What matters to you, written down so it's not forgotten." / Settings subtitle → "Set how often you check in and what happens if you don't." / Home hero → "Everything is in order." / New Instruction subtitle → "Record something you'd like carried out." |
+| F25 | As a user, I want to edit my assets and contacts (not just delete and re-add), so I can fix mistakes without losing data. | Must | specified | Wishes already have edit. Add same pattern (edit icon → opens pre-filled modal) to asset items and contact cards. |
+| F26 | As a user, I want the "add" action on every screen to follow the same visual pattern, so I don't have to re-learn the interface on each tab. | Should | specified | Currently: Home uses pill buttons, Ledger uses `.gbtn`, Contacts uses outlined `.ob` button. Standardise secondary "add" actions to `.ob` style in section headers. |
+| F27 | As a user, I want card backgrounds (grey vs white) to follow a clear visual rule, so the screen hierarchy makes sense at a glance. | Should | specified | Rule: `.cardw` (white + shadow) for interactive/primary sections; `.card` (grey) for informational/contextual content. Audit and apply across all screens. |
+| F28 | As a user, I want section headers to follow a consistent layout pattern across all screens, so the app feels cohesive. | Should | specified | Standardise `.sh` row: left = `.st` with icon + label; right = badge (status) or action button (`.ob`). Remove text-link style from Home activity header. |
+| F29 | As a user, I want to see my contacts' email and phone number on their card, so I can verify the details are correct without opening anything. | Should | specified | Currently only shows name, relationship, notify method, and sequence. Add compact email/phone display below notification method. |
+| F30 | As a user, I want the Vitality Pulse to be less prominent until I've set up my vault, so I'm guided toward adding content first rather than checking in to an empty vault. | Should | specified | De-emphasise pulse when completeness < 40%. Promote completeness card + top tip as the primary Home element for new users. |
+| F31 | As a user, I want a brief privacy note on the Home screen or Settings, so I feel confident about where my sensitive data is stored. | Should | specified | Add: "Your information is stored on this device only. It never leaves your phone unless you choose to share it." Update when backend launches. |
+| F32 | As a user, I want the Statement of Wishes nudge to include a brief plain-language explanation of what it is (and how it differs from a Will), so I understand why it matters. | Should | specified | Add clarifying sentence: "A Statement of Wishes is a plain-language document — separate from your Will — that tells your people exactly what to do and where to find everything." |
+| F33 | As a user, I want the check-in label to say "Tap to check in" instead of "TAP TO CONFIRM", so it feels like a gentle habit rather than a transactional confirmation. | Should | specified | Small copy change on Vitality Pulse micro-label. |
+| F34 | As a user, I want all delete actions across the app to look and behave the same way, so destructive actions are predictable. | Could | specified | Currently: assets use icon only, contacts use text + icon ("Remove"), docs use icon only. Standardise to icon-only, same size and colour everywhere. |
+| F35 | As a user, I want Settings to auto-save all changes consistently (not a mix of auto-save and manual confirm), so I don't wonder whether my changes were saved. | Could | specified | Currently: notification protocol auto-saves on tap; frequency/grace period require "Confirm Settings" button. Switch everything to auto-save with toast feedback. |
+| F36 | As a user, I want toast messages to feel consistent and occasionally warm, so small moments of feedback reinforce trust. | Could | specified | Standardise: all toasts include ✓. First few saves can use warmer copy like "Saved. One more thing taken care of." |
+| F37 | As a user, I want screen subtitles to be visually distinct from in-card body text, so the hierarchy is clear. | Could | specified | Bump `.ps` to 15px or 500 weight to separate from in-card descriptions. |
+
+### Bug Fix
+
+| ID | User Story | Priority | Status | Notes |
+|----|-----------|----------|--------|-------|
+| F38 | As a user, I do not want to see an "Access Level" dropdown when adding a contact, because all contacts receive the full package and this field was deliberately removed. | Must | done | Verified — Access Level field is not present on the live site. Live HTML and repo `index.html` are in sync. |
+
 ### Won't Have (for now)
 
 | ID | Feature | Why not |
@@ -399,7 +428,7 @@ These features complete the vault → heartbeat → delivery loop. Without them,
 
 ### How to use this backlog
 
-- **Adding a new feature:** Add a row with the next ID number (F22, F23...), write the user story, set priority and status to `idea`.
+- **Adding a new feature:** Add a row with the next ID number (F39, F40...), write the user story, set priority and status to `idea`.
 - **When building:** Move status to `specified` once requirements are clear, `in-progress` when coding, `done` when shipped.
 - **Re-prioritising:** Change the MoSCoW priority and move the row to the correct section. Add a note explaining why.
 - **Removing a feature:** Move it to "Won't Have" with an explanation. Never delete — context matters.
