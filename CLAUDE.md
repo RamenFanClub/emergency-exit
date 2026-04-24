@@ -2,12 +2,14 @@
 
 ## How to start a new chat
 
-Always begin a new chat with:
-1. Upload the current `index.html` from GitHub
-2. Say: "We are continuing work on Emergency Exit. Here is the current index.html."
-3. Then describe what you want to change
+This project is connected to the `RamenFanClub/emergency-exit` GitHub repo. `CLAUDE.md` and `index.html` are synced at the project level, so Claude can read them automatically at the start of every chat — no need to upload files manually.
 
-This gives Claude the current state of the app without needing to re-read this entire file.
+To start a new chat:
+1. Open a new chat inside this Claude Project
+2. Simply describe what you want to change or build
+3. Claude will read the latest `CLAUDE.md` and `index.html` from the GitHub sync
+
+**Important:** Always push your changes to `main` after each session. The GitHub sync reflects whatever is on `main` — if you don't push, the next chat will be working from outdated files.
 
 ---
 
@@ -61,6 +63,7 @@ Planned platforms:
 ### Current (prototype)
 - Single-file HTML/CSS/JavaScript (`index.html`)
 - localStorage for data persistence (key: `ee_v3`)
+- jsPDF (via CDN) for client-side PDF generation
 - Hosted on GitHub Pages
 
 ### Planned (production)
@@ -83,7 +86,7 @@ Planned platforms:
 - Last confirmed timestamp shown below pulse
 - Asset Ledger CTA (full-width gradient button)
 - Compact pill buttons: **Add Asset** (navy) + **My Wishes** (grey-blue)
-- Home completeness % with progress bar + actionable tips (8 checks)
+- Home completeness % with progress bar + actionable tips (7 checks)
 - Recent activity log
 - Screen ID: `s-home` | Nav ID: `n-home`
 
@@ -119,11 +122,12 @@ Planned platforms:
 - Contact cards showing:
   - Initials avatar (navy gradient)
   - Full name + relationship
-  - Access level badge (Executor / Full / Wishes)
   - Notify via icon + label (Email / SMS / WhatsApp / Email+SMS)
   - Sequence number (#1, #2...) with up/down arrows to reorder
   - Remove button
-- Add Contact modal fields: First name, Last name, Relationship, Email, Phone, Notify via, Access level
+  - **"Preview what [Name] will receive" button** — generates and downloads a per-contact PDF package
+- Add Contact modal fields: First name, Last name, Relationship, Email, Phone, Notify via
+- **All contacts receive the full package — there are no access level tiers**
 
 ### 5. Settings
 - **Check-in Frequency** — stepper (1–24 Weeks or Months)
@@ -164,6 +168,7 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 - **Toast notifications:** Fixed, centred, navy pill, auto-dismiss 2.4s
 - **Stepper controls:** − value + (used for frequency and grace period)
 - **Icons:** Google Material Symbols Outlined
+- **Preview button:** Outlined style (navy border, near-transparent background) at the bottom of each contact card
 
 ---
 
@@ -196,8 +201,8 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
     id: timestamp, first: string, last: string, rel: string,
     email: string, phone: string,
     notifyVia: 'email' | 'sms' | 'whatsapp' | 'email_and_sms',
-    access: 'executor' | 'full' | 'wishes',
     order: number
+    // Note: no access field — all contacts receive the full package
   }],
   lastCheckin: timestamp | null,
   fc: number,               // frequency count (1–24)
@@ -211,7 +216,7 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 
 ---
 
-## Completeness Score — 8 Checks (~12.5% each)
+## Completeness Score — 7 Checks (~14.3% each)
 
 1. At least one asset recorded
 2. At least one asset has a beneficiary assigned
@@ -219,8 +224,7 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 4. Will details recorded
 5. Statement of Wishes recorded (suppDocs includes type === 'Statement of Wishes')
 6. At least one contact added
-7. At least one contact has access level "executor"
-8. First check-in completed
+7. First check-in completed
 
 ---
 
@@ -234,17 +238,22 @@ When the grace period expires, contacts receive a self-contained package. No app
 2. **Personal letter** — written by the user for this specific contact, embedded in email body
 3. **Emergency Exit PDF** — attached to the email, works offline, can be printed
 
-**PDF sections** (filtered by contact's access level):
-- Personal message from the user
-- Action checklist (auto-generated from vault data)
-- Will & legal documents (solicitor, locations, supplementary docs)
-- Asset register (Executor sees account details; Full sees names/values; Wishes-only skips this)
-- Wishes grouped by category with priority flags
-- Key people to contact (other contacts + solicitor)
+**PDF structure (6 pages, generated client-side via jsPDF):**
+- **Page 1 — Cover:** Contact's name, generation date, intro note, personal letter placeholder
+- **Page 2 — Action Checklist:** Auto-generated steps from vault data (solicitor, Will location, Statement of Wishes location)
+- **Page 3 — Will & Legal Documents:** Will details + all supplementary documents
+- **Page 4 — Asset Register:** All assets grouped by category, full detail (name, value, details, beneficiary)
+- **Page 5 — My Wishes:** All wishes grouped by category with priority badges
+- **Page 6 — Key Contacts:** All contacts with name, relationship, email, phone
+- **Footer on every page:** Contact name + page numbers
+
+**All contacts receive the full package — there are no access level tiers.**
 
 **Statement of Wishes** is referenced prominently — contacts are told where to find the user's detailed step-by-step instructions.
 
-**Design principle:** PDF works offline. Watermarked with contact name + date. Does not depend on Emergency Exit servers staying online.
+**Design principle:** PDF works offline. Does not depend on Emergency Exit servers staying online.
+
+**Preview feature (F17):** The vault owner can tap "Preview what [Name] will receive" on any contact card to generate and download the PDF immediately. This lets them verify the output before it's ever needed for real.
 
 ---
 
@@ -290,6 +299,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - localStorage key is `ee_v3` (not ee_v2)
 - Home screen uses `id="s-home"` and nav uses `id="n-home"`
 - When editing index.html, always update BOTH `./index.html` AND `./frontend/index.html`
+- jsPDF loaded via CDN in `<head>` — access via `window.jspdf.jsPDF`
 
 ---
 
@@ -306,6 +316,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - Do not use `ee_v2` as localStorage key — it is `ee_v3`
 - Do not remove the Statement of Wishes prompt — it is a key UX nudge
 - Do not use `s-vault` or `n-vault` as element IDs — they are now `s-home` and `n-home`
+- **Do not reintroduce contact access levels (Executor / Full / Wishes only) — deliberately removed. All contacts receive the full package.**
 
 ---
 
@@ -322,8 +333,8 @@ These features complete the vault → heartbeat → delivery loop. Without them,
 | ID | User Story | Priority | Status | Notes |
 |----|-----------|----------|--------|-------|
 | F01 | As a user, I want the app to automatically notify my contacts if I miss a check-in and the grace period expires, so that my loved ones are alerted without relying on someone else to act. | Must | idea | This is the #1 differentiator. Requires backend (notification-service). |
-| F02 | As a contact, I want to receive a self-contained PDF with the user's assets, wishes, and legal document locations filtered to my access level, so I can act immediately without needing an app or login. | Must | idea | Offline-capable PDF. Watermarked with contact name + date. |
-| F03 | As a user, I want to write a personal letter for each contact that is included in their notification, so they receive a human message alongside the practical information. | Must | idea | Embedded in email body, not just the PDF. |
+| F02 | As a contact, I want to receive a self-contained PDF with the user's assets, wishes, and legal document locations, so I can act immediately without needing an app or login. | Must | done | All contacts receive the full package — no access level tiers. 6-page A4 PDF generated client-side via jsPDF. Preview button on each contact card ("Preview what [Name] will receive"). Also delivers F17. |
+| F03 | As a user, I want to write a personal letter for each contact that is included in their notification, so they receive a human message alongside the practical information. | Must | idea | PDF currently shows a placeholder where the letter will appear. |
 | F04 | As a user, I want my data encrypted at rest and in transit, so that sensitive financial and legal information is protected from unauthorised access. | Must | idea | Current prototype uses plain localStorage. Production needs AES-256 or equivalent. |
 | F05 | As a user, I want to receive reminders (push notification, email, or SMS) when my check-in is due, so I don't accidentally miss one and trigger a false alarm. | Must | idea | Critical for preventing false positives. Configurable reminder frequency. |
 
@@ -334,7 +345,7 @@ These features complete the vault → heartbeat → delivery loop. Without them,
 | F06 | As a user, I want to test the notification flow with a "dry run" that sends a sample email to myself or a chosen contact, so I can verify everything works before it's needed for real. | Should | idea | Builds user trust. Reduces anxiety about "will this actually work?" |
 | F07 | As a user, I want a guided onboarding flow that walks me through the most important setup steps on first use, so I don't feel overwhelmed by the number of sections. | Should | idea | Completeness score already nudges — but first-time UX needs more hand-holding. |
 | F08 | As a user, I want to export or back up my vault data to a file I control, so I'm not entirely dependent on Emergency Exit's servers or storage. | Should | idea | JSON or encrypted export. Aligns with "your data, your control" philosophy. |
-| F09 | As a user, I want an auto-generated action checklist in the PDF delivery package that tells my contacts what to do first, second, third, so they aren't overwhelmed by raw data. | Should | idea | E.g. "1. Contact solicitor at Smith & Associates. 2. Locate Will in home safe..." |
+| F09 | As a user, I want an auto-generated action checklist in the PDF delivery package that tells my contacts what to do first, second, third, so they aren't overwhelmed by raw data. | Should | done | Implemented as part of F02. Page 2 of the PDF is an auto-generated checklist built from vault data. |
 | F10 | As a user, I want to record my digital accounts (email, social media, subscriptions) and what should happen to each one, so my contacts can close or transfer them. | Should | idea | Separate from financial assets. Inspired by GoodTrust's account closure feature. |
 | F11 | As a contact receiving a notification, I want to see a clear explanation of what Emergency Exit is and why I'm receiving this message, so I understand the context without confusion or alarm. | Should | idea | Warm, human-toned message. Not robotic. First impression matters enormously. |
 | F19 | As a user, I want the app to passively detect that I'm alive based on phone activity (unlocks, movement, app usage), so I don't have to manually check in every time. | Should | idea | Reduces check-in fatigue — the #1 engagement risk. Manual check-in becomes fallback. Requires native mobile APIs (iOS/Android), not possible in browser-only prototype. |
@@ -350,7 +361,7 @@ These features complete the vault → heartbeat → delivery loop. Without them,
 | F14 | As a user, I want the app to remind me periodically (e.g. every 6 months) to review and update my vault data, so my information stays current as my life changes. | Could | idea | Separate from check-in reminders. "Life audit" nudge — new baby, moved house, etc. |
 | F15 | As a user, I want to nominate a backup check-in method (e.g. if I don't respond to push notifications, try SMS, then email), so the system has multiple ways to reach me before alerting contacts. | Could | idea | Reduces false alarms. Escalation ladder for the user, not just contacts. |
 | F16 | As a user, I want to record video or audio messages for my contacts, so they receive something more personal than text. | Could | idea | Emotional value is high. Storage and delivery complexity is also high. Consider post-MVP. |
-| F17 | As a user, I want to see a "What my contacts will receive" preview screen, so I can verify the output before it's ever needed. | Could | idea | Builds confidence. Shows the PDF and email exactly as contacts would see it. |
+| F17 | As a user, I want to see a "What my contacts will receive" preview screen, so I can verify the output before it's ever needed. | Could | done | Delivered as part of F02. "Preview what [Name] will receive" button on each contact card. |
 | F18 | As a user, I want to grant a trusted person "vault editor" access so they can help me fill in details (e.g. elderly parent's adult child helping set up), so the app works for people who aren't comfortable doing it alone. | Could | idea | Delegate setup use case. Common in aged care context. |
 
 ### Won't Have (for now)
@@ -376,6 +387,7 @@ These features complete the vault → heartbeat → delivery loop. Without them,
 ## End-of-Chat Checklist
 
 - [ ] Download the new `index.html`
+- [ ] Download the new `CLAUDE.md`
 - [ ] Did anything structural change? Update `CLAUDE.md`
 - [ ] Replace files in VS Code (`./index.html` AND `./frontend/index.html`)
 - [ ] `git add -A`

@@ -6,6 +6,7 @@
 <title>Emergency Exit</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{--p:#002147;--pc:#002d5e;--s:#f8f9fb;--sl:#f2f4f6;--sc:#eceef0;--sh:#e6e8ea;--sx:#e0e3e5;--w:#ffffff;--os:#191c1e;--ov:#44474e;--ov2:#c4c6cf;--ac:#2d8a7a;--al:rgba(45,138,122,.10);--ab:rgba(45,138,122,.22);--sec:#54657d;--scc:#d1d9e6;--er:#ba1a1a;--fh:'Manrope',sans-serif;--fb:'Public Sans',sans-serif;--g:linear-gradient(135deg,#002147 0%,#003366 100%);--cs:0 2px 12px rgba(25,28,30,.07);--cn:0 -4px 20px rgba(0,0,0,.08);--rc:16px;--rb:14px;--rp:9999px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -129,6 +130,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .upload-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border:1.5px dashed var(--ov2);border-radius:10px;background:none;cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:600;color:var(--sec);transition:all .15s;}
 .upload-btn:active{border-color:var(--ac);color:var(--ac);background:var(--al);}
 .upload-btn .m{font-size:18px;}
+
+/* Preview package button */
+.preview-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:10px;border:1.5px solid rgba(0,33,71,.18);background:rgba(0,33,71,.03);cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--p);transition:all .18s;margin-top:10px;}
+.preview-btn:active{background:rgba(0,33,71,.07);transform:scale(.98);}
+.preview-btn .m{font-size:16px;color:var(--ac);}
 </style>
 </head>
 <body>
@@ -148,7 +154,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <div style="font-size:13px;color:var(--ov);font-weight:600;" id="d-sum">0 assets · 0 wishes</div>
         <div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div>
       </div>
-      <!-- Vitality Pulse + Next Check-in combined -->
       <div class="cardw">
         <div style="display:flex;align-items:center;gap:16px;">
           <div class="vr" onclick="checkin()" style="width:100px;height:100px;flex-shrink:0;">
@@ -207,7 +212,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           <button class="upload-btn" onclick="openM('sdm')"><span class="m">attach_file</span>Attach document</button>
         </div>
       </div>
-      <!-- Statement of Wishes nudge -->
       <div class="cardw" id="sow-nudge">
         <div style="display:flex;align-items:flex-start;gap:12px;">
           <div style="width:44px;height:44px;border-radius:12px;background:rgba(216,90,48,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="m mf" style="font-size:22px;color:#d85a30;">priority_high</span></div>
@@ -218,7 +222,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           </div>
         </div>
       </div>
-      <!-- Statement of Wishes confirmed -->
       <div class="cardw" id="sow-done" style="display:none;">
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="width:44px;height:44px;border-radius:12px;background:rgba(45,138,122,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="m mf" style="font-size:22px;color:var(--ac);">task_alt</span></div>
@@ -241,16 +244,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <!-- SETTINGS -->
     <div id="s-config" class="scr">
       <div class="ph">Settings</div><div class="ps">Configure your check-in schedule and alerts.</div>
-      <!-- Pulse Frequency -->
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">pulse_alert</span>Check-in Frequency</div><div style="background:var(--w);border-radius:12px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);">Custom Interval</span><div class="tg"><button class="to" id="tw" onclick="setU('weeks')">Weeks</button><button class="to on" id="tm" onclick="setU('months')">Months</button></div></div><div class="cc"><button class="cb" onclick="adj(-1)">−</button><div><div class="cv" id="fc">2</div><div class="cu" id="fu">Months</div></div><button class="cb" onclick="adj(1)">+</button></div></div></div>
-      <!-- Grace Period in Days -->
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m" style="font-size:17px;color:var(--sec);">hourglass_bottom</span>Grace Period</div>
         <div style="background:var(--w);border-radius:12px;padding:14px;">
           <div style="font-size:12px;color:var(--ov);margin-bottom:10px;">How many days after a missed check-in before contacts are alerted?</div>
           <div class="cc"><button class="cb" onclick="adjGP(-1)">−</button><div><div class="cv" id="gp-val">3</div><div class="cu">Days</div></div><button class="cb" onclick="adjGP(1)">+</button></div>
         </div>
       </div>
-      <!-- Notification Protocol -->
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">notifications_active</span>Notification Protocol</div>
         <div style="font-size:12px;color:var(--ov);margin-bottom:12px;">What happens after the grace period expires?</div>
         <div class="ri" onclick="setProto('ping_then_notify')" id="proto-1">
@@ -262,11 +262,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           <div class="rd" id="rp-2"></div>
         </div>
         <div class="ri" onclick="setProto('escalate')" id="proto-3">
-          <div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">escalator</span><div><span style="font-weight:600;font-size:14px;color:var(--p);display:block;">Escalate gradually</span><span style="font-size:11px;color:var(--ov);">Notify first contact, wait 24h, then next</span></div></div>
+          <div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">escalator</span><div><span style="font-weight:600;font-size:14px;color:var(--p);display:block;">Escalate gradually</span><span style="font-weight:600;font-size:11px;color:var(--ov);">Notify first contact, wait 24h, then next</span></div></div>
           <div class="rd" id="rp-3"></div>
         </div>
       </div>
-      <!-- Verification -->
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">verified_user</span>Verification</div><div class="ri" onclick="setV('face')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">face</span><span style="font-weight:600;font-size:15px;color:var(--p);">FaceID / Biometrics</span></div><div class="rd on" id="rf"></div></div><div class="ri" onclick="setV('pin')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">password</span><span style="font-weight:600;font-size:15px;color:var(--p);">Secure Passcode</span></div><div class="rd" id="rp2"></div></div></div>
       <div class="ib2"><span class="m" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span><p>Missed check-ins after <strong id="ig">3 days</strong> will grant access to <strong id="ik">0 contacts</strong>.</p></div>
       <button class="cfb" onclick="saveCfg()">Confirm Settings</button>
@@ -285,7 +284,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <div id="wm" class="mo"><div class="ms"><div class="mh"></div><div class="mt" id="wm-title">Record a Wish</div><input type="hidden" id="wm-edit-id" value=""/><div class="fi"><label>Category</label><select id="wc2"><option>Funeral & Service</option><option>Medical / end of life care</option><option>Guardian for children</option><option>Pet care</option><option>Business succession</option><option>Digital accounts</option><option>Personal message</option><option>Charitable giving</option><option>Other</option></select></div><div class="fi"><label>Wish</label><input id="wt" type="text" placeholder="e.g. I would like to be cremated"/></div><div class="fi"><label>Details</label><textarea id="wd" placeholder="Add any additional context or instructions..."></textarea></div><div class="fi"><label>Priority</label><select id="wp"><option value="high">High — must be followed</option><option value="medium" selected>Medium — strongly preferred</option><option value="low">Low — would be nice</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveW()" id="wm-save-btn">Save Wish</button></div></div></div>
 <div id="wlm" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Will Details</div><div class="fi"><label>Will status</label><select id="wl-status"><option value="signed">Signed and legally witnessed</option><option value="draft">Draft — not yet signed</option><option value="none">No Will exists yet</option></select></div><div class="fi"><label>Date signed</label><input id="wl-date" type="date"/></div><div class="fi"><label>Solicitor / law firm</label><input id="wl-solicitor" type="text" placeholder="e.g. Smith & Associates, Melbourne"/></div><div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sec);margin-bottom:8px;">Where is the original Will stored?</div><div class="fi"><label>Primary location</label><input id="wl-loc1" type="text" placeholder="e.g. Safe at home — study, top shelf"/></div><div class="fi"><label>Secondary location</label><input id="wl-loc2" type="text" placeholder="e.g. Solicitor's office, copy with executor"/></div><div class="fi"><label>Additional notes</label><textarea id="wl-notes" placeholder="Any other instructions for finding or executing the Will..."></textarea></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveWill()">Save Will details</button></div></div></div>
 <div id="sdm" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Attach Document</div><div class="fi"><label>Document type</label><select id="sd-type"><option>Statement of Wishes</option><option>Enduring Power of Attorney</option><option>Advance Health Directive</option><option>Guardianship Nomination</option><option>Funeral Pre-arrangement</option><option>Business Succession Plan</option><option>Other</option></select></div><div class="fi"><label>Document name</label><input id="sd-name" type="text" placeholder="e.g. Statement of Wishes — 2024"/></div><div class="fi"><label>Where is this document stored?</label><input id="sd-loc" type="text" placeholder="e.g. Google Drive, home safe, solicitor"/></div><div class="fi"><label>Notes</label><textarea id="sd-notes" placeholder="Any additional context..."></textarea></div><div style="background:var(--sl);border-radius:10px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;"><span class="m" style="font-size:18px;color:var(--sec);">info</span><span style="font-size:12px;color:var(--ov);line-height:1.4;">File uploads will be available when the app connects to secure cloud storage. For now, record where the document is located.</span></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveSupp()">Save document</button></div></div></div>
-<div id="km" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Add Contact</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>First Name</label><input id="kf" type="text" placeholder="Jane"/></div><div class="fi"><label>Last Name</label><input id="kl" type="text" placeholder="Smith"/></div></div><div class="fi"><label>Relationship</label><input id="kr" type="text" placeholder="e.g. Spouse, Child, Solicitor"/></div><div class="fi"><label>Email</label><input id="ke" type="email" placeholder="jane@email.com"/></div><div class="fi"><label>Phone</label><input id="kp" type="tel" placeholder="+61 4xx xxx xxx"/></div><div class="fi"><label>Notify via</label><select id="k-notify"><option value="email">Email</option><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option><option value="email_and_sms">Email + SMS</option></select></div><div class="fi"><label>Access Level</label><select id="ka2"><option value="executor">Executor — full + account details</option><option value="full">Full — all assets & wishes</option><option value="wishes">Wishes only</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveK()">Add Contact</button></div></div></div>
+<div id="km" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Add Contact</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>First Name</label><input id="kf" type="text" placeholder="Jane"/></div><div class="fi"><label>Last Name</label><input id="kl" type="text" placeholder="Smith"/></div></div><div class="fi"><label>Relationship</label><input id="kr" type="text" placeholder="e.g. Spouse, Child, Solicitor"/></div><div class="fi"><label>Email</label><input id="ke" type="email" placeholder="jane@email.com"/></div><div class="fi"><label>Phone</label><input id="kp" type="tel" placeholder="+61 4xx xxx xxx"/></div><div class="fi"><label>Notify via</label><select id="k-notify"><option value="email">Email</option><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option><option value="email_and_sms">Email + SMS</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveK()">Add Contact</button></div></div></div>
 <div id="toast" class="toast"></div>
 <script>
 let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[]};
@@ -302,7 +301,7 @@ function delW(id){S.wishes=S.wishes.filter(w=>w.id!==id);log('Wish removed');sav
 function saveWill(){S.will={status:document.getElementById('wl-status').value,date:document.getElementById('wl-date').value,solicitor:document.getElementById('wl-solicitor').value,loc1:document.getElementById('wl-loc1').value,loc2:document.getElementById('wl-loc2').value,notes:document.getElementById('wl-notes').value};log('Will details recorded');closeM();save();toast('Will details saved ✓');}
 function saveSupp(){const n=document.getElementById('sd-name').value.trim();if(!n){toast('Please enter a document name');return;}if(!S.suppDocs)S.suppDocs=[];S.suppDocs.push({id:Date.now(),type:document.getElementById('sd-type').value,name:n,loc:document.getElementById('sd-loc').value,notes:document.getElementById('sd-notes').value});log('Document recorded: '+n);closeM();['sd-name','sd-loc','sd-notes'].forEach(i=>document.getElementById(i).value='');save();toast('Document saved ✓');}
 function delSupp(id){S.suppDocs=S.suppDocs.filter(d=>d.id!==id);log('Document removed');save();toast('Removed');}
-function saveK(){const f=document.getElementById('kf').value.trim();if(!f){toast('Please enter a first name');return;}S.kin.push({id:Date.now(),first:f,last:document.getElementById('kl').value.trim(),rel:document.getElementById('kr').value,email:document.getElementById('ke').value,phone:document.getElementById('kp').value,notifyVia:document.getElementById('k-notify').value,access:document.getElementById('ka2').value,order:S.kin.length+1});log('Contact added: '+f);closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');save();toast('Contact added ✓');}
+function saveK(){const f=document.getElementById('kf').value.trim();if(!f){toast('Please enter a first name');return;}S.kin.push({id:Date.now(),first:f,last:document.getElementById('kl').value.trim(),rel:document.getElementById('kr').value,email:document.getElementById('ke').value,phone:document.getElementById('kp').value,notifyVia:document.getElementById('k-notify').value,order:S.kin.length+1});log('Contact added: '+f);closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');save();toast('Contact added ✓');}
 function delA(id){S.assets=S.assets.filter(a=>a.id!==id);log('Asset removed');save();toast('Removed');}
 function delK(id){S.kin=S.kin.filter(k=>k.id!==id);S.kin.forEach((k,i)=>k.order=i+1);log('Contact removed');save();toast('Removed');}
 function moveK(id,dir){const idx=S.kin.findIndex(k=>k.id===id);if(idx<0)return;const ni=idx+dir;if(ni<0||ni>=S.kin.length)return;[S.kin[idx],S.kin[ni]]=[S.kin[ni],S.kin[idx]];S.kin.forEach((k,i)=>k.order=i+1);save();}
@@ -315,12 +314,413 @@ function setV(v){S.v=v;document.getElementById('rf').className='rd'+(v==='face'?
 function setProto(p){S.notifyProto=p;save();toast('Protocol updated ✓');}
 function saveCfg(){S.fc=fCount;S.fu=fUnit;save();toast('Settings saved ✓');}
 function log(msg){S.log.unshift({msg,time:new Date().toLocaleString()});if(S.log.length>20)S.log.pop();}
-function comp(){const sow=(S.suppDocs||[]).some(d=>d.type==='Statement of Wishes');const c=[{d:S.assets.length>0,t:'Add at least one asset'},{d:S.assets.some(a=>a.beneficiary),t:'Assign a beneficiary to an asset'},{d:S.wishes.length>0,t:'Record at least one wish'},{d:!!S.will,t:'Record your Will details'},{d:sow,t:'Record your Statement of Wishes'},{d:S.kin.length>0,t:'Add at least one contact'},{d:S.kin.some(k=>k.access==='executor'),t:'Designate an executor'},{d:!!S.lastCheckin,t:'Complete your first check-in'}];return{pct:Math.round(c.filter(x=>x.d).length/c.length*100),tips:c.filter(x=>!x.d).slice(0,3).map(x=>x.t)};}
+function comp(){const sow=(S.suppDocs||[]).some(d=>d.type==='Statement of Wishes');const c=[{d:S.assets.length>0,t:'Add at least one asset'},{d:S.assets.some(a=>a.beneficiary),t:'Assign a beneficiary to an asset'},{d:S.wishes.length>0,t:'Record at least one wish'},{d:!!S.will,t:'Record your Will details'},{d:sow,t:'Record your Statement of Wishes'},{d:S.kin.length>0,t:'Add at least one contact'},{d:!!S.lastCheckin,t:'Complete your first check-in'}];return{pct:Math.round(c.filter(x=>x.d).length/c.length*100),tips:c.filter(x=>!x.d).slice(0,3).map(x=>x.t)};}
 const icons={'Bank account':'account_balance','Property':'home','Investment':'trending_up','Superannuation':'savings','Life insurance':'security','Vehicle':'directions_car','Cryptocurrency':'currency_bitcoin','Business':'business','Personal item':'diamond','Digital account':'cloud','Other':'category'};
-const accCol={executor:'td',full:'ts',wishes:'ta'};
 const willStatusLabel={signed:'Signed & witnessed',draft:'Draft — not signed',none:'No Will yet'};
 const notifyIcons={email:'email',sms:'sms',whatsapp:'chat',email_and_sms:'mark_email_read'};
 const notifyLabels={email:'Email',sms:'SMS',whatsapp:'WhatsApp',email_and_sms:'Email + SMS'};
+
+// ─── PDF GENERATION ──────────────────────────────────────────────────────────
+function generatePDF(kinId) {
+  if (typeof window.jspdf === 'undefined') {
+    toast('PDF library not loaded yet — try again');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const k = S.kin.find(x => x.id === kinId);
+  if (!k) return;
+
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, H = 297;
+  const ML = 20, MR = 20, MT = 20;
+  const CW = W - ML - MR; // content width = 170mm
+  let y = MT;
+
+  // ── colour palette ──
+  const NAVY  = [0, 33, 71];
+  const TEAL  = [45, 138, 122];
+  const GREY  = [84, 101, 125];
+  const LGREY = [242, 244, 246];
+  const WHITE = [255, 255, 255];
+  const RED   = [186, 26, 26];
+
+  // ── helpers ──
+  function setFont(size, weight, color) {
+    doc.setFontSize(size);
+    doc.setFont('helvetica', weight || 'normal');
+    doc.setTextColor(...(color || NAVY));
+  }
+  function fillRect(x, fy, w, h, color) {
+    doc.setFillColor(...color);
+    doc.rect(x, fy, w, h, 'F');
+  }
+  function wrap(text, maxW) {
+    // jsPDF splitTextToSize wraps text to fit width
+    return doc.splitTextToSize(text || '', maxW);
+  }
+  function checkPage(needed) {
+    if (y + needed > H - 20) { doc.addPage(); y = MT; }
+  }
+  function sectionHeader(title, icon) {
+    checkPage(14);
+    fillRect(ML, y, CW, 10, LGREY);
+    setFont(9, 'bold', GREY);
+    doc.text((icon ? icon + '  ' : '') + title.toUpperCase(), ML + 4, y + 6.5);
+    y += 14;
+  }
+  function divider() {
+    doc.setDrawColor(...LGREY);
+    doc.setLineWidth(0.3);
+    doc.line(ML, y, ML + CW, y);
+    y += 5;
+  }
+  function labelValue(label, value, indent) {
+    if (!value) return;
+    const x = ML + (indent || 0);
+    const w = CW - (indent || 0);
+    checkPage(12);
+    setFont(7.5, 'bold', GREY);
+    doc.text(label.toUpperCase(), x, y);
+    y += 4;
+    setFont(9, 'normal', NAVY);
+    const lines = wrap(value, w);
+    doc.text(lines, x, y);
+    y += lines.length * 4.5 + 3;
+  }
+
+  // ════════════════════════════════════════════════
+  // PAGE 1 — COVER
+  // ════════════════════════════════════════════════
+
+  // Navy header band
+  fillRect(0, 0, W, 52, NAVY);
+
+  // Watermark stripe
+  doc.setFillColor(0, 45, 94);
+  doc.rect(0, 46, W, 6, 'F');
+
+  setFont(9, 'normal', [180, 200, 220]);
+  doc.text('EMERGENCY EXIT — CONFIDENTIAL PACKAGE', ML, 51);
+
+  // Title block
+  setFont(22, 'bold', WHITE);
+  doc.text('Emergency Exit', ML, 22);
+  setFont(11, 'normal', [180, 200, 220]);
+  doc.text('Prepared for ' + k.first + ' ' + k.last, ML, 30);
+  setFont(9, 'normal', [140, 170, 200]);
+  doc.text('Generated ' + new Date().toLocaleDateString('en-AU', {day:'numeric',month:'long',year:'numeric'}), ML, 38);
+
+  y = 65;
+
+  // Intro note
+  fillRect(ML, y, CW, 28, [232, 240, 255]);
+  doc.setDrawColor(...TEAL);
+  doc.setLineWidth(1);
+  doc.line(ML, y, ML, y + 28);
+  setFont(9, 'bold', NAVY);
+  doc.text('This document has been prepared for you by the vault holder.', ML + 5, y + 7);
+  setFont(8.5, 'normal', GREY);
+  const introLines = wrap(
+    'If you are reading this, the vault holder has not confirmed their check-in within the required period. ' +
+    'This package contains everything you need to act on their behalf. No login or app is required.',
+    CW - 10
+  );
+  doc.text(introLines, ML + 5, y + 13);
+  y += 36;
+
+  // ── Personal Letter placeholder ──
+  sectionHeader('Personal Letter');
+  fillRect(ML, y, CW, 38, [248, 249, 251]);
+  doc.setDrawColor(200, 210, 220);
+  doc.setLineWidth(0.4);
+  doc.rect(ML, y, CW, 38);
+  setFont(9, 'italic', GREY);
+  doc.text('[ A personal letter from the vault holder will appear here once written. ]', ML + 4, y + 8);
+  setFont(8, 'normal', GREY);
+  const letterNote = wrap(
+    'To add a personal letter for this contact, return to the Emergency Exit app, open their contact card, and tap "Write personal letter".',
+    CW - 8
+  );
+  doc.text(letterNote, ML + 4, y + 16);
+  y += 46;
+
+  // ─────────────────────────────────────────
+  // PAGE 2 — ACTION CHECKLIST
+  // ─────────────────────────────────────────
+  doc.addPage();
+  y = MT;
+
+  // Page header stripe
+  fillRect(0, 0, W, 14, NAVY);
+  setFont(8, 'normal', WHITE);
+  doc.text('EMERGENCY EXIT  ·  ACTION CHECKLIST', ML, 9);
+  y = 22;
+
+  setFont(16, 'bold', NAVY);
+  doc.text('What to do first', ML, y);
+  y += 5;
+  setFont(9, 'normal', GREY);
+  doc.text('Work through these steps in order. Take your time.', ML, y);
+  y += 12;
+
+  // Build checklist dynamically from vault data
+  const steps = [];
+  if (S.will && S.will.solicitor) steps.push('Contact the solicitor: ' + S.will.solicitor);
+  if (S.will && S.will.loc1) steps.push('Locate the original Will: ' + S.will.loc1);
+  const sow = (S.suppDocs || []).find(d => d.type === 'Statement of Wishes');
+  if (sow) steps.push('Find the Statement of Wishes: ' + (sow.loc || sow.name));
+  if (S.assets.length) steps.push('Review the Asset Register in this document (page 3)');
+  steps.push('Notify relevant financial institutions and government agencies');
+  steps.push('Keep a copy of this document in a safe place');
+
+  steps.forEach((step, i) => {
+    checkPage(14);
+    // Circle number
+    doc.setFillColor(...TEAL);
+    doc.circle(ML + 5, y + 3.5, 4, 'F');
+    setFont(8, 'bold', WHITE);
+    doc.text(String(i + 1), ML + 5, y + 5.5, { align: 'center' });
+    // Step text
+    setFont(9.5, 'normal', NAVY);
+    const stepLines = wrap(step, CW - 16);
+    doc.text(stepLines, ML + 13, y + 5);
+    y += stepLines.length * 5 + 6;
+    divider();
+  });
+
+  // ─────────────────────────────────────────
+  // PAGE 3 — WILL & LEGAL DOCUMENTS
+  // ─────────────────────────────────────────
+  doc.addPage();
+  y = MT;
+  fillRect(0, 0, W, 14, NAVY);
+  setFont(8, 'normal', WHITE);
+  doc.text('EMERGENCY EXIT  ·  WILL & LEGAL DOCUMENTS', ML, 9);
+  y = 22;
+
+  setFont(16, 'bold', NAVY);
+  doc.text('Will & Legal Documents', ML, y);
+  y += 12;
+
+  if (S.will) {
+    sectionHeader('Will Details');
+    labelValue('Status', willStatusLabel[S.will.status] || S.will.status);
+    if (S.will.date) labelValue('Date Signed', S.will.date);
+    if (S.will.solicitor) labelValue('Solicitor / Law Firm', S.will.solicitor);
+    if (S.will.loc1) labelValue('Primary Location', S.will.loc1);
+    if (S.will.loc2) labelValue('Secondary Location', S.will.loc2);
+    if (S.will.notes) labelValue('Additional Notes', S.will.notes);
+    y += 4;
+  } else {
+    fillRect(ML, y, CW, 16, LGREY);
+    setFont(9, 'italic', GREY);
+    doc.text('No Will details have been recorded.', ML + 4, y + 9);
+    y += 22;
+  }
+
+  if (S.suppDocs && S.suppDocs.length) {
+    sectionHeader('Supporting Documents');
+    S.suppDocs.forEach(d => {
+      checkPage(20);
+      fillRect(ML, y, CW, 18, WHITE);
+      doc.setDrawColor(...LGREY);
+      doc.setLineWidth(0.3);
+      doc.rect(ML, y, CW, 18);
+      // Teal left accent
+      fillRect(ML, y, 3, 18, TEAL);
+      setFont(9, 'bold', NAVY);
+      doc.text(d.name, ML + 7, y + 6);
+      setFont(8, 'normal', GREY);
+      doc.text(d.type, ML + 7, y + 11);
+      if (d.loc) { setFont(8, 'normal', TEAL); doc.text('Location: ' + d.loc, ML + 7, y + 16); }
+      y += 22;
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // PAGE 4 — ASSET REGISTER
+  // ─────────────────────────────────────────
+  doc.addPage();
+  y = MT;
+  fillRect(0, 0, W, 14, NAVY);
+  setFont(8, 'normal', WHITE);
+  doc.text('EMERGENCY EXIT  ·  ASSET REGISTER', ML, 9);
+  y = 22;
+
+  setFont(16, 'bold', NAVY);
+  doc.text('Asset Register', ML, y);
+  y += 6;
+  setFont(9, 'normal', GREY);
+  doc.text('All assets recorded by the vault holder at time of package generation.', ML, y);
+  y += 12;
+
+  if (!S.assets.length) {
+    fillRect(ML, y, CW, 16, LGREY);
+    setFont(9, 'italic', GREY);
+    doc.text('No assets have been recorded.', ML + 4, y + 9);
+    y += 22;
+  } else {
+    // Group by category
+    const cats = [...new Set(S.assets.map(a => a.category))];
+    cats.forEach(cat => {
+      const items = S.assets.filter(a => a.category === cat);
+      sectionHeader(cat);
+      items.forEach(a => {
+        checkPage(32);
+        fillRect(ML, y, CW, 28, WHITE);
+        doc.setDrawColor(...LGREY);
+        doc.setLineWidth(0.3);
+        doc.rect(ML, y, CW, 28);
+        fillRect(ML, y, 3, 28, NAVY);
+
+        let ay = y + 6;
+        setFont(10, 'bold', NAVY);
+        doc.text(a.name, ML + 7, ay);
+        ay += 5;
+
+        if (a.value) {
+          setFont(9, 'bold', TEAL);
+          doc.text('$' + Math.round(a.value).toLocaleString(), ML + 7, ay);
+          ay += 4.5;
+        }
+        if (a.details) {
+          setFont(8, 'normal', GREY);
+          const dl = wrap(a.details, CW - 14);
+          doc.text(dl.slice(0, 2), ML + 7, ay); // max 2 lines in card
+          ay += dl.slice(0, 2).length * 4;
+        }
+        if (a.beneficiary) {
+          setFont(7.5, 'bold', GREY);
+          doc.text('BENEFICIARY: ' + a.beneficiary, ML + 7, y + 25);
+        }
+        y += 32;
+      });
+      y += 4;
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // PAGE 5 — WISHES
+  // ─────────────────────────────────────────
+  doc.addPage();
+  y = MT;
+  fillRect(0, 0, W, 14, NAVY);
+  setFont(8, 'normal', WHITE);
+  doc.text('EMERGENCY EXIT  ·  MY WISHES', ML, 9);
+  y = 22;
+
+  setFont(16, 'bold', NAVY);
+  doc.text('My Wishes', ML, y);
+  y += 6;
+  setFont(9, 'normal', GREY);
+  doc.text('These are the vault holder\'s recorded wishes and final instructions.', ML, y);
+  y += 12;
+
+  if (!S.wishes.length) {
+    fillRect(ML, y, CW, 16, LGREY);
+    setFont(9, 'italic', GREY);
+    doc.text('No wishes have been recorded.', ML + 4, y + 9);
+    y += 22;
+  } else {
+    const priColor = { high: RED, medium: GREY, low: TEAL };
+    const wishCats = [...new Set(S.wishes.map(w => w.category))];
+    wishCats.forEach(cat => {
+      sectionHeader(cat);
+      S.wishes.filter(w => w.category === cat).forEach(w => {
+        checkPage(26);
+        // Priority badge
+        const pc = priColor[w.priority] || GREY;
+        fillRect(ML, y, 22, 7, pc);
+        setFont(6.5, 'bold', WHITE);
+        doc.text((w.priority || 'medium').toUpperCase(), ML + 2, y + 4.8);
+
+        setFont(10, 'bold', NAVY);
+        doc.text(w.title, ML + 26, y + 5);
+        y += 10;
+
+        if (w.details) {
+          setFont(8.5, 'normal', GREY);
+          const dl = wrap(w.details, CW);
+          doc.text(dl, ML, y);
+          y += dl.length * 4.5 + 3;
+        }
+        divider();
+      });
+      y += 4;
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // PAGE 6 — KEY CONTACTS
+  // ─────────────────────────────────────────
+  doc.addPage();
+  y = MT;
+  fillRect(0, 0, W, 14, NAVY);
+  setFont(8, 'normal', WHITE);
+  doc.text('EMERGENCY EXIT  ·  KEY CONTACTS', ML, 9);
+  y = 22;
+
+  setFont(16, 'bold', NAVY);
+  doc.text('Key People to Contact', ML, y);
+  y += 12;
+
+  if (!S.kin.length) {
+    fillRect(ML, y, CW, 16, LGREY);
+    setFont(9, 'italic', GREY);
+    doc.text('No contacts have been recorded.', ML + 4, y + 9);
+    y += 22;
+  } else {
+    S.kin.forEach((contact, i) => {
+      checkPage(30);
+      fillRect(ML, y, CW, 26, i % 2 === 0 ? WHITE : LGREY);
+      doc.setDrawColor(...LGREY);
+      doc.setLineWidth(0.3);
+      doc.rect(ML, y, CW, 26);
+
+      // Avatar circle
+      doc.setFillColor(...NAVY);
+      doc.circle(ML + 10, y + 13, 7, 'F');
+      const initials = ((contact.first[0] || '') + (contact.last ? contact.last[0] : '')).toUpperCase();
+      setFont(8, 'bold', WHITE);
+      doc.text(initials, ML + 10, y + 15.5, { align: 'center' });
+
+      setFont(10, 'bold', NAVY);
+      doc.text(contact.first + ' ' + contact.last, ML + 22, y + 8);
+      setFont(8, 'normal', GREY);
+      doc.text(contact.rel || 'Contact', ML + 22, y + 13);
+      if (contact.email) { setFont(8, 'normal', TEAL); doc.text(contact.email, ML + 22, y + 18); }
+      if (contact.phone) { setFont(8, 'normal', GREY); doc.text(contact.phone, ML + 22, y + 22); }
+
+      y += 30;
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // FOOTER — every page
+  // ─────────────────────────────────────────
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    fillRect(0, H - 12, W, 12, NAVY);
+    setFont(7, 'normal', [140, 170, 200]);
+    doc.text(
+      'Emergency Exit  ·  Prepared for ' + k.first + ' ' + k.last + '  ·  Confidential',
+      ML, H - 5
+    );
+    doc.text('Page ' + i + ' of ' + totalPages, W - MR, H - 5, { align: 'right' });
+  }
+
+  // ─────────────────────────────────────────
+  // SAVE
+  // ─────────────────────────────────────────
+  const fname = 'Emergency-Exit-' + k.first + '-' + k.last + '.pdf';
+  doc.save(fname);
+  log('Package previewed for ' + k.first + ' ' + k.last);
+  save();
+  toast('Package downloaded ✓');
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function render(){
   const{pct,tips}=comp();
   document.getElementById('d-sum').textContent=S.assets.length+' asset'+(S.assets.length!==1?'s':'')+' · '+S.wishes.length+' wish'+(S.wishes.length!==1?'es':'');
@@ -347,7 +747,36 @@ function render(){
   const wel=document.getElementById('w-content');
   if(!S.wishes.length){wel.innerHTML='<div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No wishes recorded yet.</div>';}
   else{const ac2=wishCats.filter(c=>S.wishes.some(w=>w.category===c));wel.innerHTML=ac2.map(cat=>{const items=S.wishes.filter(w=>w.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(wishIcons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(wishIcons[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+(w.details?w.details.substring(0,40)+(w.details.length>40?'...':''):w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(priColors[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');}
-  document.getElementById('k-list').innerHTML=S.kin.length===0?'<div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No contacts added yet.</div>':S.kin.map((k,i)=>'<div class="kc"><div class="kt"><div class="ka">'+((k.first[0]||'')+(k.last?k.last[0]:'')).toUpperCase()+'</div><div style="flex:1;"><div style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--p);line-height:1;">'+k.first+' '+k.last+'</div><div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);margin-top:2px;">'+(k.rel||'Contact')+'</div></div><span class="tag '+(accCol[k.access]||'ts')+'">'+(k.access==='executor'?'Executor':k.access==='full'?'Full':'Wishes')+'</span></div><div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;"><span class="m" style="font-size:14px;color:var(--sec);">'+(notifyIcons[k.notifyVia]||'email')+'</span><span style="font-size:11px;color:var(--ov);">Notify via '+(notifyLabels[k.notifyVia]||'Email')+'</span></div><div style="display:flex;gap:10px;align-items:center;"><span style="font-size:11px;font-weight:700;color:var(--sec);background:var(--sl);padding:3px 10px;border-radius:99px;">#'+(i+1)+'</span><button onclick="moveK('+k.id+',-1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_upward</span></button><button onclick="moveK('+k.id+',1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_downward</span></button><span style="flex:1;"></span><span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK('+k.id+')"><span class="m" style="font-size:13px;">delete</span>Remove</span></div></div>').join('');
+
+  // ── Contact cards with Preview Package button ──
+  document.getElementById('k-list').innerHTML=S.kin.length===0
+    ?'<div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No contacts added yet.</div>'
+    :S.kin.map((k,i)=>`
+      <div class="kc">
+        <div class="kt">
+          <div class="ka">${((k.first[0]||'')+(k.last?k.last[0]:'')).toUpperCase()}</div>
+          <div style="flex:1;">
+            <div style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--p);line-height:1;">${k.first} ${k.last}</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);margin-top:2px;">${k.rel||'Contact'}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;">
+          <span class="m" style="font-size:14px;color:var(--sec);">${notifyIcons[k.notifyVia]||'email'}</span>
+          <span style="font-size:11px;color:var(--ov);">Notify via ${notifyLabels[k.notifyVia]||'Email'}</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span style="font-size:11px;font-weight:700;color:var(--sec);background:var(--sl);padding:3px 10px;border-radius:99px;">#${i+1}</span>
+          <button onclick="moveK(${k.id},-1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_upward</span></button>
+          <button onclick="moveK(${k.id},1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_downward</span></button>
+          <span style="flex:1;"></span>
+          <span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK(${k.id})"><span class="m" style="font-size:13px;">delete</span>Remove</span>
+        </div>
+        <button class="preview-btn" onclick="generatePDF(${k.id})">
+          <span class="m" style="font-size:16px;color:var(--ac);">draft</span>
+          Preview what ${k.first} will receive
+        </button>
+      </div>`).join('');
+
   fCount=S.fc||2;fUnit=S.fu||'months';document.getElementById('fc').textContent=fCount;document.getElementById('fu').textContent=fUnit.charAt(0).toUpperCase()+fUnit.slice(1);document.getElementById('tw').classList.toggle('on',fUnit==='weeks');document.getElementById('tm').classList.toggle('on',fUnit==='months');
   document.getElementById('gp-val').textContent=S.gp||3;
   document.getElementById('ig').textContent=(S.gp||3)+' day'+(S.gp!==1?'s':'');
