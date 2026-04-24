@@ -25,7 +25,7 @@ html,body{height:100%;background:#f8f9fb;font-family:var(--fb);color:var(--os);-
 .m{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;line-height:1;display:inline-block;white-space:nowrap;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 40;}
 .mf{font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 40;}
 .ph{font-family:var(--fh);font-weight:800;font-size:28px;color:var(--p);letter-spacing:-.5px;line-height:1.15;margin-bottom:4px;}
-.ps{font-size:14px;color:var(--ov);margin-bottom:20px;line-height:1.4;}
+.ps{font-size:15px;font-weight:500;color:var(--ov);margin-bottom:20px;line-height:1.4;}
 .card{background:var(--sl);border-radius:var(--rc);padding:16px;margin-bottom:14px;}
 .cardw{background:var(--w);border-radius:var(--rc);padding:16px;margin-bottom:14px;box-shadow:var(--cs);}
 .gbtn{background:var(--g);border:none;border-radius:var(--rb);padding:18px 20px;display:flex;align-items:center;gap:14px;width:100%;cursor:pointer;text-align:left;box-shadow:0 4px 16px rgba(0,33,71,.28);border-bottom:3px solid rgba(0,0,0,.22);transition:transform .1s;margin-bottom:10px;}
@@ -130,25 +130,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .upload-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border:1.5px dashed var(--ov2);border-radius:10px;background:none;cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:600;color:var(--sec);transition:all .15s;}
 .upload-btn:active{border-color:var(--ac);color:var(--ac);background:var(--al);}
 .upload-btn .m{font-size:18px;}
-
-/* Preview package button */
 .preview-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:10px;border:1.5px solid rgba(0,33,71,.18);background:rgba(0,33,71,.03);cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--p);transition:all .18s;margin-top:10px;}
 .preview-btn:active{background:rgba(0,33,71,.07);transform:scale(.98);}
 .preview-btn .m{font-size:16px;color:var(--ac);}
-
-/* Letter button — warm teal tint to feel personal/emotional */
 .letter-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:10px;border:1.5px solid var(--ab);background:var(--al);cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--ac);transition:all .18s;margin-top:8px;}
 .letter-btn:active{background:rgba(45,138,122,.18);transform:scale(.98);}
-.letter-btn .m{font-size:16px;color:var(--ac);}
 .letter-btn.written{background:rgba(45,138,122,.08);border-color:rgba(45,138,122,.3);}
-
-/* Letter status pill on contact card */
 .letter-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:var(--rp);}
 .letter-pill.done{background:rgba(45,138,122,.12);color:var(--ac);border:1px solid var(--ab);}
 .letter-pill.missing{background:rgba(216,90,48,.08);color:#d85a30;border:1px solid rgba(216,90,48,.25);}
-
-/* Letter textarea in modal — slightly taller, evokes writing */
 #lt{min-height:160px;line-height:1.6;font-size:15px;}
+
+/* F23: Empty state styling */
+.empty-state{display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 16px;}
+.empty-state .empty-icon{width:64px;height:64px;border-radius:50%;background:var(--sl);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.empty-state .empty-icon .m{font-size:28px;color:var(--sec);}
+.empty-state .empty-title{font-family:var(--fh);font-size:16px;font-weight:700;color:var(--p);margin-bottom:6px;}
+.empty-state .empty-sub{font-size:13px;color:var(--ov);line-height:1.5;margin-bottom:16px;max-width:280px;}
+.empty-state .empty-cta{background:var(--p);border:none;border-radius:var(--rp);padding:11px 24px;font-family:var(--fb);font-size:13px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;gap:7px;transition:transform .1s;}
+.empty-state .empty-cta:active{transform:scale(.96);}
+.empty-state .empty-cta .m{font-size:16px;color:#fff;}
 </style>
 </head>
 <body>
@@ -163,7 +164,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   <div class="body">
     <!-- HOME -->
     <div id="s-home" class="scr on">
-      <div style="font-family:var(--fh);font-weight:800;font-size:23px;color:var(--p);letter-spacing:-.4px;line-height:1.2;">Your legacy is <span style="color:var(--ac);">securely</span> anchored.</div>
+      <!-- F24: Calm, grounded hero headline -->
+      <div style="font-family:var(--fh);font-weight:800;font-size:23px;color:var(--p);letter-spacing:-.4px;line-height:1.2;">Everything is <span style="color:var(--ac);">in order.</span></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;margin-bottom:14px;">
         <div style="font-size:13px;color:var(--ov);font-weight:600;" id="d-sum">0 assets · 0 wishes</div>
         <div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div>
@@ -173,7 +175,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           <div class="vr" onclick="checkin()" style="width:100px;height:100px;flex-shrink:0;">
             <div class="vc" style="width:78px;height:78px;">
               <span class="m mf" style="font-size:28px;color:var(--ac);">favorite</span>
-              <span class="vl" style="font-size:8px;">TAP TO CONFIRM</span>
+              <!-- F24: Warmer check-in micro-label -->
+              <span class="vl" style="font-size:8px;">TAP TO CHECK IN</span>
             </div>
           </div>
           <div style="flex:1;">
@@ -198,24 +201,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <div id="cp-tips"></div>
       </div>
       <div class="cardw">
-        <div class="sh"><span style="font-family:var(--fh);font-size:16px;font-weight:700;color:var(--p);">Recent Activity</span><button onclick="go('ledger')" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--p);cursor:pointer;text-decoration:underline;text-decoration-color:var(--ac);">View Ledger</button></div>
+        <div class="sh"><span style="font-family:var(--fh);font-size:16px;font-weight:700;color:var(--p);">Recent Activity</span><button onclick="go('ledger')" class="ob" style="padding:5px 10px;font-size:11px;">View Ledger</button></div>
         <div id="d-act"><div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No activity yet</div></div>
       </div>
     </div>
     <!-- LEDGER -->
     <div id="s-ledger" class="scr">
-      <div class="ph">Asset Ledger</div><div class="ps">Securing your lifetime achievements for the generations to follow.</div>
-      <button class="gbtn" onclick="openM('am')"><div class="ib"><span class="m" style="font-size:24px;color:#fff;">add_circle</span></div><div class="tb"><span class="big">Record New Asset</span><span class="sm">Financial, physical, or digital</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
-      <div id="l-content"><div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No assets recorded yet.</div></div>
+      <div class="ph">Asset Ledger</div>
+      <!-- F24: Calm, grounded subtitle -->
+      <div class="ps">A record of what you have, so the right people know where to find it.</div>
+      <button class="gbtn" onclick="openM('am')"><div class="ib"><span class="m" style="font-size:24px;color:#fff;">add_circle</span></div><div class="tb"><span class="big">Record New Asset</span><span class="sm">Add anything your people should know about</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
+      <div id="l-content"></div>
       <div class="ib2"><span class="m mf" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">verified_user</span><p>Your legacy is <strong id="l-pct">0%</strong> documented.</p></div>
     </div>
     <!-- MY WISHES -->
     <div id="s-wishes" class="scr">
-      <div class="ph">My Wishes</div><div class="ps">Your final instructions and values, securely stored.</div>
-      <div style="background:var(--g);border-radius:var(--rc);padding:18px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;"><span class="m" style="font-size:19px;color:#fff;">add</span></div><div><div style="font-family:var(--fh);font-size:16px;font-weight:800;color:#fff;">New Instruction</div><div style="font-size:12px;color:rgba(255,255,255,.7);">Add a request or directive</div></div></div>
-        <button class="pab" onclick="openM('wm')" style="background:rgba(255,255,255,.18);color:#fff;font-size:14px;font-weight:800;font-family:var(--fh);">START NOW</button>
-      </div>
+      <div class="ph">My Wishes</div>
+      <!-- F24: Calm, grounded subtitle -->
+      <div class="ps">What matters to you, written down so it's not forgotten.</div>
+      <!-- F22: Standardised CTA — now uses .gbtn like every other screen -->
+      <button class="gbtn" onclick="openM('wm')"><div class="ib"><span class="m" style="font-size:24px;color:#fff;">edit_note</span></div><div class="tb"><span class="big">New Instruction</span><span class="sm">Record something you'd like carried out</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
       <div class="card">
         <div class="sh" style="margin-bottom:12px;"><span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">gavel</span>Will & Legal Documents</span><span class="tag tw" id="will-badge">Not recorded</span></div>
         <div class="will-card" id="will-summary">
@@ -245,19 +250,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           </div>
         </div>
       </div>
-      <div id="w-content"><div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No wishes recorded yet.</div></div>
+      <div id="w-content"></div>
     </div>
     <!-- CONTACT -->
     <div id="s-kin" class="scr">
       <div class="ph">Contacts</div><div class="ps">People to notify and how to reach them.</div>
       <div class="card">
         <div class="sh" style="margin-bottom:12px;"><span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">group</span>My Contacts</span><button class="ob" onclick="openM('km')"><span class="m" style="font-size:15px;">add</span>Add Contact</button></div>
-        <div id="k-list"><div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No contacts added yet.</div></div>
+        <div id="k-list"></div>
       </div>
     </div>
     <!-- SETTINGS -->
     <div id="s-config" class="scr">
-      <div class="ph">Settings</div><div class="ps">Configure your check-in schedule and alerts.</div>
+      <div class="ph">Settings</div>
+      <!-- F24: Calm, grounded subtitle -->
+      <div class="ps">Set how often you check in and what happens if you don't.</div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">pulse_alert</span>Check-in Frequency</div><div style="background:var(--w);border-radius:12px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);">Custom Interval</span><div class="tg"><button class="to" id="tw" onclick="setU('weeks')">Weeks</button><button class="to on" id="tm" onclick="setU('months')">Months</button></div></div><div class="cc"><button class="cb" onclick="adj(-1)">−</button><div><div class="cv" id="fc">2</div><div class="cu" id="fu">Months</div></div><button class="cb" onclick="adj(1)">+</button></div></div></div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m" style="font-size:17px;color:var(--sec);">hourglass_bottom</span>Grace Period</div>
         <div style="background:var(--w);border-radius:12px;padding:14px;">
@@ -295,7 +302,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 </div>
 
 <!-- MODALS -->
-<div id="am" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Record New Asset</div><div class="fi"><label>Asset Name</label><input id="an" type="text" placeholder="e.g. ANZ Savings Account"/></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>Category</label><select id="ac2"><option>Bank account</option><option>Property</option><option>Investment</option><option>Superannuation</option><option>Life insurance</option><option>Vehicle</option><option>Cryptocurrency</option><option>Business</option><option>Personal item</option><option>Digital account</option><option>Other</option></select></div><div class="fi"><label>Est. Value ($)</label><input id="av" type="number" placeholder="0"/></div></div><div class="fi"><label>Details</label><textarea id="adet" placeholder="e.g. Account held at ANZ Bank, BSB 123-456, account ending 4421..."></textarea></div><div class="fi"><label>Beneficiary</label><input id="ab2" type="text" placeholder="e.g. Jane Smith (spouse)"/></div><div class="fi"><label>Notes</label><textarea id="ano" placeholder="Additional instructions..."></textarea></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveA()">Save Asset</button></div></div></div>
+<!-- F25: Asset modal now supports both Add and Edit -->
+<div id="am" class="mo"><div class="ms"><div class="mh"></div><div class="mt" id="am-title">Record New Asset</div><input type="hidden" id="am-edit-id" value=""/><div class="fi"><label>Asset Name</label><input id="an" type="text" placeholder="e.g. ANZ Savings Account"/></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>Category</label><select id="ac2"><option>Bank account</option><option>Property</option><option>Investment</option><option>Superannuation</option><option>Life insurance</option><option>Vehicle</option><option>Cryptocurrency</option><option>Business</option><option>Personal item</option><option>Digital account</option><option>Other</option></select></div><div class="fi"><label>Est. Value ($)</label><input id="av" type="number" placeholder="0"/></div></div><div class="fi"><label>Details</label><textarea id="adet" placeholder="e.g. Account held at ANZ Bank, BSB 123-456, account ending 4421..."></textarea></div><div class="fi"><label>Beneficiary</label><input id="ab2" type="text" placeholder="e.g. Jane Smith (spouse)"/></div><div class="fi"><label>Notes</label><textarea id="ano" placeholder="Additional instructions..."></textarea></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveA()" id="am-save-btn">Save Asset</button></div></div></div>
 
 <div id="wm" class="mo"><div class="ms"><div class="mh"></div><div class="mt" id="wm-title">Record a Wish</div><input type="hidden" id="wm-edit-id" value=""/><div class="fi"><label>Category</label><select id="wc2"><option>Funeral & Service</option><option>Medical / end of life care</option><option>Guardian for children</option><option>Pet care</option><option>Business succession</option><option>Digital accounts</option><option>Personal message</option><option>Charitable giving</option><option>Other</option></select></div><div class="fi"><label>Wish</label><input id="wt" type="text" placeholder="e.g. I would like to be cremated"/></div><div class="fi"><label>Details</label><textarea id="wd" placeholder="Add any additional context or instructions..."></textarea></div><div class="fi"><label>Priority</label><select id="wp"><option value="high">High — must be followed</option><option value="medium" selected>Medium — strongly preferred</option><option value="low">Low — would be nice</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveW()" id="wm-save-btn">Save Wish</button></div></div></div>
 
@@ -303,7 +311,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 
 <div id="sdm" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Attach Document</div><div class="fi"><label>Document type</label><select id="sd-type"><option>Statement of Wishes</option><option>Enduring Power of Attorney</option><option>Advance Health Directive</option><option>Guardianship Nomination</option><option>Funeral Pre-arrangement</option><option>Business Succession Plan</option><option>Other</option></select></div><div class="fi"><label>Document name</label><input id="sd-name" type="text" placeholder="e.g. Statement of Wishes — 2024"/></div><div class="fi"><label>Where is this document stored?</label><input id="sd-loc" type="text" placeholder="e.g. Google Drive, home safe, solicitor"/></div><div class="fi"><label>Notes</label><textarea id="sd-notes" placeholder="Any additional context..."></textarea></div><div style="background:var(--sl);border-radius:10px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;"><span class="m" style="font-size:18px;color:var(--sec);">info</span><span style="font-size:12px;color:var(--ov);line-height:1.4;">File uploads will be available when the app connects to secure cloud storage. For now, record where the document is located.</span></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveSupp()">Save document</button></div></div></div>
 
-<div id="km" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Add Contact</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>First Name</label><input id="kf" type="text" placeholder="Jane"/></div><div class="fi"><label>Last Name</label><input id="kl" type="text" placeholder="Smith"/></div></div><div class="fi"><label>Relationship</label><input id="kr" type="text" placeholder="e.g. Spouse, Child, Solicitor"/></div><div class="fi"><label>Email</label><input id="ke" type="email" placeholder="jane@email.com"/></div><div class="fi"><label>Phone</label><input id="kp" type="tel" placeholder="+61 4xx xxx xxx"/></div><div class="fi"><label>Notify via</label><select id="k-notify"><option value="email">Email</option><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option><option value="email_and_sms">Email + SMS</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveK()">Add Contact</button></div></div></div>
+<!-- F25: Contact modal now supports both Add and Edit -->
+<div id="km" class="mo"><div class="ms"><div class="mh"></div><div class="mt" id="km-title">Add Contact</div><input type="hidden" id="km-edit-id" value=""/><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>First Name</label><input id="kf" type="text" placeholder="Jane"/></div><div class="fi"><label>Last Name</label><input id="kl" type="text" placeholder="Smith"/></div></div><div class="fi"><label>Relationship</label><input id="kr" type="text" placeholder="e.g. Spouse, Child, Solicitor"/></div><div class="fi"><label>Email</label><input id="ke" type="email" placeholder="jane@email.com"/></div><div class="fi"><label>Phone</label><input id="kp" type="tel" placeholder="+61 4xx xxx xxx"/></div><div class="fi"><label>Notify via</label><select id="k-notify"><option value="email">Email</option><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option><option value="email_and_sms">Email + SMS</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveK()" id="km-save-btn">Add Contact</button></div></div></div>
 
 <!-- F03: Personal Letter Modal -->
 <div id="lm" class="mo">
@@ -311,7 +320,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div class="mh"></div>
     <input type="hidden" id="lm-kin-id" value=""/>
     <div class="mt" id="lm-title">Write a personal letter</div>
-    <!-- Warm prompt to encourage writing -->
     <div style="background:var(--al);border:1px solid var(--ab);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;">
       <span class="m mf" style="font-size:18px;color:var(--ac);flex-shrink:0;margin-top:1px;">favorite</span>
       <p style="font-size:13px;color:var(--ov);line-height:1.5;">This letter will appear on the first page of the package <strong id="lm-name-hint">this person</strong> receives. Write whatever feels right — it doesn't need to be perfect.</p>
@@ -335,7 +343,9 @@ function load(){try{const d=localStorage.getItem('ee_v3');if(d){const p=JSON.par
 function save(){try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){}render();}
 function go(s){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));document.getElementById('s-'+s).classList.add('on');document.getElementById('n-'+s).classList.add('on');document.querySelector('.body').scrollTop=0;}
 function openM(id,cat){
+  if(id==='am'){document.getElementById('am-edit-id').value='';document.getElementById('am-title').textContent='Record New Asset';document.getElementById('am-save-btn').textContent='Save Asset';['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');document.getElementById('ac2').selectedIndex=0;}
   if(id==='wm'){document.getElementById('wm-edit-id').value='';document.getElementById('wm-title').textContent='Record a Wish';document.getElementById('wm-save-btn').textContent='Save Wish';['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wp').value='medium';}
+  if(id==='km'){document.getElementById('km-edit-id').value='';document.getElementById('km-title').textContent='Add Contact';document.getElementById('km-save-btn').textContent='Add Contact';['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');document.getElementById('k-notify').value='email';}
   if(cat&&id==='wm')document.getElementById('wc2').value=cat;
   if(cat&&id==='sdm')document.getElementById('sd-type').value=cat;
   document.getElementById(id).classList.add('on');
@@ -343,7 +353,6 @@ function openM(id,cat){
 function closeM(){document.querySelectorAll('.mo').forEach(e=>e.classList.remove('on'));}
 document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeM();}));
 
-// F03: Open letter modal for a specific contact
 function openLetter(kinId){
   const k=S.kin.find(x=>x.id===kinId);
   if(!k)return;
@@ -354,7 +363,6 @@ function openLetter(kinId){
   document.getElementById('lm').classList.add('on');
 }
 
-// F03: Save letter to the contact object
 function saveLetter(){
   const kinId=parseInt(document.getElementById('lm-kin-id').value);
   const text=document.getElementById('lt').value.trim();
@@ -367,16 +375,105 @@ function saveLetter(){
   toast(text?'Letter saved ✓':'Letter cleared');
 }
 
-function saveA(){const n=document.getElementById('an').value.trim();if(!n){toast('Please enter an asset name');return;}S.assets.push({id:Date.now(),name:n,category:document.getElementById('ac2').value,value:parseFloat(document.getElementById('av').value)||0,details:document.getElementById('adet').value,beneficiary:document.getElementById('ab2').value,notes:document.getElementById('ano').value});log('Asset added: '+n);closeM();['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');save();toast('Asset saved ✓');}
+// F25: saveA now supports both Add and Edit
+function saveA(){
+  const n=document.getElementById('an').value.trim();
+  if(!n){toast('Please enter an asset name');return;}
+  const editId=document.getElementById('am-edit-id').value;
+  const data={
+    name:n,
+    category:document.getElementById('ac2').value,
+    value:parseFloat(document.getElementById('av').value)||0,
+    details:document.getElementById('adet').value,
+    beneficiary:document.getElementById('ab2').value,
+    notes:document.getElementById('ano').value
+  };
+  if(editId){
+    const idx=S.assets.findIndex(a=>a.id===parseInt(editId));
+    if(idx>=0){Object.assign(S.assets[idx],data);log('Asset updated: '+n);}
+  }else{
+    S.assets.push({id:Date.now(),...data});
+    log('Asset added: '+n);
+  }
+  closeM();
+  ['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('am-edit-id').value='';
+  save();
+  toast(editId?'Asset updated ✓':'Asset saved ✓');
+}
+
+// F25: editA opens the asset modal pre-filled
+function editA(id){
+  const a=S.assets.find(x=>x.id===id);
+  if(!a)return;
+  document.getElementById('am-edit-id').value=id;
+  document.getElementById('an').value=a.name;
+  document.getElementById('ac2').value=a.category;
+  document.getElementById('av').value=a.value||'';
+  document.getElementById('adet').value=a.details||'';
+  document.getElementById('ab2').value=a.beneficiary||'';
+  document.getElementById('ano').value=a.notes||'';
+  document.getElementById('am-title').textContent='Edit Asset';
+  document.getElementById('am-save-btn').textContent='Update Asset';
+  document.getElementById('am').classList.add('on');
+}
+
 function saveW(){const t=document.getElementById('wt').value.trim();if(!t){toast('Please enter a wish');return;}const editId=document.getElementById('wm-edit-id').value;if(editId){const idx=S.wishes.findIndex(w=>w.id===parseInt(editId));if(idx>=0){S.wishes[idx].category=document.getElementById('wc2').value;S.wishes[idx].title=t;S.wishes[idx].details=document.getElementById('wd').value;S.wishes[idx].priority=document.getElementById('wp').value;log('Wish updated: '+t);}}else{S.wishes.push({id:Date.now(),category:document.getElementById('wc2').value,title:t,details:document.getElementById('wd').value,priority:document.getElementById('wp').value});log('Wish recorded: '+t);}closeM();['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wm-edit-id').value='';save();toast(editId?'Wish updated ✓':'Wish recorded ✓');}
 function editW(id){const w=S.wishes.find(x=>x.id===id);if(!w)return;document.getElementById('wm-edit-id').value=id;document.getElementById('wc2').value=w.category;document.getElementById('wt').value=w.title;document.getElementById('wd').value=w.details||'';document.getElementById('wp').value=w.priority||'medium';document.getElementById('wm-title').textContent='Edit Wish';document.getElementById('wm-save-btn').textContent='Update Wish';document.getElementById('wm').classList.add('on');}
-function delW(id){S.wishes=S.wishes.filter(w=>w.id!==id);log('Wish removed');save();toast('Removed');}
+function delW(id){S.wishes=S.wishes.filter(w=>w.id!==id);log('Wish removed');save();toast('Removed ✓');}
 function saveWill(){S.will={status:document.getElementById('wl-status').value,date:document.getElementById('wl-date').value,solicitor:document.getElementById('wl-solicitor').value,loc1:document.getElementById('wl-loc1').value,loc2:document.getElementById('wl-loc2').value,notes:document.getElementById('wl-notes').value};log('Will details recorded');closeM();save();toast('Will details saved ✓');}
 function saveSupp(){const n=document.getElementById('sd-name').value.trim();if(!n){toast('Please enter a document name');return;}if(!S.suppDocs)S.suppDocs=[];S.suppDocs.push({id:Date.now(),type:document.getElementById('sd-type').value,name:n,loc:document.getElementById('sd-loc').value,notes:document.getElementById('sd-notes').value});log('Document recorded: '+n);closeM();['sd-name','sd-loc','sd-notes'].forEach(i=>document.getElementById(i).value='');save();toast('Document saved ✓');}
-function delSupp(id){S.suppDocs=S.suppDocs.filter(d=>d.id!==id);log('Document removed');save();toast('Removed');}
-function saveK(){const f=document.getElementById('kf').value.trim();if(!f){toast('Please enter a first name');return;}S.kin.push({id:Date.now(),first:f,last:document.getElementById('kl').value.trim(),rel:document.getElementById('kr').value,email:document.getElementById('ke').value,phone:document.getElementById('kp').value,notifyVia:document.getElementById('k-notify').value,order:S.kin.length+1,letter:''});log('Contact added: '+f);closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');save();toast('Contact added ✓');}
-function delA(id){S.assets=S.assets.filter(a=>a.id!==id);log('Asset removed');save();toast('Removed');}
-function delK(id){S.kin=S.kin.filter(k=>k.id!==id);S.kin.forEach((k,i)=>k.order=i+1);log('Contact removed');save();toast('Removed');}
+function delSupp(id){S.suppDocs=S.suppDocs.filter(d=>d.id!==id);log('Document removed');save();toast('Removed ✓');}
+
+// F25: saveK now supports both Add and Edit
+function saveK(){
+  const f=document.getElementById('kf').value.trim();
+  if(!f){toast('Please enter a first name');return;}
+  const editId=document.getElementById('km-edit-id').value;
+  const data={
+    first:f,
+    last:document.getElementById('kl').value.trim(),
+    rel:document.getElementById('kr').value,
+    email:document.getElementById('ke').value,
+    phone:document.getElementById('kp').value,
+    notifyVia:document.getElementById('k-notify').value
+  };
+  if(editId){
+    const idx=S.kin.findIndex(k=>k.id===parseInt(editId));
+    if(idx>=0){
+      // Preserve order and letter when editing
+      Object.assign(S.kin[idx],data);
+      log('Contact updated: '+f);
+    }
+  }else{
+    S.kin.push({id:Date.now(),...data,order:S.kin.length+1,letter:''});
+    log('Contact added: '+f);
+  }
+  closeM();
+  ['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('km-edit-id').value='';
+  save();
+  toast(editId?'Contact updated ✓':'Contact added ✓');
+}
+
+// F25: editK opens the contact modal pre-filled
+function editK(id){
+  const k=S.kin.find(x=>x.id===id);
+  if(!k)return;
+  document.getElementById('km-edit-id').value=id;
+  document.getElementById('kf').value=k.first;
+  document.getElementById('kl').value=k.last||'';
+  document.getElementById('kr').value=k.rel||'';
+  document.getElementById('ke').value=k.email||'';
+  document.getElementById('kp').value=k.phone||'';
+  document.getElementById('k-notify').value=k.notifyVia||'email';
+  document.getElementById('km-title').textContent='Edit Contact';
+  document.getElementById('km-save-btn').textContent='Update Contact';
+  document.getElementById('km').classList.add('on');
+}
+
+function delA(id){S.assets=S.assets.filter(a=>a.id!==id);log('Asset removed');save();toast('Removed ✓');}
+function delK(id){S.kin=S.kin.filter(k=>k.id!==id);S.kin.forEach((k,i)=>k.order=i+1);log('Contact removed');save();toast('Removed ✓');}
 function moveK(id,dir){const idx=S.kin.findIndex(k=>k.id===id);if(idx<0)return;const ni=idx+dir;if(ni<0||ni>=S.kin.length)return;[S.kin[idx],S.kin[ni]]=[S.kin[ni],S.kin[idx]];S.kin.forEach((k,i)=>k.order=i+1);save();}
 function checkin(){S.lastCheckin=Date.now();log('Check-in confirmed — alive');save();toast('You\'re confirmed alive ✓');}
 let fUnit='months',fCount=2;
@@ -458,9 +555,6 @@ function generatePDF(kinId) {
     y += lines.length * 4.5 + 3;
   }
 
-  // ════════════════════════════════════════════════
-  // PAGE 1 — COVER
-  // ════════════════════════════════════════════════
   fillRect(0, 0, W, 52, NAVY);
   doc.setFillColor(0, 45, 94);
   doc.rect(0, 46, W, 6, 'F');
@@ -475,7 +569,6 @@ function generatePDF(kinId) {
 
   y = 65;
 
-  // Intro note
   fillRect(ML, y, CW, 28, [232, 240, 255]);
   doc.setDrawColor(...TEAL);
   doc.setLineWidth(1);
@@ -491,28 +584,20 @@ function generatePDF(kinId) {
   doc.text(introLines, ML + 5, y + 13);
   y += 36;
 
-  // ── F03: Personal Letter section ──
-  // Shows the real letter if written; placeholder if not
   sectionHeader('Personal Letter');
 
   if (k.letter && k.letter.trim()) {
-    // Render the actual letter with a warm card style
     const letterLines = wrap(k.letter.trim(), CW - 16);
     const letterHeight = Math.max(40, letterLines.length * 5.5 + 20);
     checkPage(letterHeight);
-
-    // Soft card background
     fillRect(ML, y, CW, letterHeight, [248, 249, 251]);
     doc.setDrawColor(...TEAL);
     doc.setLineWidth(1.2);
-    doc.line(ML, y, ML, y + letterHeight); // teal left accent
-
-    // Italic letter body
+    doc.line(ML, y, ML, y + letterHeight);
     setFont(10, 'italic', NAVY);
     doc.text(letterLines, ML + 7, y + 10);
     y += letterHeight + 8;
   } else {
-    // Placeholder shown when no letter written
     fillRect(ML, y, CW, 38, [248, 249, 251]);
     doc.setDrawColor(200, 210, 220);
     doc.setLineWidth(0.4);
@@ -528,9 +613,6 @@ function generatePDF(kinId) {
     y += 46;
   }
 
-  // ─────────────────────────────────────────
-  // PAGE 2 — ACTION CHECKLIST
-  // ─────────────────────────────────────────
   doc.addPage();
   y = MT;
   fillRect(0, 0, W, 14, NAVY);
@@ -566,9 +648,6 @@ function generatePDF(kinId) {
     divider();
   });
 
-  // ─────────────────────────────────────────
-  // PAGE 3 — WILL & LEGAL DOCUMENTS
-  // ─────────────────────────────────────────
   doc.addPage();
   y = MT;
   fillRect(0, 0, W, 14, NAVY);
@@ -613,9 +692,6 @@ function generatePDF(kinId) {
     });
   }
 
-  // ─────────────────────────────────────────
-  // PAGE 4 — ASSET REGISTER
-  // ─────────────────────────────────────────
   doc.addPage();
   y = MT;
   fillRect(0, 0, W, 14, NAVY);
@@ -671,9 +747,6 @@ function generatePDF(kinId) {
     });
   }
 
-  // ─────────────────────────────────────────
-  // PAGE 5 — WISHES
-  // ─────────────────────────────────────────
   doc.addPage();
   y = MT;
   fillRect(0, 0, W, 14, NAVY);
@@ -718,9 +791,6 @@ function generatePDF(kinId) {
     });
   }
 
-  // ─────────────────────────────────────────
-  // PAGE 6 — KEY CONTACTS
-  // ─────────────────────────────────────────
   doc.addPage();
   y = MT;
   fillRect(0, 0, W, 14, NAVY);
@@ -758,9 +828,6 @@ function generatePDF(kinId) {
     });
   }
 
-  // ─────────────────────────────────────────
-  // FOOTER — every page
-  // ─────────────────────────────────────────
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -779,7 +846,6 @@ function generatePDF(kinId) {
   save();
   toast('Package downloaded ✓');
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 function render(){
   const{pct,tips}=comp();
@@ -788,10 +854,17 @@ function render(){
   document.getElementById('cp-tips').innerHTML=tips.length===0?'<div style="color:var(--ac);font-size:13px;font-weight:600;padding:2px 0;">Home complete — well done!</div>':tips.map(t=>'<div class="ct"><span class="m" style="font-size:14px;color:var(--ac);flex-shrink:0;">arrow_circle_right</span><span>'+t+'</span></div>').join('');
   if(S.lastCheckin){const dU=S.fu==='months'?(S.fc||2)*30:(S.fc||2)*7;const nd=new Date(S.lastCheckin+dU*86400000);document.getElementById('d-next').textContent=nd.toLocaleDateString('en-AU',{day:'numeric',month:'short'});const dl=Math.max(0,Math.ceil(dU-(Date.now()-S.lastCheckin)/86400000));document.getElementById('d-days').textContent=dl;const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);document.getElementById('lc-lbl').textContent=ago===0?'Confirmed today':'Confirmed '+ago+' day'+(ago!==1?'s':'')+' ago';}else{document.getElementById('d-next').textContent='Not set';document.getElementById('d-days').textContent='—';}
   document.getElementById('d-act').innerHTML=S.log.length===0?'<div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No activity yet</div>':S.log.slice(0,5).map(l=>'<div class="ai"><div class="aico"><span class="m">history</span></div><div><div style="font-weight:700;font-size:13px;color:var(--p);line-height:1.2;">'+l.msg+'</div><div style="font-size:11px;color:var(--ov);margin-top:1px;">'+l.time+'</div></div></div>').join('');
+
+  // ── F23: Warm empty states for Ledger ──
   const cats=['Bank account','Property','Investment','Superannuation','Life insurance','Vehicle','Cryptocurrency','Business','Personal item','Digital account','Other'];
   const lel=document.getElementById('l-content');
-  if(!S.assets.length){lel.innerHTML='<div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No assets recorded yet.</div>';}
-  else{const ac=cats.filter(c=>S.assets.some(a=>a.category===c));lel.innerHTML=ac.map(cat=>{const items=S.assets.filter(a=>a.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(icons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(a=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(icons[a.category]||'category')+'</span></div><div class="lib"><div class="lit">'+a.name+'</div><div class="lis">'+(a.details?a.details.substring(0,40)+(a.details.length>40?'...':''):a.category)+(a.beneficiary?' · '+a.beneficiary:'')+'</div></div><div style="display:flex;align-items:center;gap:6px;">'+(a.value?'<span style="font-size:12px;font-weight:700;color:var(--p);">$'+Math.round(a.value).toLocaleString()+'</span>':'')+'<button onclick="delA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');}
+  if(!S.assets.length){
+    lel.innerHTML='<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">account_balance</span></div><div class="empty-title">No assets yet — and that\'s okay</div><div class="empty-sub">Start with one, even something small like a bank account. You can always add more later.</div><button class="empty-cta" onclick="openM(\'am\')"><span class="m">add</span>Record your first asset</button></div>';
+  }else{
+    const ac=cats.filter(c=>S.assets.some(a=>a.category===c));
+    // F25: Added edit button to each asset row
+    lel.innerHTML=ac.map(cat=>{const items=S.assets.filter(a=>a.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(icons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(a=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(icons[a.category]||'category')+'</span></div><div class="lib"><div class="lit">'+a.name+'</div><div class="lis">'+(a.details?a.details.substring(0,40)+(a.details.length>40?'...':''):a.category)+(a.beneficiary?' · '+a.beneficiary:'')+'</div></div><div style="display:flex;align-items:center;gap:6px;">'+(a.value?'<span style="font-size:12px;font-weight:700;color:var(--p);">$'+Math.round(a.value).toLocaleString()+'</span>':'')+'<button onclick="editA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');
+  }
   document.getElementById('l-pct').textContent=pct+'%';
   const wb=document.getElementById('will-badge'),wtd=document.getElementById('will-title-display'),wld=document.getElementById('will-loc-display');
   if(S.will){wb.textContent=willStatusLabel[S.will.status]||S.will.status;wb.className='tag '+(S.will.status==='signed'?'tw':'ts');wtd.textContent=S.will.solicitor?'Will held by '+S.will.solicitor:'Will details recorded';wld.textContent=S.will.loc1||'Location not specified';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit</span> Edit Will details';}else{wb.textContent='Not recorded';wb.className='tag ts';wtd.textContent='No Will recorded yet';wld.textContent='Tap below to add your Will details';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit_note</span> Record Will details';}
@@ -801,16 +874,23 @@ function render(){
   document.getElementById('sow-nudge').style.display=sowDoc?'none':'block';
   document.getElementById('sow-done').style.display=sowDoc?'block':'none';
   if(sowDoc)document.getElementById('sow-loc').textContent=sowDoc.loc?'Stored at: '+sowDoc.loc:'Location recorded';
+
+  // ── F23: Warm empty state for Wishes ──
   const wishCats=['Funeral & Service','Medical / end of life care','Guardian for children','Pet care','Business succession','Digital accounts','Personal message','Charitable giving','Other'];
   const wishIcons={'Funeral & Service':'church','Medical / end of life care':'medical_services','Guardian for children':'family_restroom','Pet care':'pets','Business succession':'business','Digital accounts':'devices','Personal message':'mail','Charitable giving':'volunteer_activism','Other':'category'};
   const priColors={high:'td',medium:'ts',low:'ta'};
   const wel=document.getElementById('w-content');
-  if(!S.wishes.length){wel.innerHTML='<div style="text-align:center;padding:28px 0;color:var(--ov);font-size:13px;">No wishes recorded yet.</div>';}
-  else{const ac2=wishCats.filter(c=>S.wishes.some(w=>w.category===c));wel.innerHTML=ac2.map(cat=>{const items=S.wishes.filter(w=>w.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(wishIcons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(wishIcons[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+(w.details?w.details.substring(0,40)+(w.details.length>40?'...':''):w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(priColors[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');}
+  if(!S.wishes.length){
+    wel.innerHTML='<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">auto_stories</span></div><div class="empty-title">No wishes recorded yet</div><div class="empty-sub">What would you like your people to know? Start with something that matters to you — it doesn\'t have to be everything at once.</div><button class="empty-cta" onclick="openM(\'wm\')"><span class="m">add</span>Record your first wish</button></div>';
+  }else{
+    const ac2=wishCats.filter(c=>S.wishes.some(w=>w.category===c));
+    wel.innerHTML=ac2.map(cat=>{const items=S.wishes.filter(w=>w.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(wishIcons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(wishIcons[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+(w.details?w.details.substring(0,40)+(w.details.length>40?'...':''):w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(priColors[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');
+  }
 
-  // ── Contact cards with letter status + buttons ──
+  // ── Contact cards with letter status + buttons + F25: edit + F29: email/phone display ──
   document.getElementById('k-list').innerHTML=S.kin.length===0
-    ?'<div style="text-align:center;padding:14px 0;color:var(--ov);font-size:13px;">No contacts added yet.</div>'
+    // F23: Warm empty state for Contacts
+    ?'<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">group</span></div><div class="empty-title">No contacts added yet</div><div class="empty-sub">Who should be contacted if something happens to you? Add someone you trust — you can always update this later.</div><button class="empty-cta" onclick="openM(\'km\')"><span class="m">add</span>Add your first contact</button></div>'
     :S.kin.map((k,i)=>{
       const hasLetter=!!(k.letter&&k.letter.trim());
       const letterPill=hasLetter
@@ -827,16 +907,20 @@ function render(){
           </div>
           ${letterPill}
         </div>
-        <div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
           <span class="m" style="font-size:14px;color:var(--sec);">${notifyIcons[k.notifyVia]||'email'}</span>
           <span style="font-size:11px;color:var(--ov);">Notify via ${notifyLabels[k.notifyVia]||'Email'}</span>
         </div>
+        ${k.email?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;"><span class="m" style="font-size:13px;color:var(--ov2);">mail</span><span style="font-size:11px;color:var(--ov);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${k.email}</span></div>`:''}
+        ${k.phone?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;"><span class="m" style="font-size:13px;color:var(--ov2);">phone</span><span style="font-size:11px;color:var(--ov);">${k.phone}</span></div>`:'<div style="margin-bottom:8px;"></div>'}
         <div style="display:flex;gap:10px;align-items:center;">
           <span style="font-size:11px;font-weight:700;color:var(--sec);background:var(--sl);padding:3px 10px;border-radius:99px;">#${i+1}</span>
           <button onclick="moveK(${k.id},-1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_upward</span></button>
           <button onclick="moveK(${k.id},1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_downward</span></button>
           <span style="flex:1;"></span>
-          <span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK(${k.id})"><span class="m" style="font-size:13px;">delete</span>Remove</span>
+          <!-- F25: Edit button for contacts -->
+          <span style="font-size:12px;font-weight:600;color:var(--sec);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="editK(${k.id})"><span class="m" style="font-size:13px;">edit</span>Edit</span>
+          <span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK(${k.id})"><span class="m" style="font-size:13px;">delete</span></span>
         </div>
         <button class="letter-btn ${hasLetter?'written':''}" onclick="openLetter(${k.id})">
           <span class="m" style="font-size:16px;">${hasLetter?'edit':'edit_note'}</span>
