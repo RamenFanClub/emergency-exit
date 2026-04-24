@@ -104,7 +104,7 @@ Planned platforms:
   - Will status badge: Not recorded / Draft / Signed & witnessed
   - Will details: status, date signed, solicitor, primary location, secondary location, notes
   - Supplementary Documents list with delete per item
-  - Attach document button
+  - Attach document button (`.ob` style in section header)
 - **Statement of Wishes prompt** (orange accent card — prominent nudge):
   - Shows when Statement of Wishes has NOT been recorded
   - Transforms to green confirmation card when recorded, showing storage location
@@ -118,7 +118,7 @@ Planned platforms:
 
 ### 4. Contact
 - Title: "Contacts", subtitle: "People to notify and how to reach them"
-- Section: "My Contacts" with Add Contact button
+- Section: "My Contacts" with Add Contact button (`.ob` style in section header)
 - Contact cards showing:
   - Initials avatar (navy gradient)
   - Full name + relationship
@@ -166,6 +166,8 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 - **Gradient buttons:** Full-width, 18px padding, 3px border-bottom for depth, active scale(0.97)
 - **Compact action buttons:** Pill-shaped, side by side, 10px vertical padding
 - **Cards:** `border-radius: 16px`, `#f2f4f6` or white with ambient shadow
+- **Card background rule (F27):** `.cardw` (white + shadow) = interactive or primary sections. `.card` (grey) = informational or contextual grouping containers. Never mix these up.
+- **Secondary add-action buttons (F26):** All "add" actions in section headers use `.ob` style (navy outlined pill). The only exceptions are the Home screen quick-action pills (`.qb`) which are primary actions, not section header adds.
 - **Tags/badges:** Uppercase, 10px, pill-shaped
 - **Toast notifications:** Fixed, centred, navy pill, auto-dismiss 2.4s
 - **Stepper controls:** − value + (used for frequency and grace period)
@@ -339,6 +341,8 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - Do not use `s-vault` or `n-vault` as element IDs — they are now `s-home` and `n-home`
 - **Do not reintroduce contact access levels (Executor / Full / Wishes only) — deliberately removed. All contacts receive the full package.**
 - Do not remove the personal letter prompt from the letter modal — it sets the right emotional tone for users
+- Do not use `.cardw` for informational/contextual containers — use `.card` (grey). `.cardw` is reserved for interactive or primary content only (F27).
+- Do not use non-`.ob` styles for secondary add-action buttons in section headers (F26). The only exception is the Home screen quick-action pills (`.qb`).
 
 ---
 
@@ -396,8 +400,8 @@ These features address UX audit findings: visual consistency, tone of voice, emp
 | F23 | As a first-time user, I want encouraging empty states with a clear next step and warm copy, so I feel guided rather than confronted by blank screens. | Must | done | Warm empty states with icon, headline, encouraging sub-text, and CTA button added to Ledger, Wishes, and Contacts. Uses `.empty-state` CSS class. |
 | F24 | As a user, I want all screen subtitles and headlines to use calm, grounded language instead of marketing-speak, so the app feels like a trusted guide rather than a sales pitch. | Must | done | Rewrites applied: Home hero → "Everything is in order." / Ledger → "A record of what you have, so the right people know where to find it." / Wishes → "What matters to you, written down so it's not forgotten." / Settings → "Set how often you check in and what happens if you don't." / Check-in label → "TAP TO CHECK IN". / Record New Asset subtitle → "Add anything your people should know about". / `.ps` bumped to 15px/500wt. |
 | F25 | As a user, I want to edit my assets and contacts (not just delete and re-add), so I can fix mistakes without losing data. | Must | done | `editA()` and `editK()` functions added. Asset and contact modals now support both Add and Edit modes (hidden `*-edit-id` field, dynamic title/button text). Edit icons added to asset rows and contact cards. Existing data preserved on edit (contact order and letter kept). |
-| F26 | As a user, I want the "add" action on every screen to follow the same visual pattern, so I don't have to re-learn the interface on each tab. | Should | specified | Currently: Home uses pill buttons, Ledger uses `.gbtn`, Contacts uses outlined `.ob` button. Standardise secondary "add" actions to `.ob` style in section headers. |
-| F27 | As a user, I want card backgrounds (grey vs white) to follow a clear visual rule, so the screen hierarchy makes sense at a glance. | Should | specified | Rule: `.cardw` (white + shadow) for interactive/primary sections; `.card` (grey) for informational/contextual content. Audit and apply across all screens. |
+| F26 | As a user, I want the "add" action on every screen to follow the same visual pattern, so I don't have to re-learn the interface on each tab. | Should | done | All secondary add-actions in section headers now use `.ob` style (navy outlined pill button). Supp docs "Attach" button moved into section header as `.ob`. Home quick-action pills (`.qb`) deliberately preserved — they are primary Home actions, not section header adds. |
+| F27 | As a user, I want card backgrounds (grey vs white) to follow a clear visual rule, so the screen hierarchy makes sense at a glance. | Should | done | Rule enforced across all screens: `.cardw` (white + shadow) = interactive or primary sections; `.card` (grey) = informational or contextual grouping containers. Rule also documented in Key UI Patterns and What NOT to Do sections of this file. |
 | F28 | As a user, I want section headers to follow a consistent layout pattern across all screens, so the app feels cohesive. | Should | done | Home activity header changed from text-link to `.ob` button. All section headers now use `.sh` row with consistent left/right elements. |
 | F29 | As a user, I want to see my contacts' email and phone number on their card, so I can verify the details are correct without opening anything. | Should | done | Compact email and phone lines added below notification method on contact cards, with mail/phone icons and text overflow handling. |
 | F30 | As a user, I want the Vitality Pulse to be less prominent until I've set up my vault, so I'm guided toward adding content first rather than checking in to an empty vault. | Should | specified | De-emphasise pulse when completeness < 40%. Promote completeness card + top tip as the primary Home element for new users. |

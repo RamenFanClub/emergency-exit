@@ -26,7 +26,9 @@ html,body{height:100%;background:#f8f9fb;font-family:var(--fb);color:var(--os);-
 .mf{font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 40;}
 .ph{font-family:var(--fh);font-weight:800;font-size:28px;color:var(--p);letter-spacing:-.5px;line-height:1.15;margin-bottom:4px;}
 .ps{font-size:15px;font-weight:500;color:var(--ov);margin-bottom:20px;line-height:1.4;}
+/* F27: .card = grey background = informational/contextual content */
 .card{background:var(--sl);border-radius:var(--rc);padding:16px;margin-bottom:14px;}
+/* F27: .cardw = white + shadow = interactive/primary content */
 .cardw{background:var(--w);border-radius:var(--rc);padding:16px;margin-bottom:14px;box-shadow:var(--cs);}
 .gbtn{background:var(--g);border:none;border-radius:var(--rb);padding:18px 20px;display:flex;align-items:center;gap:14px;width:100%;cursor:pointer;text-align:left;box-shadow:0 4px 16px rgba(0,33,71,.28);border-bottom:3px solid rgba(0,0,0,.22);transition:transform .1s;margin-bottom:10px;}
 .gbtn:active{transform:scale(.97);}
@@ -75,7 +77,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .rd{width:22px;height:22px;border-radius:50%;border:2px solid var(--ov2);display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .rd.on{border-color:var(--ac);background:var(--ac);}
 .rd.on::after{content:'';width:8px;height:8px;border-radius:50%;background:#fff;}
-.kc{background:var(--w);border-radius:var(--rc);padding:14px;margin-bottom:10px;}
+.kc{background:var(--w);border-radius:var(--rc);padding:14px;margin-bottom:10px;box-shadow:var(--cs);}
 .kt{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
 .ka{width:48px;height:48px;border-radius:12px;background:var(--g);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:18px;font-weight:800;color:#fff;flex-shrink:0;}
 .pb{background:var(--g);border-radius:var(--rc);padding:16px;}
@@ -85,6 +87,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .pab{background:rgba(255,255,255,.13);border:none;border-radius:10px;padding:12px;width:100%;color:rgba(255,255,255,.75);font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;}
 .cfb{background:var(--g);border:none;border-radius:var(--rb);padding:18px;width:100%;font-family:var(--fh);font-size:17px;font-weight:800;color:#fff;cursor:pointer;box-shadow:0 4px 16px rgba(0,33,71,.28);border-bottom:3px solid rgba(0,0,0,.2);transition:transform .1s;}
 .cfb:active{transform:scale(.97);}
+/* F27: info boxes stay grey — they are purely informational */
 .ib2{background:rgba(0,33,71,.04);border:1px dashed rgba(0,33,71,.18);border-radius:12px;padding:14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;}
 .ib2 p{font-size:13px;color:var(--ov);line-height:1.5;}
 .ss{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--al);border:1px solid var(--ab);border-radius:var(--rp);padding:10px 20px;margin-bottom:16px;}
@@ -110,9 +113,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .ct span{font-size:13px;color:var(--ov);}
 .nc{display:flex;align-items:center;justify-content:space-between;background:var(--w);border-radius:var(--rc);padding:14px 16px;}
 .ncb{width:40px;height:40px;border-radius:50%;background:var(--p);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+/* F26: .ob is the standard secondary action button used in all section headers */
 .ob{background:none;border:1.5px solid var(--p);border-radius:var(--rp);padding:8px 14px;font-size:13px;font-weight:700;color:var(--p);cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--fb);}
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--p);color:#fff;border-radius:var(--rp);padding:11px 22px;font-size:13px;font-weight:700;z-index:300;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+/* F26: Home quick-action pills — kept as-is since they are primary actions (not section header adds) */
 .qa{display:flex;gap:8px;margin-bottom:12px;}
 .qb{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;border-radius:var(--rp);border:none;cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;transition:transform .1s;flex:1;}
 .qb:active{transform:scale(.96);}
@@ -162,20 +167,27 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div style="width:34px;height:34px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;"><span class="m" style="font-size:19px;color:#fff;">person</span></div>
   </div>
   <div class="body">
-    <!-- HOME -->
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- HOME SCREEN                                                      -->
+    <!-- F27: Vitality Pulse card → .cardw (interactive — user taps it)  -->
+    <!-- F27: Completeness card → .cardw (primary, calls to action)       -->
+    <!-- F27: Recent Activity card → .cardw (primary content area)        -->
+    <!-- F26: "View Ledger" in Recent Activity header → .ob (already was) -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div id="s-home" class="scr on">
-      <!-- F24: Calm, grounded hero headline -->
       <div style="font-family:var(--fh);font-weight:800;font-size:23px;color:var(--p);letter-spacing:-.4px;line-height:1.2;">Everything is <span style="color:var(--ac);">in order.</span></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;margin-bottom:14px;">
         <div style="font-size:13px;color:var(--ov);font-weight:600;" id="d-sum">0 assets · 0 wishes</div>
         <div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div>
       </div>
+
+      <!-- F27: .cardw — user taps this card to check in (interactive) -->
       <div class="cardw">
         <div style="display:flex;align-items:center;gap:16px;">
           <div class="vr" onclick="checkin()" style="width:100px;height:100px;flex-shrink:0;">
             <div class="vc" style="width:78px;height:78px;">
               <span class="m mf" style="font-size:28px;color:var(--ac);">favorite</span>
-              <!-- F24: Warmer check-in micro-label -->
               <span class="vl" style="font-size:8px;">TAP TO CHECK IN</span>
             </div>
           </div>
@@ -193,44 +205,72 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           </div>
         </div>
       </div>
+
       <button class="gbtn" onclick="go('ledger')"><div class="ib"><span class="m mf" style="font-size:28px;color:#fff;">shield</span></div><div class="tb"><span class="big">Asset Ledger</span><span class="sm">View all your recorded assets</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
       <div class="qa"><button class="qb qbp" onclick="openM('am')"><span class="m">add_moderator</span>Add Asset</button><button class="qb qbs" onclick="go('wishes')"><span class="m">auto_stories</span>My Wishes</button></div>
+
+      <!-- F27: .cardw — primary, shows completeness progress and actionable tips -->
       <div class="cardw">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font-family:var(--fh);font-size:14px;font-weight:700;color:var(--p);">Home completeness</span><span id="cp-lbl" style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--ac);">0%</span></div>
         <div class="cbw"><div class="cbf" id="cp-bar" style="width:0%"></div></div>
         <div id="cp-tips"></div>
       </div>
+
+      <!-- F27: .cardw — primary content area with navigation action -->
       <div class="cardw">
+        <!-- F26: "View Ledger" is an .ob button — section header secondary action -->
         <div class="sh"><span style="font-family:var(--fh);font-size:16px;font-weight:700;color:var(--p);">Recent Activity</span><button onclick="go('ledger')" class="ob" style="padding:5px 10px;font-size:11px;">View Ledger</button></div>
         <div id="d-act"><div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No activity yet</div></div>
       </div>
     </div>
-    <!-- LEDGER -->
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- LEDGER SCREEN                                                    -->
+    <!-- F27: The outer wrapper uses no card — content rendered by JS     -->
+    <!-- F27: Info box (.ib2) stays grey — informational only            -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div id="s-ledger" class="scr">
       <div class="ph">Asset Ledger</div>
-      <!-- F24: Calm, grounded subtitle -->
       <div class="ps">A record of what you have, so the right people know where to find it.</div>
       <button class="gbtn" onclick="openM('am')"><div class="ib"><span class="m" style="font-size:24px;color:#fff;">add_circle</span></div><div class="tb"><span class="big">Record New Asset</span><span class="sm">Add anything your people should know about</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
       <div id="l-content"></div>
+      <!-- F27: .ib2 uses grey/dashed style — purely informational, not interactive -->
       <div class="ib2"><span class="m mf" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">verified_user</span><p>Your legacy is <strong id="l-pct">0%</strong> documented.</p></div>
     </div>
-    <!-- MY WISHES -->
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- MY WISHES SCREEN                                                 -->
+    <!-- F27: Will & Legal Documents → .card (grouped informational area) -->
+    <!-- F27: SOW nudge → .cardw (interactive — has a CTA button)         -->
+    <!-- F27: SOW done → .cardw (primary status confirmation)             -->
+    <!-- F26: "Attach document" in supp docs header → .ob button          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div id="s-wishes" class="scr">
       <div class="ph">My Wishes</div>
-      <!-- F24: Calm, grounded subtitle -->
       <div class="ps">What matters to you, written down so it's not forgotten.</div>
-      <!-- F22: Standardised CTA — now uses .gbtn like every other screen -->
       <button class="gbtn" onclick="openM('wm')"><div class="ib"><span class="m" style="font-size:24px;color:#fff;">edit_note</span></div><div class="tb"><span class="big">New Instruction</span><span class="sm">Record something you'd like carried out</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
+
+      <!-- F27: .card — this is an informational grouping container (Will + Supp Docs) -->
       <div class="card">
-        <div class="sh" style="margin-bottom:12px;"><span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">gavel</span>Will & Legal Documents</span><span class="tag tw" id="will-badge">Not recorded</span></div>
+        <div class="sh" style="margin-bottom:12px;">
+          <span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">gavel</span>Will & Legal Documents</span>
+          <span class="tag tw" id="will-badge">Not recorded</span>
+        </div>
         <div class="will-card" id="will-summary">
           <div class="will-status"><div class="will-icon"><span class="m mf">description</span></div><div><div class="will-title" id="will-title-display">No Will recorded yet</div><div class="will-sub" id="will-loc-display">Tap below to add your Will details</div></div></div>
           <button class="upload-btn" onclick="openM('wlm')"><span class="m">edit_note</span>Record Will details</button>
         </div>
-        <div style="margin-top:12px;"><div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sec);margin-bottom:8px;">Supplementary Documents</div><div id="supp-docs"></div>
-          <button class="upload-btn" onclick="openM('sdm')"><span class="m">attach_file</span>Attach document</button>
+        <div style="margin-top:12px;">
+          <!-- F26: "Attach document" — secondary add action in section header → .ob -->
+          <div class="sh" style="margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sec);">Supplementary Documents</div>
+            <button class="ob" onclick="openM('sdm')" style="padding:6px 12px;font-size:11px;"><span class="m" style="font-size:13px;">add</span>Attach</button>
+          </div>
+          <div id="supp-docs"></div>
         </div>
       </div>
+
+      <!-- F27: .cardw — interactive; has a CTA button the user must tap to act -->
       <div class="cardw" id="sow-nudge">
         <div style="display:flex;align-items:flex-start;gap:12px;">
           <div style="width:44px;height:44px;border-radius:12px;background:rgba(216,90,48,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="m mf" style="font-size:22px;color:#d85a30;">priority_high</span></div>
@@ -241,6 +281,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           </div>
         </div>
       </div>
+
+      <!-- F27: .cardw — primary status card (confirmed action) -->
       <div class="cardw" id="sow-done" style="display:none;">
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="width:44px;height:44px;border-radius:12px;background:rgba(45,138,122,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="m mf" style="font-size:22px;color:var(--ac);">task_alt</span></div>
@@ -250,20 +292,41 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           </div>
         </div>
       </div>
+
       <div id="w-content"></div>
     </div>
-    <!-- CONTACT -->
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- CONTACT SCREEN                                                   -->
+    <!-- F27: Outer wrapper → .card (informational grouping container)    -->
+    <!-- F26: "Add Contact" in section header → .ob (already was)         -->
+    <!-- Contact cards (.kc) now use .cardw via JS render                 -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div id="s-kin" class="scr">
-      <div class="ph">Contacts</div><div class="ps">People to notify and how to reach them.</div>
+      <div class="ph">Contacts</div>
+      <div class="ps">People to notify and how to reach them.</div>
+
+      <!-- F27: .card — informational grouping container for the contacts list -->
       <div class="card">
-        <div class="sh" style="margin-bottom:12px;"><span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">group</span>My Contacts</span><button class="ob" onclick="openM('km')"><span class="m" style="font-size:15px;">add</span>Add Contact</button></div>
+        <!-- F26: "Add Contact" → .ob button in section header -->
+        <div class="sh" style="margin-bottom:12px;">
+          <span class="st"><span class="m mf" style="font-size:17px;color:var(--sec);">group</span>My Contacts</span>
+          <button class="ob" onclick="openM('km')"><span class="m" style="font-size:15px;">add</span>Add Contact</button>
+        </div>
         <div id="k-list"></div>
       </div>
     </div>
-    <!-- SETTINGS -->
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- SETTINGS SCREEN                                                  -->
+    <!-- F27: All setting sections → .card (informational/config areas)   -->
+    <!-- F27: Info box (.ib2) stays grey — purely informational           -->
+    <!-- Settings uses .card throughout — these are config panels, not    -->
+    <!--   interactive primary content. The .cfb button is the primary    -->
+    <!--   interactive action (gradient, full-width), not the card itself. -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div id="s-config" class="scr">
       <div class="ph">Settings</div>
-      <!-- F24: Calm, grounded subtitle -->
       <div class="ps">Set how often you check in and what happens if you don't.</div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">pulse_alert</span>Check-in Frequency</div><div style="background:var(--w);border-radius:12px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);">Custom Interval</span><div class="tg"><button class="to" id="tw" onclick="setU('weeks')">Weeks</button><button class="to on" id="tm" onclick="setU('months')">Months</button></div></div><div class="cc"><button class="cb" onclick="adj(-1)">−</button><div><div class="cv" id="fc">2</div><div class="cu" id="fu">Months</div></div><button class="cb" onclick="adj(1)">+</button></div></div></div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m" style="font-size:17px;color:var(--sec);">hourglass_bottom</span>Grace Period</div>
@@ -288,10 +351,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">verified_user</span>Verification</div><div class="ri" onclick="setV('face')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">face</span><span style="font-weight:600;font-size:15px;color:var(--p);">FaceID / Biometrics</span></div><div class="rd on" id="rf"></div></div><div class="ri" onclick="setV('pin')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">password</span><span style="font-weight:600;font-size:15px;color:var(--p);">Secure Passcode</span></div><div class="rd" id="rp2"></div></div></div>
+      <!-- F27: .ib2 stays grey — informational only, no user action required -->
       <div class="ib2"><span class="m" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span><p>Missed check-ins after <strong id="ig">3 days</strong> will grant access to <strong id="ik">0 contacts</strong>.</p></div>
       <button class="cfb" onclick="saveCfg()">Confirm Settings</button>
     </div>
   </div>
+
   <nav class="nav">
     <div class="ni on" id="n-home" onclick="go('home')"><span class="m mf">shield</span><span class="l">Home</span></div>
     <div class="ni" id="n-ledger" onclick="go('ledger')"><span class="m">account_balance</span><span class="l">Ledger</span></div>
@@ -302,7 +367,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 </div>
 
 <!-- MODALS -->
-<!-- F25: Asset modal now supports both Add and Edit -->
 <div id="am" class="mo"><div class="ms"><div class="mh"></div><div class="mt" id="am-title">Record New Asset</div><input type="hidden" id="am-edit-id" value=""/><div class="fi"><label>Asset Name</label><input id="an" type="text" placeholder="e.g. ANZ Savings Account"/></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>Category</label><select id="ac2"><option>Bank account</option><option>Property</option><option>Investment</option><option>Superannuation</option><option>Life insurance</option><option>Vehicle</option><option>Cryptocurrency</option><option>Business</option><option>Personal item</option><option>Digital account</option><option>Other</option></select></div><div class="fi"><label>Est. Value ($)</label><input id="av" type="number" placeholder="0"/></div></div><div class="fi"><label>Details</label><textarea id="adet" placeholder="e.g. Account held at ANZ Bank, BSB 123-456, account ending 4421..."></textarea></div><div class="fi"><label>Beneficiary</label><input id="ab2" type="text" placeholder="e.g. Jane Smith (spouse)"/></div><div class="fi"><label>Notes</label><textarea id="ano" placeholder="Additional instructions..."></textarea></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveA()" id="am-save-btn">Save Asset</button></div></div></div>
 
 <div id="wm" class="mo"><div class="ms"><div class="mh"></div><div class="mt" id="wm-title">Record a Wish</div><input type="hidden" id="wm-edit-id" value=""/><div class="fi"><label>Category</label><select id="wc2"><option>Funeral & Service</option><option>Medical / end of life care</option><option>Guardian for children</option><option>Pet care</option><option>Business succession</option><option>Digital accounts</option><option>Personal message</option><option>Charitable giving</option><option>Other</option></select></div><div class="fi"><label>Wish</label><input id="wt" type="text" placeholder="e.g. I would like to be cremated"/></div><div class="fi"><label>Details</label><textarea id="wd" placeholder="Add any additional context or instructions..."></textarea></div><div class="fi"><label>Priority</label><select id="wp"><option value="high">High — must be followed</option><option value="medium" selected>Medium — strongly preferred</option><option value="low">Low — would be nice</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveW()" id="wm-save-btn">Save Wish</button></div></div></div>
@@ -311,10 +375,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 
 <div id="sdm" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Attach Document</div><div class="fi"><label>Document type</label><select id="sd-type"><option>Statement of Wishes</option><option>Enduring Power of Attorney</option><option>Advance Health Directive</option><option>Guardianship Nomination</option><option>Funeral Pre-arrangement</option><option>Business Succession Plan</option><option>Other</option></select></div><div class="fi"><label>Document name</label><input id="sd-name" type="text" placeholder="e.g. Statement of Wishes — 2024"/></div><div class="fi"><label>Where is this document stored?</label><input id="sd-loc" type="text" placeholder="e.g. Google Drive, home safe, solicitor"/></div><div class="fi"><label>Notes</label><textarea id="sd-notes" placeholder="Any additional context..."></textarea></div><div style="background:var(--sl);border-radius:10px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;"><span class="m" style="font-size:18px;color:var(--sec);">info</span><span style="font-size:12px;color:var(--ov);line-height:1.4;">File uploads will be available when the app connects to secure cloud storage. For now, record where the document is located.</span></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveSupp()">Save document</button></div></div></div>
 
-<!-- F25: Contact modal now supports both Add and Edit -->
 <div id="km" class="mo"><div class="ms"><div class="mh"></div><div class="mt" id="km-title">Add Contact</div><input type="hidden" id="km-edit-id" value=""/><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="fi"><label>First Name</label><input id="kf" type="text" placeholder="Jane"/></div><div class="fi"><label>Last Name</label><input id="kl" type="text" placeholder="Smith"/></div></div><div class="fi"><label>Relationship</label><input id="kr" type="text" placeholder="e.g. Spouse, Child, Solicitor"/></div><div class="fi"><label>Email</label><input id="ke" type="email" placeholder="jane@email.com"/></div><div class="fi"><label>Phone</label><input id="kp" type="tel" placeholder="+61 4xx xxx xxx"/></div><div class="fi"><label>Notify via</label><select id="k-notify"><option value="email">Email</option><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option><option value="email_and_sms">Email + SMS</option></select></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveK()" id="km-save-btn">Add Contact</button></div></div></div>
 
-<!-- F03: Personal Letter Modal -->
 <div id="lm" class="mo">
   <div class="ms">
     <div class="mh"></div>
@@ -375,47 +437,18 @@ function saveLetter(){
   toast(text?'Letter saved ✓':'Letter cleared');
 }
 
-// F25: saveA now supports both Add and Edit
 function saveA(){
   const n=document.getElementById('an').value.trim();
   if(!n){toast('Please enter an asset name');return;}
   const editId=document.getElementById('am-edit-id').value;
-  const data={
-    name:n,
-    category:document.getElementById('ac2').value,
-    value:parseFloat(document.getElementById('av').value)||0,
-    details:document.getElementById('adet').value,
-    beneficiary:document.getElementById('ab2').value,
-    notes:document.getElementById('ano').value
-  };
-  if(editId){
-    const idx=S.assets.findIndex(a=>a.id===parseInt(editId));
-    if(idx>=0){Object.assign(S.assets[idx],data);log('Asset updated: '+n);}
-  }else{
-    S.assets.push({id:Date.now(),...data});
-    log('Asset added: '+n);
-  }
-  closeM();
-  ['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('am-edit-id').value='';
-  save();
-  toast(editId?'Asset updated ✓':'Asset saved ✓');
+  const data={name:n,category:document.getElementById('ac2').value,value:parseFloat(document.getElementById('av').value)||0,details:document.getElementById('adet').value,beneficiary:document.getElementById('ab2').value,notes:document.getElementById('ano').value};
+  if(editId){const idx=S.assets.findIndex(a=>a.id===parseInt(editId));if(idx>=0){Object.assign(S.assets[idx],data);log('Asset updated: '+n);}}else{S.assets.push({id:Date.now(),...data});log('Asset added: '+n);}
+  closeM();['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');document.getElementById('am-edit-id').value='';save();toast(editId?'Asset updated ✓':'Asset saved ✓');
 }
 
-// F25: editA opens the asset modal pre-filled
 function editA(id){
-  const a=S.assets.find(x=>x.id===id);
-  if(!a)return;
-  document.getElementById('am-edit-id').value=id;
-  document.getElementById('an').value=a.name;
-  document.getElementById('ac2').value=a.category;
-  document.getElementById('av').value=a.value||'';
-  document.getElementById('adet').value=a.details||'';
-  document.getElementById('ab2').value=a.beneficiary||'';
-  document.getElementById('ano').value=a.notes||'';
-  document.getElementById('am-title').textContent='Edit Asset';
-  document.getElementById('am-save-btn').textContent='Update Asset';
-  document.getElementById('am').classList.add('on');
+  const a=S.assets.find(x=>x.id===id);if(!a)return;
+  document.getElementById('am-edit-id').value=id;document.getElementById('an').value=a.name;document.getElementById('ac2').value=a.category;document.getElementById('av').value=a.value||'';document.getElementById('adet').value=a.details||'';document.getElementById('ab2').value=a.beneficiary||'';document.getElementById('ano').value=a.notes||'';document.getElementById('am-title').textContent='Edit Asset';document.getElementById('am-save-btn').textContent='Update Asset';document.getElementById('am').classList.add('on');
 }
 
 function saveW(){const t=document.getElementById('wt').value.trim();if(!t){toast('Please enter a wish');return;}const editId=document.getElementById('wm-edit-id').value;if(editId){const idx=S.wishes.findIndex(w=>w.id===parseInt(editId));if(idx>=0){S.wishes[idx].category=document.getElementById('wc2').value;S.wishes[idx].title=t;S.wishes[idx].details=document.getElementById('wd').value;S.wishes[idx].priority=document.getElementById('wp').value;log('Wish updated: '+t);}}else{S.wishes.push({id:Date.now(),category:document.getElementById('wc2').value,title:t,details:document.getElementById('wd').value,priority:document.getElementById('wp').value});log('Wish recorded: '+t);}closeM();['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wm-edit-id').value='';save();toast(editId?'Wish updated ✓':'Wish recorded ✓');}
@@ -425,51 +458,17 @@ function saveWill(){S.will={status:document.getElementById('wl-status').value,da
 function saveSupp(){const n=document.getElementById('sd-name').value.trim();if(!n){toast('Please enter a document name');return;}if(!S.suppDocs)S.suppDocs=[];S.suppDocs.push({id:Date.now(),type:document.getElementById('sd-type').value,name:n,loc:document.getElementById('sd-loc').value,notes:document.getElementById('sd-notes').value});log('Document recorded: '+n);closeM();['sd-name','sd-loc','sd-notes'].forEach(i=>document.getElementById(i).value='');save();toast('Document saved ✓');}
 function delSupp(id){S.suppDocs=S.suppDocs.filter(d=>d.id!==id);log('Document removed');save();toast('Removed ✓');}
 
-// F25: saveK now supports both Add and Edit
 function saveK(){
-  const f=document.getElementById('kf').value.trim();
-  if(!f){toast('Please enter a first name');return;}
+  const f=document.getElementById('kf').value.trim();if(!f){toast('Please enter a first name');return;}
   const editId=document.getElementById('km-edit-id').value;
-  const data={
-    first:f,
-    last:document.getElementById('kl').value.trim(),
-    rel:document.getElementById('kr').value,
-    email:document.getElementById('ke').value,
-    phone:document.getElementById('kp').value,
-    notifyVia:document.getElementById('k-notify').value
-  };
-  if(editId){
-    const idx=S.kin.findIndex(k=>k.id===parseInt(editId));
-    if(idx>=0){
-      // Preserve order and letter when editing
-      Object.assign(S.kin[idx],data);
-      log('Contact updated: '+f);
-    }
-  }else{
-    S.kin.push({id:Date.now(),...data,order:S.kin.length+1,letter:''});
-    log('Contact added: '+f);
-  }
-  closeM();
-  ['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('km-edit-id').value='';
-  save();
-  toast(editId?'Contact updated ✓':'Contact added ✓');
+  const data={first:f,last:document.getElementById('kl').value.trim(),rel:document.getElementById('kr').value,email:document.getElementById('ke').value,phone:document.getElementById('kp').value,notifyVia:document.getElementById('k-notify').value};
+  if(editId){const idx=S.kin.findIndex(k=>k.id===parseInt(editId));if(idx>=0){Object.assign(S.kin[idx],data);log('Contact updated: '+f);}}else{S.kin.push({id:Date.now(),...data,order:S.kin.length+1,letter:''});log('Contact added: '+f);}
+  closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');document.getElementById('km-edit-id').value='';save();toast(editId?'Contact updated ✓':'Contact added ✓');
 }
 
-// F25: editK opens the contact modal pre-filled
 function editK(id){
-  const k=S.kin.find(x=>x.id===id);
-  if(!k)return;
-  document.getElementById('km-edit-id').value=id;
-  document.getElementById('kf').value=k.first;
-  document.getElementById('kl').value=k.last||'';
-  document.getElementById('kr').value=k.rel||'';
-  document.getElementById('ke').value=k.email||'';
-  document.getElementById('kp').value=k.phone||'';
-  document.getElementById('k-notify').value=k.notifyVia||'email';
-  document.getElementById('km-title').textContent='Edit Contact';
-  document.getElementById('km-save-btn').textContent='Update Contact';
-  document.getElementById('km').classList.add('on');
+  const k=S.kin.find(x=>x.id===id);if(!k)return;
+  document.getElementById('km-edit-id').value=id;document.getElementById('kf').value=k.first;document.getElementById('kl').value=k.last||'';document.getElementById('kr').value=k.rel||'';document.getElementById('ke').value=k.email||'';document.getElementById('kp').value=k.phone||'';document.getElementById('k-notify').value=k.notifyVia||'email';document.getElementById('km-title').textContent='Edit Contact';document.getElementById('km-save-btn').textContent='Update Contact';document.getElementById('km').classList.add('on');
 }
 
 function delA(id){S.assets=S.assets.filter(a=>a.id!==id);log('Asset removed');save();toast('Removed ✓');}
@@ -492,359 +491,40 @@ const notifyLabels={email:'Email',sms:'SMS',whatsapp:'WhatsApp',email_and_sms:'E
 
 // ─── PDF GENERATION ──────────────────────────────────────────────────────────
 function generatePDF(kinId) {
-  if (typeof window.jspdf === 'undefined') {
-    toast('PDF library not loaded yet — try again');
-    return;
-  }
+  if (typeof window.jspdf === 'undefined') { toast('PDF library not loaded yet — try again'); return; }
   const { jsPDF } = window.jspdf;
   const k = S.kin.find(x => x.id === kinId);
   if (!k) return;
-
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const W = 210, H = 297;
-  const ML = 20, MR = 20, MT = 20;
-  const CW = W - ML - MR;
+  const W = 210, H = 297, ML = 20, MR = 20, MT = 20, CW = W - ML - MR;
   let y = MT;
-
-  const NAVY  = [0, 33, 71];
-  const TEAL  = [45, 138, 122];
-  const GREY  = [84, 101, 125];
-  const LGREY = [242, 244, 246];
-  const WHITE = [255, 255, 255];
-  const RED   = [186, 26, 26];
-
-  function setFont(size, weight, color) {
-    doc.setFontSize(size);
-    doc.setFont('helvetica', weight || 'normal');
-    doc.setTextColor(...(color || NAVY));
-  }
-  function fillRect(x, fy, w, h, color) {
-    doc.setFillColor(...color);
-    doc.rect(x, fy, w, h, 'F');
-  }
-  function wrap(text, maxW) {
-    return doc.splitTextToSize(text || '', maxW);
-  }
-  function checkPage(needed) {
-    if (y + needed > H - 20) { doc.addPage(); y = MT; }
-  }
-  function sectionHeader(title, icon) {
-    checkPage(14);
-    fillRect(ML, y, CW, 10, LGREY);
-    setFont(9, 'bold', GREY);
-    doc.text((icon ? icon + '  ' : '') + title.toUpperCase(), ML + 4, y + 6.5);
-    y += 14;
-  }
-  function divider() {
-    doc.setDrawColor(...LGREY);
-    doc.setLineWidth(0.3);
-    doc.line(ML, y, ML + CW, y);
-    y += 5;
-  }
-  function labelValue(label, value, indent) {
-    if (!value) return;
-    const x = ML + (indent || 0);
-    const w = CW - (indent || 0);
-    checkPage(12);
-    setFont(7.5, 'bold', GREY);
-    doc.text(label.toUpperCase(), x, y);
-    y += 4;
-    setFont(9, 'normal', NAVY);
-    const lines = wrap(value, w);
-    doc.text(lines, x, y);
-    y += lines.length * 4.5 + 3;
-  }
-
-  fillRect(0, 0, W, 52, NAVY);
-  doc.setFillColor(0, 45, 94);
-  doc.rect(0, 46, W, 6, 'F');
-  setFont(9, 'normal', [180, 200, 220]);
-  doc.text('EMERGENCY EXIT — CONFIDENTIAL PACKAGE', ML, 51);
-  setFont(22, 'bold', WHITE);
-  doc.text('Emergency Exit', ML, 22);
-  setFont(11, 'normal', [180, 200, 220]);
-  doc.text('Prepared for ' + k.first + ' ' + k.last, ML, 30);
-  setFont(9, 'normal', [140, 170, 200]);
-  doc.text('Generated ' + new Date().toLocaleDateString('en-AU', {day:'numeric',month:'long',year:'numeric'}), ML, 38);
-
-  y = 65;
-
-  fillRect(ML, y, CW, 28, [232, 240, 255]);
-  doc.setDrawColor(...TEAL);
-  doc.setLineWidth(1);
-  doc.line(ML, y, ML, y + 28);
-  setFont(9, 'bold', NAVY);
-  doc.text('This document has been prepared for you by the vault holder.', ML + 5, y + 7);
-  setFont(8.5, 'normal', GREY);
-  const introLines = wrap(
-    'If you are reading this, the vault holder has not confirmed their check-in within the required period. ' +
-    'This package contains everything you need to act on their behalf. No login or app is required.',
-    CW - 10
-  );
-  doc.text(introLines, ML + 5, y + 13);
-  y += 36;
-
+  const NAVY=[0,33,71],TEAL=[45,138,122],GREY=[84,101,125],LGREY=[242,244,246],WHITE=[255,255,255],RED=[186,26,26];
+  function setFont(size,weight,color){doc.setFontSize(size);doc.setFont('helvetica',weight||'normal');doc.setTextColor(...(color||NAVY));}
+  function fillRect(x,fy,w,h,color){doc.setFillColor(...color);doc.rect(x,fy,w,h,'F');}
+  function wrap(text,maxW){return doc.splitTextToSize(text||'',maxW);}
+  function checkPage(needed){if(y+needed>H-20){doc.addPage();y=MT;}}
+  function sectionHeader(title){checkPage(14);fillRect(ML,y,CW,10,LGREY);setFont(9,'bold',GREY);doc.text(title.toUpperCase(),ML+4,y+6.5);y+=14;}
+  function divider(){doc.setDrawColor(...LGREY);doc.setLineWidth(0.3);doc.line(ML,y,ML+CW,y);y+=5;}
+  function labelValue(label,value,indent){if(!value)return;const x=ML+(indent||0),w=CW-(indent||0);checkPage(12);setFont(7.5,'bold',GREY);doc.text(label.toUpperCase(),x,y);y+=4;setFont(9,'normal',NAVY);const lines=wrap(value,w);doc.text(lines,x,y);y+=lines.length*4.5+3;}
+  fillRect(0,0,W,52,NAVY);doc.setFillColor(0,45,94);doc.rect(0,46,W,6,'F');setFont(9,'normal',[180,200,220]);doc.text('EMERGENCY EXIT — CONFIDENTIAL PACKAGE',ML,51);setFont(22,'bold',WHITE);doc.text('Emergency Exit',ML,22);setFont(11,'normal',[180,200,220]);doc.text('Prepared for '+k.first+' '+k.last,ML,30);setFont(9,'normal',[140,170,200]);doc.text('Generated '+new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}),ML,38);
+  y=65;
+  fillRect(ML,y,CW,28,[232,240,255]);doc.setDrawColor(...TEAL);doc.setLineWidth(1);doc.line(ML,y,ML,y+28);setFont(9,'bold',NAVY);doc.text('This document has been prepared for you by the vault holder.',ML+5,y+7);setFont(8.5,'normal',GREY);const introLines=wrap('If you are reading this, the vault holder has not confirmed their check-in within the required period. This package contains everything you need to act on their behalf. No login or app is required.',CW-10);doc.text(introLines,ML+5,y+13);y+=36;
   sectionHeader('Personal Letter');
-
-  if (k.letter && k.letter.trim()) {
-    const letterLines = wrap(k.letter.trim(), CW - 16);
-    const letterHeight = Math.max(40, letterLines.length * 5.5 + 20);
-    checkPage(letterHeight);
-    fillRect(ML, y, CW, letterHeight, [248, 249, 251]);
-    doc.setDrawColor(...TEAL);
-    doc.setLineWidth(1.2);
-    doc.line(ML, y, ML, y + letterHeight);
-    setFont(10, 'italic', NAVY);
-    doc.text(letterLines, ML + 7, y + 10);
-    y += letterHeight + 8;
-  } else {
-    fillRect(ML, y, CW, 38, [248, 249, 251]);
-    doc.setDrawColor(200, 210, 220);
-    doc.setLineWidth(0.4);
-    doc.rect(ML, y, CW, 38);
-    setFont(9, 'italic', GREY);
-    doc.text('[ A personal letter from the vault holder will appear here once written. ]', ML + 4, y + 8);
-    setFont(8, 'normal', GREY);
-    const letterNote = wrap(
-      'To add a personal letter for this contact, return to the Emergency Exit app, open their contact card, and tap "Write personal letter".',
-      CW - 8
-    );
-    doc.text(letterNote, ML + 4, y + 16);
-    y += 46;
-  }
-
-  doc.addPage();
-  y = MT;
-  fillRect(0, 0, W, 14, NAVY);
-  setFont(8, 'normal', WHITE);
-  doc.text('EMERGENCY EXIT  ·  ACTION CHECKLIST', ML, 9);
-  y = 22;
-  setFont(16, 'bold', NAVY);
-  doc.text('What to do first', ML, y);
-  y += 5;
-  setFont(9, 'normal', GREY);
-  doc.text('Work through these steps in order. Take your time.', ML, y);
-  y += 12;
-
-  const steps = [];
-  if (S.will && S.will.solicitor) steps.push('Contact the solicitor: ' + S.will.solicitor);
-  if (S.will && S.will.loc1) steps.push('Locate the original Will: ' + S.will.loc1);
-  const sow = (S.suppDocs || []).find(d => d.type === 'Statement of Wishes');
-  if (sow) steps.push('Find the Statement of Wishes: ' + (sow.loc || sow.name));
-  if (S.assets.length) steps.push('Review the Asset Register in this document (page 3)');
-  steps.push('Notify relevant financial institutions and government agencies');
-  steps.push('Keep a copy of this document in a safe place');
-
-  steps.forEach((step, i) => {
-    checkPage(14);
-    doc.setFillColor(...TEAL);
-    doc.circle(ML + 5, y + 3.5, 4, 'F');
-    setFont(8, 'bold', WHITE);
-    doc.text(String(i + 1), ML + 5, y + 5.5, { align: 'center' });
-    setFont(9.5, 'normal', NAVY);
-    const stepLines = wrap(step, CW - 16);
-    doc.text(stepLines, ML + 13, y + 5);
-    y += stepLines.length * 5 + 6;
-    divider();
-  });
-
-  doc.addPage();
-  y = MT;
-  fillRect(0, 0, W, 14, NAVY);
-  setFont(8, 'normal', WHITE);
-  doc.text('EMERGENCY EXIT  ·  WILL & LEGAL DOCUMENTS', ML, 9);
-  y = 22;
-  setFont(16, 'bold', NAVY);
-  doc.text('Will & Legal Documents', ML, y);
-  y += 12;
-
-  if (S.will) {
-    sectionHeader('Will Details');
-    labelValue('Status', willStatusLabel[S.will.status] || S.will.status);
-    if (S.will.date) labelValue('Date Signed', S.will.date);
-    if (S.will.solicitor) labelValue('Solicitor / Law Firm', S.will.solicitor);
-    if (S.will.loc1) labelValue('Primary Location', S.will.loc1);
-    if (S.will.loc2) labelValue('Secondary Location', S.will.loc2);
-    if (S.will.notes) labelValue('Additional Notes', S.will.notes);
-    y += 4;
-  } else {
-    fillRect(ML, y, CW, 16, LGREY);
-    setFont(9, 'italic', GREY);
-    doc.text('No Will details have been recorded.', ML + 4, y + 9);
-    y += 22;
-  }
-
-  if (S.suppDocs && S.suppDocs.length) {
-    sectionHeader('Supporting Documents');
-    S.suppDocs.forEach(d => {
-      checkPage(20);
-      fillRect(ML, y, CW, 18, WHITE);
-      doc.setDrawColor(...LGREY);
-      doc.setLineWidth(0.3);
-      doc.rect(ML, y, CW, 18);
-      fillRect(ML, y, 3, 18, TEAL);
-      setFont(9, 'bold', NAVY);
-      doc.text(d.name, ML + 7, y + 6);
-      setFont(8, 'normal', GREY);
-      doc.text(d.type, ML + 7, y + 11);
-      if (d.loc) { setFont(8, 'normal', TEAL); doc.text('Location: ' + d.loc, ML + 7, y + 16); }
-      y += 22;
-    });
-  }
-
-  doc.addPage();
-  y = MT;
-  fillRect(0, 0, W, 14, NAVY);
-  setFont(8, 'normal', WHITE);
-  doc.text('EMERGENCY EXIT  ·  ASSET REGISTER', ML, 9);
-  y = 22;
-  setFont(16, 'bold', NAVY);
-  doc.text('Asset Register', ML, y);
-  y += 6;
-  setFont(9, 'normal', GREY);
-  doc.text('All assets recorded by the vault holder at time of package generation.', ML, y);
-  y += 12;
-
-  if (!S.assets.length) {
-    fillRect(ML, y, CW, 16, LGREY);
-    setFont(9, 'italic', GREY);
-    doc.text('No assets have been recorded.', ML + 4, y + 9);
-    y += 22;
-  } else {
-    const cats = [...new Set(S.assets.map(a => a.category))];
-    cats.forEach(cat => {
-      const items = S.assets.filter(a => a.category === cat);
-      sectionHeader(cat);
-      items.forEach(a => {
-        checkPage(32);
-        fillRect(ML, y, CW, 28, WHITE);
-        doc.setDrawColor(...LGREY);
-        doc.setLineWidth(0.3);
-        doc.rect(ML, y, CW, 28);
-        fillRect(ML, y, 3, 28, NAVY);
-        let ay = y + 6;
-        setFont(10, 'bold', NAVY);
-        doc.text(a.name, ML + 7, ay);
-        ay += 5;
-        if (a.value) {
-          setFont(9, 'bold', TEAL);
-          doc.text('$' + Math.round(a.value).toLocaleString(), ML + 7, ay);
-          ay += 4.5;
-        }
-        if (a.details) {
-          setFont(8, 'normal', GREY);
-          const dl = wrap(a.details, CW - 14);
-          doc.text(dl.slice(0, 2), ML + 7, ay);
-          ay += dl.slice(0, 2).length * 4;
-        }
-        if (a.beneficiary) {
-          setFont(7.5, 'bold', GREY);
-          doc.text('BENEFICIARY: ' + a.beneficiary, ML + 7, y + 25);
-        }
-        y += 32;
-      });
-      y += 4;
-    });
-  }
-
-  doc.addPage();
-  y = MT;
-  fillRect(0, 0, W, 14, NAVY);
-  setFont(8, 'normal', WHITE);
-  doc.text('EMERGENCY EXIT  ·  MY WISHES', ML, 9);
-  y = 22;
-  setFont(16, 'bold', NAVY);
-  doc.text('My Wishes', ML, y);
-  y += 6;
-  setFont(9, 'normal', GREY);
-  doc.text('These are the vault holder\'s recorded wishes and final instructions.', ML, y);
-  y += 12;
-
-  if (!S.wishes.length) {
-    fillRect(ML, y, CW, 16, LGREY);
-    setFont(9, 'italic', GREY);
-    doc.text('No wishes have been recorded.', ML + 4, y + 9);
-    y += 22;
-  } else {
-    const priColor = { high: RED, medium: GREY, low: TEAL };
-    const wishCats = [...new Set(S.wishes.map(w => w.category))];
-    wishCats.forEach(cat => {
-      sectionHeader(cat);
-      S.wishes.filter(w => w.category === cat).forEach(w => {
-        checkPage(26);
-        const pc = priColor[w.priority] || GREY;
-        fillRect(ML, y, 22, 7, pc);
-        setFont(6.5, 'bold', WHITE);
-        doc.text((w.priority || 'medium').toUpperCase(), ML + 2, y + 4.8);
-        setFont(10, 'bold', NAVY);
-        doc.text(w.title, ML + 26, y + 5);
-        y += 10;
-        if (w.details) {
-          setFont(8.5, 'normal', GREY);
-          const dl = wrap(w.details, CW);
-          doc.text(dl, ML, y);
-          y += dl.length * 4.5 + 3;
-        }
-        divider();
-      });
-      y += 4;
-    });
-  }
-
-  doc.addPage();
-  y = MT;
-  fillRect(0, 0, W, 14, NAVY);
-  setFont(8, 'normal', WHITE);
-  doc.text('EMERGENCY EXIT  ·  KEY CONTACTS', ML, 9);
-  y = 22;
-  setFont(16, 'bold', NAVY);
-  doc.text('Key People to Contact', ML, y);
-  y += 12;
-
-  if (!S.kin.length) {
-    fillRect(ML, y, CW, 16, LGREY);
-    setFont(9, 'italic', GREY);
-    doc.text('No contacts have been recorded.', ML + 4, y + 9);
-    y += 22;
-  } else {
-    S.kin.forEach((contact, i) => {
-      checkPage(30);
-      fillRect(ML, y, CW, 26, i % 2 === 0 ? WHITE : LGREY);
-      doc.setDrawColor(...LGREY);
-      doc.setLineWidth(0.3);
-      doc.rect(ML, y, CW, 26);
-      doc.setFillColor(...NAVY);
-      doc.circle(ML + 10, y + 13, 7, 'F');
-      const initials = ((contact.first[0] || '') + (contact.last ? contact.last[0] : '')).toUpperCase();
-      setFont(8, 'bold', WHITE);
-      doc.text(initials, ML + 10, y + 15.5, { align: 'center' });
-      setFont(10, 'bold', NAVY);
-      doc.text(contact.first + ' ' + contact.last, ML + 22, y + 8);
-      setFont(8, 'normal', GREY);
-      doc.text(contact.rel || 'Contact', ML + 22, y + 13);
-      if (contact.email) { setFont(8, 'normal', TEAL); doc.text(contact.email, ML + 22, y + 18); }
-      if (contact.phone) { setFont(8, 'normal', GREY); doc.text(contact.phone, ML + 22, y + 22); }
-      y += 30;
-    });
-  }
-
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    fillRect(0, H - 12, W, 12, NAVY);
-    setFont(7, 'normal', [140, 170, 200]);
-    doc.text(
-      'Emergency Exit  ·  Prepared for ' + k.first + ' ' + k.last + '  ·  Confidential',
-      ML, H - 5
-    );
-    doc.text('Page ' + i + ' of ' + totalPages, W - MR, H - 5, { align: 'right' });
-  }
-
-  const fname = 'Emergency-Exit-' + k.first + '-' + k.last + '.pdf';
-  doc.save(fname);
-  log('Package previewed for ' + k.first + ' ' + k.last);
-  save();
-  toast('Package downloaded ✓');
+  if(k.letter&&k.letter.trim()){const letterLines=wrap(k.letter.trim(),CW-16);const letterHeight=Math.max(40,letterLines.length*5.5+20);checkPage(letterHeight);fillRect(ML,y,CW,letterHeight,[248,249,251]);doc.setDrawColor(...TEAL);doc.setLineWidth(1.2);doc.line(ML,y,ML,y+letterHeight);setFont(10,'italic',NAVY);doc.text(letterLines,ML+7,y+10);y+=letterHeight+8;}else{fillRect(ML,y,CW,38,[248,249,251]);doc.setDrawColor(200,210,220);doc.setLineWidth(0.4);doc.rect(ML,y,CW,38);setFont(9,'italic',GREY);doc.text('[ A personal letter from the vault holder will appear here once written. ]',ML+4,y+8);setFont(8,'normal',GREY);const letterNote=wrap('To add a personal letter for this contact, return to the Emergency Exit app, open their contact card, and tap "Write personal letter".',CW-8);doc.text(letterNote,ML+4,y+16);y+=46;}
+  doc.addPage();y=MT;fillRect(0,0,W,14,NAVY);setFont(8,'normal',WHITE);doc.text('EMERGENCY EXIT  ·  ACTION CHECKLIST',ML,9);y=22;setFont(16,'bold',NAVY);doc.text('What to do first',ML,y);y+=5;setFont(9,'normal',GREY);doc.text('Work through these steps in order. Take your time.',ML,y);y+=12;
+  const steps=[];if(S.will&&S.will.solicitor)steps.push('Contact the solicitor: '+S.will.solicitor);if(S.will&&S.will.loc1)steps.push('Locate the original Will: '+S.will.loc1);const sow=(S.suppDocs||[]).find(d=>d.type==='Statement of Wishes');if(sow)steps.push('Find the Statement of Wishes: '+(sow.loc||sow.name));if(S.assets.length)steps.push('Review the Asset Register in this document (page 3)');steps.push('Notify relevant financial institutions and government agencies');steps.push('Keep a copy of this document in a safe place');
+  steps.forEach((step,i)=>{checkPage(14);doc.setFillColor(...TEAL);doc.circle(ML+5,y+3.5,4,'F');setFont(8,'bold',WHITE);doc.text(String(i+1),ML+5,y+5.5,{align:'center'});setFont(9.5,'normal',NAVY);const stepLines=wrap(step,CW-16);doc.text(stepLines,ML+13,y+5);y+=stepLines.length*5+6;divider();});
+  doc.addPage();y=MT;fillRect(0,0,W,14,NAVY);setFont(8,'normal',WHITE);doc.text('EMERGENCY EXIT  ·  WILL & LEGAL DOCUMENTS',ML,9);y=22;setFont(16,'bold',NAVY);doc.text('Will & Legal Documents',ML,y);y+=12;
+  if(S.will){sectionHeader('Will Details');labelValue('Status',willStatusLabel[S.will.status]||S.will.status);if(S.will.date)labelValue('Date Signed',S.will.date);if(S.will.solicitor)labelValue('Solicitor / Law Firm',S.will.solicitor);if(S.will.loc1)labelValue('Primary Location',S.will.loc1);if(S.will.loc2)labelValue('Secondary Location',S.will.loc2);if(S.will.notes)labelValue('Additional Notes',S.will.notes);y+=4;}else{fillRect(ML,y,CW,16,LGREY);setFont(9,'italic',GREY);doc.text('No Will details have been recorded.',ML+4,y+9);y+=22;}
+  if(S.suppDocs&&S.suppDocs.length){sectionHeader('Supporting Documents');S.suppDocs.forEach(d=>{checkPage(20);fillRect(ML,y,CW,18,WHITE);doc.setDrawColor(...LGREY);doc.setLineWidth(0.3);doc.rect(ML,y,CW,18);fillRect(ML,y,3,18,TEAL);setFont(9,'bold',NAVY);doc.text(d.name,ML+7,y+6);setFont(8,'normal',GREY);doc.text(d.type,ML+7,y+11);if(d.loc){setFont(8,'normal',TEAL);doc.text('Location: '+d.loc,ML+7,y+16);}y+=22;});}
+  doc.addPage();y=MT;fillRect(0,0,W,14,NAVY);setFont(8,'normal',WHITE);doc.text('EMERGENCY EXIT  ·  ASSET REGISTER',ML,9);y=22;setFont(16,'bold',NAVY);doc.text('Asset Register',ML,y);y+=6;setFont(9,'normal',GREY);doc.text('All assets recorded by the vault holder at time of package generation.',ML,y);y+=12;
+  if(!S.assets.length){fillRect(ML,y,CW,16,LGREY);setFont(9,'italic',GREY);doc.text('No assets have been recorded.',ML+4,y+9);y+=22;}else{const cats=[...new Set(S.assets.map(a=>a.category))];cats.forEach(cat=>{const items=S.assets.filter(a=>a.category===cat);sectionHeader(cat);items.forEach(a=>{checkPage(32);fillRect(ML,y,CW,28,WHITE);doc.setDrawColor(...LGREY);doc.setLineWidth(0.3);doc.rect(ML,y,CW,28);fillRect(ML,y,3,28,NAVY);let ay=y+6;setFont(10,'bold',NAVY);doc.text(a.name,ML+7,ay);ay+=5;if(a.value){setFont(9,'bold',TEAL);doc.text('$'+Math.round(a.value).toLocaleString(),ML+7,ay);ay+=4.5;}if(a.details){setFont(8,'normal',GREY);const dl=wrap(a.details,CW-14);doc.text(dl.slice(0,2),ML+7,ay);ay+=dl.slice(0,2).length*4;}if(a.beneficiary){setFont(7.5,'bold',GREY);doc.text('BENEFICIARY: '+a.beneficiary,ML+7,y+25);}y+=32;});y+=4;});}
+  doc.addPage();y=MT;fillRect(0,0,W,14,NAVY);setFont(8,'normal',WHITE);doc.text('EMERGENCY EXIT  ·  MY WISHES',ML,9);y=22;setFont(16,'bold',NAVY);doc.text('My Wishes',ML,y);y+=6;setFont(9,'normal',GREY);doc.text('These are the vault holder\'s recorded wishes and final instructions.',ML,y);y+=12;
+  if(!S.wishes.length){fillRect(ML,y,CW,16,LGREY);setFont(9,'italic',GREY);doc.text('No wishes have been recorded.',ML+4,y+9);y+=22;}else{const priColor={high:RED,medium:GREY,low:TEAL};const wishCats=[...new Set(S.wishes.map(w=>w.category))];wishCats.forEach(cat=>{sectionHeader(cat);S.wishes.filter(w=>w.category===cat).forEach(w=>{checkPage(26);const pc=priColor[w.priority]||GREY;fillRect(ML,y,22,7,pc);setFont(6.5,'bold',WHITE);doc.text((w.priority||'medium').toUpperCase(),ML+2,y+4.8);setFont(10,'bold',NAVY);doc.text(w.title,ML+26,y+5);y+=10;if(w.details){setFont(8.5,'normal',GREY);const dl=wrap(w.details,CW);doc.text(dl,ML,y);y+=dl.length*4.5+3;}divider();});y+=4;});}
+  doc.addPage();y=MT;fillRect(0,0,W,14,NAVY);setFont(8,'normal',WHITE);doc.text('EMERGENCY EXIT  ·  KEY CONTACTS',ML,9);y=22;setFont(16,'bold',NAVY);doc.text('Key People to Contact',ML,y);y+=12;
+  if(!S.kin.length){fillRect(ML,y,CW,16,LGREY);setFont(9,'italic',GREY);doc.text('No contacts have been recorded.',ML+4,y+9);y+=22;}else{S.kin.forEach((contact,i)=>{checkPage(30);fillRect(ML,y,CW,26,i%2===0?WHITE:LGREY);doc.setDrawColor(...LGREY);doc.setLineWidth(0.3);doc.rect(ML,y,CW,26);doc.setFillColor(...NAVY);doc.circle(ML+10,y+13,7,'F');const initials=((contact.first[0]||'')+(contact.last?contact.last[0]:'')).toUpperCase();setFont(8,'bold',WHITE);doc.text(initials,ML+10,y+15.5,{align:'center'});setFont(10,'bold',NAVY);doc.text(contact.first+' '+contact.last,ML+22,y+8);setFont(8,'normal',GREY);doc.text(contact.rel||'Contact',ML+22,y+13);if(contact.email){setFont(8,'normal',TEAL);doc.text(contact.email,ML+22,y+18);}if(contact.phone){setFont(8,'normal',GREY);doc.text(contact.phone,ML+22,y+22);}y+=30;});}
+  const totalPages=doc.getNumberOfPages();for(let i=1;i<=totalPages;i++){doc.setPage(i);fillRect(0,H-12,W,12,NAVY);setFont(7,'normal',[140,170,200]);doc.text('Emergency Exit  ·  Prepared for '+k.first+' '+k.last+'  ·  Confidential',ML,H-5);doc.text('Page '+i+' of '+totalPages,W-MR,H-5,{align:'right'});}
+  const fname='Emergency-Exit-'+k.first+'-'+k.last+'.pdf';doc.save(fname);log('Package previewed for '+k.first+' '+k.last);save();toast('Package downloaded ✓');
 }
 
 function render(){
@@ -855,17 +535,20 @@ function render(){
   if(S.lastCheckin){const dU=S.fu==='months'?(S.fc||2)*30:(S.fc||2)*7;const nd=new Date(S.lastCheckin+dU*86400000);document.getElementById('d-next').textContent=nd.toLocaleDateString('en-AU',{day:'numeric',month:'short'});const dl=Math.max(0,Math.ceil(dU-(Date.now()-S.lastCheckin)/86400000));document.getElementById('d-days').textContent=dl;const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);document.getElementById('lc-lbl').textContent=ago===0?'Confirmed today':'Confirmed '+ago+' day'+(ago!==1?'s':'')+' ago';}else{document.getElementById('d-next').textContent='Not set';document.getElementById('d-days').textContent='—';}
   document.getElementById('d-act').innerHTML=S.log.length===0?'<div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No activity yet</div>':S.log.slice(0,5).map(l=>'<div class="ai"><div class="aico"><span class="m">history</span></div><div><div style="font-weight:700;font-size:13px;color:var(--p);line-height:1.2;">'+l.msg+'</div><div style="font-size:11px;color:var(--ov);margin-top:1px;">'+l.time+'</div></div></div>').join('');
 
-  // ── F23: Warm empty states for Ledger ──
+  // Ledger render
   const cats=['Bank account','Property','Investment','Superannuation','Life insurance','Vehicle','Cryptocurrency','Business','Personal item','Digital account','Other'];
   const lel=document.getElementById('l-content');
   if(!S.assets.length){
     lel.innerHTML='<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">account_balance</span></div><div class="empty-title">No assets yet — and that\'s okay</div><div class="empty-sub">Start with one, even something small like a bank account. You can always add more later.</div><button class="empty-cta" onclick="openM(\'am\')"><span class="m">add</span>Record your first asset</button></div>';
   }else{
     const ac=cats.filter(c=>S.assets.some(a=>a.category===c));
-    // F25: Added edit button to each asset row
+    // F27: Asset category groups use .card (grey) — informational grouping container
+    // F26: Each category group already has a consistent header pattern (no add button here — add is the .gbtn at top)
     lel.innerHTML=ac.map(cat=>{const items=S.assets.filter(a=>a.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(icons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(a=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(icons[a.category]||'category')+'</span></div><div class="lib"><div class="lit">'+a.name+'</div><div class="lis">'+(a.details?a.details.substring(0,40)+(a.details.length>40?'...':''):a.category)+(a.beneficiary?' · '+a.beneficiary:'')+'</div></div><div style="display:flex;align-items:center;gap:6px;">'+(a.value?'<span style="font-size:12px;font-weight:700;color:var(--p);">$'+Math.round(a.value).toLocaleString()+'</span>':'')+'<button onclick="editA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');
   }
   document.getElementById('l-pct').textContent=pct+'%';
+
+  // Will section
   const wb=document.getElementById('will-badge'),wtd=document.getElementById('will-title-display'),wld=document.getElementById('will-loc-display');
   if(S.will){wb.textContent=willStatusLabel[S.will.status]||S.will.status;wb.className='tag '+(S.will.status==='signed'?'tw':'ts');wtd.textContent=S.will.solicitor?'Will held by '+S.will.solicitor:'Will details recorded';wld.textContent=S.will.loc1||'Location not specified';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit</span> Edit Will details';}else{wb.textContent='Not recorded';wb.className='tag ts';wtd.textContent='No Will recorded yet';wld.textContent='Tap below to add your Will details';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit_note</span> Record Will details';}
   const sd=document.getElementById('supp-docs'),docs=S.suppDocs||[];
@@ -875,7 +558,7 @@ function render(){
   document.getElementById('sow-done').style.display=sowDoc?'block':'none';
   if(sowDoc)document.getElementById('sow-loc').textContent=sowDoc.loc?'Stored at: '+sowDoc.loc:'Location recorded';
 
-  // ── F23: Warm empty state for Wishes ──
+  // Wishes render
   const wishCats=['Funeral & Service','Medical / end of life care','Guardian for children','Pet care','Business succession','Digital accounts','Personal message','Charitable giving','Other'];
   const wishIcons={'Funeral & Service':'church','Medical / end of life care':'medical_services','Guardian for children':'family_restroom','Pet care':'pets','Business succession':'business','Digital accounts':'devices','Personal message':'mail','Charitable giving':'volunteer_activism','Other':'category'};
   const priColors={high:'td',medium:'ts',low:'ta'};
@@ -884,12 +567,13 @@ function render(){
     wel.innerHTML='<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">auto_stories</span></div><div class="empty-title">No wishes recorded yet</div><div class="empty-sub">What would you like your people to know? Start with something that matters to you — it doesn\'t have to be everything at once.</div><button class="empty-cta" onclick="openM(\'wm\')"><span class="m">add</span>Record your first wish</button></div>';
   }else{
     const ac2=wishCats.filter(c=>S.wishes.some(w=>w.category===c));
+    // F27: Wish category groups use .card (grey) — informational grouping container
     wel.innerHTML=ac2.map(cat=>{const items=S.wishes.filter(w=>w.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(wishIcons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(wishIcons[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+(w.details?w.details.substring(0,40)+(w.details.length>40?'...':''):w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(priColors[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');
   }
 
-  // ── Contact cards with letter status + buttons + F25: edit + F29: email/phone display ──
+  // Contacts render
+  // F27: Individual contact cards (.kc) have their own white+shadow style — correctly interactive
   document.getElementById('k-list').innerHTML=S.kin.length===0
-    // F23: Warm empty state for Contacts
     ?'<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">group</span></div><div class="empty-title">No contacts added yet</div><div class="empty-sub">Who should be contacted if something happens to you? Add someone you trust — you can always update this later.</div><button class="empty-cta" onclick="openM(\'km\')"><span class="m">add</span>Add your first contact</button></div>'
     :S.kin.map((k,i)=>{
       const hasLetter=!!(k.letter&&k.letter.trim());
@@ -918,7 +602,6 @@ function render(){
           <button onclick="moveK(${k.id},-1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_upward</span></button>
           <button onclick="moveK(${k.id},1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_downward</span></button>
           <span style="flex:1;"></span>
-          <!-- F25: Edit button for contacts -->
           <span style="font-size:12px;font-weight:600;color:var(--sec);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="editK(${k.id})"><span class="m" style="font-size:13px;">edit</span>Edit</span>
           <span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK(${k.id})"><span class="m" style="font-size:13px;">delete</span></span>
         </div>
