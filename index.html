@@ -152,11 +152,39 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .empty-state .empty-cta .m{font-size:16px;color:#fff;}
 
 /* F30: Pulse de-emphasis — applied when completeness < 40% */
-/* Transition makes the shift smooth rather than a jarring jump */
 #pulse-card{transition:opacity .4s ease, transform .4s ease;}
 #pulse-card.pulse-dimmed{opacity:0.45;transform:scale(0.97);}
-/* When dimmed, the completeness card gets a subtle highlight ring to draw attention */
 #completeness-card.pulse-dimmed-focus{box-shadow:0 0 0 2px var(--ab), 0 2px 12px rgba(25,28,30,.07);}
+
+/* F01: Overdue alert styling */
+.overdue-banner{background:linear-gradient(135deg,#8b1a1a 0%,#ba1a1a 100%);border-radius:var(--rc);padding:18px 16px;margin-bottom:14px;box-shadow:0 4px 20px rgba(186,26,26,.25);border-bottom:3px solid rgba(0,0,0,.18);animation:overdue-pulse 3s ease-in-out infinite;}
+@keyframes overdue-pulse{0%,100%{box-shadow:0 4px 20px rgba(186,26,26,.25);}50%{box-shadow:0 4px 28px rgba(186,26,26,.40);}}
+.overdue-banner .ob-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.overdue-banner .ob-icon{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.overdue-banner .ob-icon .m{font-size:24px;color:#fff;}
+.overdue-banner .ob-title{font-family:var(--fh);font-size:18px;font-weight:800;color:#fff;line-height:1.2;}
+.overdue-banner .ob-sub{font-size:12px;color:rgba(255,255,255,.75);font-weight:500;margin-top:2px;}
+.overdue-banner .ob-detail{background:rgba(0,0,0,.15);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,.85);line-height:1.5;}
+.overdue-banner .ob-actions{display:flex;gap:8px;}
+.overdue-banner .ob-btn{flex:1;padding:12px;border-radius:10px;border:none;font-family:var(--fb);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s;}
+.overdue-banner .ob-btn:active{transform:scale(.96);}
+.overdue-btn-primary{background:#fff;color:var(--er);}
+.overdue-btn-secondary{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)!important;}
+
+/* F01: Notification queue styling */
+.nq-card{background:var(--w);border-radius:var(--rc);padding:16px;margin-bottom:14px;box-shadow:var(--cs);border:1.5px solid rgba(186,26,26,.2);}
+.nq-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.nq-title{font-family:var(--fh);font-size:15px;font-weight:700;color:var(--p);display:flex;align-items:center;gap:8px;}
+.nq-item{display:flex;align-items:center;gap:10px;background:var(--sl);border-radius:10px;padding:10px 12px;margin-bottom:6px;}
+.nq-avatar{width:34px;height:34px;border-radius:8px;background:var(--g);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:13px;font-weight:800;color:#fff;flex-shrink:0;}
+.nq-name{font-weight:700;font-size:13px;color:var(--p);}
+.nq-method{font-size:11px;color:var(--ov);}
+.nq-status{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:var(--rp);white-space:nowrap;}
+.nq-queued{background:rgba(186,26,26,.08);color:var(--er);border:1px solid rgba(186,26,26,.2);}
+.nq-waiting{background:rgba(216,150,48,.08);color:#9a6c1a;border:1px solid rgba(216,150,48,.25);}
+.nq-sent{background:rgba(45,138,122,.08);color:var(--ac);border:1px solid var(--ab);}
+.nq-generate{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:10px;border:1.5px solid rgba(186,26,26,.25);background:rgba(186,26,26,.04);cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--er);transition:all .18s;margin-top:8px;}
+.nq-generate:active{background:rgba(186,26,26,.1);transform:scale(.98);}
 </style>
 </head>
 <body>
@@ -172,37 +200,64 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 
     <!-- HOME SCREEN -->
     <div id="s-home" class="scr on">
-      <div style="font-family:var(--fh);font-weight:800;font-size:23px;color:var(--p);letter-spacing:-.4px;line-height:1.2;">Everything is <span style="color:var(--ac);">in order.</span></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;margin-bottom:6px;">
-        <div style="font-size:13px;color:var(--ov);font-weight:600;" id="d-sum">0 assets · 0 wishes</div>
-        <div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div>
+
+      <!-- F01: Overdue alert banner — hidden by default, shown by render() when overdue -->
+      <div id="overdue-banner" style="display:none;">
+        <div class="overdue-banner">
+          <div class="ob-header">
+            <div class="ob-icon"><span class="m mf">warning</span></div>
+            <div>
+              <div class="ob-title">Check-in overdue</div>
+              <div class="ob-sub" id="overdue-sub">Grace period has expired</div>
+            </div>
+          </div>
+          <div class="ob-detail" id="overdue-detail">
+            Your contacts are queued for notification. If this is a false alarm, check in now to cancel.
+          </div>
+          <div class="ob-actions">
+            <button class="ob-btn overdue-btn-primary" onclick="checkin()"><span class="m mf" style="font-size:16px;">favorite</span>I'm okay — check in</button>
+            <button class="ob-btn overdue-btn-secondary" onclick="openM('nqm')"><span class="m" style="font-size:16px;">group</span>View queue</button>
+          </div>
+        </div>
       </div>
 
-      <!-- F31: Privacy note — device-only storage reassurance -->
+      <div id="home-hero-normal">
+        <div style="font-family:var(--fh);font-weight:800;font-size:23px;color:var(--p);letter-spacing:-.4px;line-height:1.2;">Everything is <span style="color:var(--ac);">in order.</span></div>
+      </div>
+      <div id="home-hero-overdue" style="display:none;">
+        <div style="font-family:var(--fh);font-weight:800;font-size:23px;color:var(--er);letter-spacing:-.4px;line-height:1.2;">Action needed.</div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;margin-bottom:6px;">
+        <div style="font-size:13px;color:var(--ov);font-weight:600;" id="d-sum">0 assets · 0 wishes</div>
+        <div id="status-badge"><div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div></div>
+      </div>
+
+      <!-- F31: Privacy note -->
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;">
         <span class="m mf" style="font-size:13px;color:var(--ac);">lock</span>
         <span style="font-size:11px;color:var(--sec);font-weight:600;">Your information is stored on this device only — it never leaves your phone.</span>
       </div>
 
-      <!-- F30: Vitality Pulse card — id added for JS targeting -->
+      <!-- F30: Vitality Pulse card -->
       <div class="cardw" id="pulse-card">
         <div style="display:flex;align-items:center;gap:16px;">
           <div class="vr" onclick="checkin()" style="width:100px;height:100px;flex-shrink:0;">
             <div class="vc" style="width:78px;height:78px;">
-              <span class="m mf" style="font-size:28px;color:var(--ac);">favorite</span>
-              <span class="vl" style="font-size:8px;">TAP TO CHECK IN</span>
+              <span class="m mf" style="font-size:28px;color:var(--ac);" id="pulse-icon">favorite</span>
+              <span class="vl" style="font-size:8px;" id="pulse-label">TAP TO CHECK IN</span>
             </div>
           </div>
           <div style="flex:1;">
-            <div style="font-family:var(--fh);font-weight:800;font-size:16px;color:var(--p);margin-bottom:4px;">Alive &amp; well</div>
+            <div style="font-family:var(--fh);font-weight:800;font-size:16px;color:var(--p);margin-bottom:4px;" id="pulse-title">Alive &amp; well</div>
             <div style="font-size:12px;color:var(--ov);margin-bottom:8px;" id="lc-lbl">Last confirmed: never</div>
             <div style="display:flex;align-items:center;gap:5px;">
               <span class="m" style="font-size:13px;color:var(--p);">calendar_today</span>
               <span style="font-size:12px;font-weight:700;color:var(--p);">Next: <span id="d-next">Not set</span></span>
             </div>
             <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">
-              <span class="m" style="font-size:13px;color:var(--ac);">timer</span>
-              <span style="font-size:12px;font-weight:700;color:var(--ac);"><span id="d-days">—</span> days remaining</span>
+              <span class="m" style="font-size:13px;color:var(--ac);" id="days-icon">timer</span>
+              <span style="font-size:12px;font-weight:700;" id="days-label"><span id="d-days">—</span> days remaining</span>
             </div>
           </div>
         </div>
@@ -212,10 +267,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
 
+      <!-- F01: Notification queue card — shown on Home only when overdue -->
+      <div id="home-nq" style="display:none;"></div>
+
       <button class="gbtn" onclick="go('ledger')"><div class="ib"><span class="m mf" style="font-size:28px;color:#fff;">shield</span></div><div class="tb"><span class="big">Asset Ledger</span><span class="sm">View all your recorded assets</span></div><span class="m" style="font-size:22px;color:rgba(255,255,255,.4);margin-left:auto;">chevron_right</span></button>
       <div class="qa"><button class="qb qbp" onclick="openM('am')"><span class="m">add_moderator</span>Add Asset</button><button class="qb qbs" onclick="go('wishes')"><span class="m">auto_stories</span>My Wishes</button></div>
 
-      <!-- F30: Completeness card — id added for JS targeting -->
+      <!-- F30: Completeness card -->
       <div class="cardw" id="completeness-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font-family:var(--fh);font-size:14px;font-weight:700;color:var(--p);">Home completeness</span><span id="cp-lbl" style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--ac);">0%</span></div>
         <div class="cbw"><div class="cbf" id="cp-bar" style="width:0%"></div></div>
@@ -261,14 +319,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
 
-      <!-- F32: SOW nudge card — added plain-language explanation of SOW vs Will -->
+      <!-- F32: SOW nudge card -->
       <div class="cardw" id="sow-nudge">
         <div style="display:flex;align-items:flex-start;gap:12px;">
           <div style="width:44px;height:44px;border-radius:12px;background:rgba(216,90,48,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="m mf" style="font-size:22px;color:#d85a30;">priority_high</span></div>
           <div style="flex:1;">
             <div style="font-family:var(--fh);font-size:15px;font-weight:700;color:var(--p);margin-bottom:4px;">Statement of Wishes</div>
             <div style="font-size:13px;color:var(--ov);line-height:1.5;margin-bottom:8px;">This is the most important document your contacts will receive. It tells them exactly what to do — step by step.</div>
-            <!-- F32: Plain-language clarification of SOW vs Will -->
             <div style="background:rgba(0,33,71,.04);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;gap:8px;align-items:flex-start;">
               <span class="m" style="font-size:15px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span>
               <span style="font-size:12px;color:var(--sec);line-height:1.5;">A Statement of Wishes is a plain-language document — separate from your Will — that tells your people exactly what to do and where to find everything. Your Will is a legal document; this is the practical guide alongside it.</span>
@@ -376,6 +433,28 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   </div>
 </div>
 
+<!-- F01: Notification Queue modal — shows detailed contact delivery queue -->
+<div id="nqm" class="mo">
+  <div class="ms">
+    <div class="mh"></div>
+    <div class="mt">Notification Queue</div>
+    <div style="background:rgba(186,26,26,.06);border:1px solid rgba(186,26,26,.18);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;">
+      <span class="m mf" style="font-size:18px;color:var(--er);flex-shrink:0;margin-top:1px;">info</span>
+      <p style="font-size:13px;color:var(--ov);line-height:1.5;">This shows which contacts would be notified and in what order, based on your chosen protocol. <strong>No messages are sent in this prototype</strong> — this is a preview only.</p>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);margin-bottom:4px;">Active Protocol</div>
+      <div style="font-family:var(--fh);font-size:15px;font-weight:700;color:var(--p);" id="nq-proto-label">Ping me first, then notify contacts</div>
+    </div>
+    <div id="nq-full-list"></div>
+    <button class="nq-generate" onclick="generateAllPDFs()" style="margin-bottom:12px;"><span class="m" style="font-size:16px;">picture_as_pdf</span>Generate all packages (dry run)</button>
+    <div class="mr">
+      <button class="cxb" onclick="closeM()" style="flex:1;">Close</button>
+      <button class="cfb" onclick="checkin();closeM();" style="flex:2;">I'm okay — check in now</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -387,6 +466,7 @@ function openM(id,cat){
   if(id==='am'){document.getElementById('am-edit-id').value='';document.getElementById('am-title').textContent='Record New Asset';document.getElementById('am-save-btn').textContent='Save Asset';['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');document.getElementById('ac2').selectedIndex=0;}
   if(id==='wm'){document.getElementById('wm-edit-id').value='';document.getElementById('wm-title').textContent='Record a Wish';document.getElementById('wm-save-btn').textContent='Save Wish';['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wp').value='medium';}
   if(id==='km'){document.getElementById('km-edit-id').value='';document.getElementById('km-title').textContent='Add Contact';document.getElementById('km-save-btn').textContent='Add Contact';['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');document.getElementById('k-notify').value='email';}
+  if(id==='nqm'){renderNQModal();}
   if(cat&&id==='wm')document.getElementById('wc2').value=cat;
   if(cat&&id==='sdm')document.getElementById('sd-type').value=cat;
   document.getElementById(id).classList.add('on');
@@ -467,6 +547,123 @@ const icons={'Bank account':'account_balance','Property':'home','Investment':'tr
 const willStatusLabel={signed:'Signed & witnessed',draft:'Draft — not signed',none:'No Will yet'};
 const notifyIcons={email:'email',sms:'sms',whatsapp:'chat',email_and_sms:'mark_email_read'};
 const notifyLabels={email:'Email',sms:'SMS',whatsapp:'WhatsApp',email_and_sms:'Email + SMS'};
+const protoLabels={'ping_then_notify':'Ping me first, then notify contacts','notify_immediately':'Notify contacts immediately','escalate':'Escalate gradually'};
+
+// ─── F01: OVERDUE DETECTION ──────────────────────────────────────────────────
+// This function checks whether the user has missed a check-in AND the grace
+// period has expired. It runs on every render() call (which fires on load and
+// after every state change).
+//
+// BACKEND HOOK: In production, this logic would live in pulse-service. The
+// backend would run a scheduled job (cron) checking all users, not rely on
+// the user opening the app. The client-side version here is a simulation only.
+function getOverdueStatus(){
+  // Can't be overdue if never checked in
+  if(!S.lastCheckin) return {overdue:false,daysOverdue:0,dueDate:null,graceEnd:null};
+
+  // Calculate when the next check-in was due
+  const intervalDays = S.fu==='months' ? (S.fc||2)*30 : (S.fc||2)*7;
+  const dueDate = new Date(S.lastCheckin + intervalDays * 86400000);
+
+  // Grace period starts after the due date
+  const graceDays = S.gp || 3;
+  const graceEnd = new Date(dueDate.getTime() + graceDays * 86400000);
+
+  const now = Date.now();
+  const overdue = now > graceEnd.getTime();
+  const daysOverdue = overdue ? Math.floor((now - graceEnd.getTime()) / 86400000) : 0;
+
+  return {overdue, daysOverdue, dueDate, graceEnd};
+}
+
+// F01: Build the notification queue based on the user's chosen protocol.
+// Returns an array of contact objects with an added `queueStatus` field.
+//
+// BACKEND HOOK: In production, notification-service would manage this queue
+// and actually send messages via SendGrid (email), Twilio (SMS), or WhatsApp
+// API. This client-side version only assigns statuses for display.
+function buildNotificationQueue(daysOverdue){
+  if(!S.kin.length) return [];
+
+  const queue = S.kin.map((k,i) => ({...k, queueIndex: i}));
+
+  if(S.notifyProto === 'ping_then_notify'){
+    // Protocol: 3 daily pings to user first, then notify all contacts at once
+    if(daysOverdue < 3){
+      // Still in ping phase — user is being reminded
+      queue.forEach(k => k.queueStatus = 'waiting');
+    } else {
+      // Pings exhausted — all contacts notified simultaneously
+      queue.forEach(k => k.queueStatus = 'queued');
+    }
+  } else if(S.notifyProto === 'notify_immediately'){
+    // Protocol: skip pings, notify everyone at once
+    queue.forEach(k => k.queueStatus = 'queued');
+  } else if(S.notifyProto === 'escalate'){
+    // Protocol: notify contact #1 first, then wait 24h per subsequent contact
+    queue.forEach((k,i) => {
+      if(daysOverdue >= i){
+        k.queueStatus = 'queued';
+      } else {
+        k.queueStatus = 'waiting';
+      }
+    });
+  }
+
+  return queue;
+}
+
+// F01: Render the notification queue inside the modal
+function renderNQModal(){
+  const {overdue, daysOverdue} = getOverdueStatus();
+  const queue = buildNotificationQueue(daysOverdue);
+  const protoLabel = protoLabels[S.notifyProto] || S.notifyProto;
+  document.getElementById('nq-proto-label').textContent = protoLabel;
+
+  const el = document.getElementById('nq-full-list');
+  if(!queue.length){
+    el.innerHTML = '<div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No contacts added yet. Add contacts first.</div>';
+    return;
+  }
+
+  el.innerHTML = queue.map((k,i) => {
+    const initials = ((k.first[0]||'')+(k.last?k.last[0]:'')).toUpperCase();
+    const statusClass = k.queueStatus === 'queued' ? 'nq-queued' : 'nq-waiting';
+    const statusLabel = k.queueStatus === 'queued' ? 'Queued' : 'Waiting';
+    const method = notifyLabels[k.notifyVia] || 'Email';
+    let timing = '';
+    if(S.notifyProto === 'escalate'){
+      timing = k.queueStatus === 'queued' ? ' — would be sent now' : ' — day '+(i+1);
+    }
+    return `<div class="nq-item">
+      <div class="nq-avatar">${initials}</div>
+      <div style="flex:1;">
+        <div class="nq-name">#${i+1} ${k.first} ${k.last||''}</div>
+        <div class="nq-method">via ${method}${timing}</div>
+      </div>
+      <span class="nq-status ${statusClass}">${statusLabel}</span>
+    </div>`;
+  }).join('');
+}
+
+// F01: Generate PDFs for ALL contacts at once (dry run / demo)
+function generateAllPDFs(){
+  if(!S.kin.length){toast('No contacts to generate packages for');return;}
+  if(typeof window.jspdf === 'undefined'){toast('PDF library not loaded yet — try again');return;}
+  let count = 0;
+  // Small stagger so the browser doesn't choke on simultaneous PDF generation
+  S.kin.forEach((k, i) => {
+    setTimeout(() => {
+      generatePDF(k.id);
+      count++;
+      if(count === S.kin.length){
+        toast(count + ' package' + (count!==1?'s':'') + ' generated ✓');
+      }
+    }, i * 600);
+  });
+  log('Dry run: generated packages for all '+S.kin.length+' contacts');
+  save();
+}
 
 // ─── PDF GENERATION ──────────────────────────────────────────────────────────
 function generatePDF(kinId) {
@@ -509,12 +706,101 @@ function generatePDF(kinId) {
 function render(){
   const{pct,tips}=comp();
 
+  // ─── F01: Overdue detection — runs every render ───────────────────────────
+  const {overdue, daysOverdue, dueDate, graceEnd} = getOverdueStatus();
+  const hasContacts = S.kin.length > 0;
+  const showOverdue = overdue && hasContacts;
+
+  // Show/hide the overdue banner
+  document.getElementById('overdue-banner').style.display = showOverdue ? 'block' : 'none';
+
+  // Switch hero text between normal and overdue
+  document.getElementById('home-hero-normal').style.display = showOverdue ? 'none' : 'block';
+  document.getElementById('home-hero-overdue').style.display = showOverdue ? 'block' : 'none';
+
+  // Switch status badge
+  const badge = document.getElementById('status-badge');
+  if(showOverdue){
+    badge.innerHTML = '<div class="tag" style="background:rgba(186,26,26,.08);color:var(--er);border:1px solid rgba(186,26,26,.2);"><span class="m mf" style="font-size:10px;vertical-align:-1px;">warning</span> Overdue</div>';
+  } else {
+    badge.innerHTML = '<div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div>';
+  }
+
+  // F01: Update overdue banner details
+  if(showOverdue){
+    const overdueStr = daysOverdue === 0 ? 'today' : daysOverdue + ' day' + (daysOverdue!==1?'s':'') + ' ago';
+    document.getElementById('overdue-sub').textContent = 'Grace period expired ' + overdueStr;
+
+    // Build protocol-specific detail text
+    let detailText = '';
+    if(S.notifyProto === 'ping_then_notify'){
+      if(daysOverdue < 3){
+        detailText = 'You would receive ' + (3 - daysOverdue) + ' more daily reminder' + ((3-daysOverdue)!==1?'s':'') + ' before your contacts are alerted. Check in now to cancel.';
+      } else {
+        detailText = 'Reminder period has passed. Your ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would now be notified. Check in now to cancel.';
+      }
+    } else if(S.notifyProto === 'notify_immediately'){
+      detailText = 'All ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would be notified immediately. Check in now to cancel.';
+    } else if(S.notifyProto === 'escalate'){
+      const notifiedCount = Math.min(S.kin.length, daysOverdue + 1);
+      detailText = notifiedCount + ' of ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would have been notified so far. Next contact in ' + (24 - (daysOverdue % 1) * 24).toFixed(0) + ' hours. Check in now to cancel.';
+    }
+    document.getElementById('overdue-detail').textContent = detailText;
+
+    // F01: Render compact notification queue on Home screen
+    const queue = buildNotificationQueue(daysOverdue);
+    const homeNQ = document.getElementById('home-nq');
+    homeNQ.style.display = 'block';
+    homeNQ.innerHTML = `
+      <div class="nq-card">
+        <div class="nq-header">
+          <div class="nq-title"><span class="m mf" style="font-size:17px;color:var(--er);">send</span>Notification Queue</div>
+          <button class="ob" onclick="openM('nqm')" style="padding:5px 10px;font-size:11px;border-color:var(--er);color:var(--er);"><span class="m" style="font-size:13px;">open_in_full</span>Details</button>
+        </div>
+        ${queue.slice(0,3).map((k,i) => {
+          const initials = ((k.first[0]||'')+(k.last?k.last[0]:'')).toUpperCase();
+          const statusClass = k.queueStatus === 'queued' ? 'nq-queued' : 'nq-waiting';
+          const statusLabel = k.queueStatus === 'queued' ? 'Queued' : 'Waiting';
+          return `<div class="nq-item"><div class="nq-avatar">${initials}</div><div style="flex:1;"><div class="nq-name">#${i+1} ${k.first} ${k.last||''}</div><div class="nq-method">via ${notifyLabels[k.notifyVia]||'Email'}</div></div><span class="nq-status ${statusClass}">${statusLabel}</span></div>`;
+        }).join('')}
+        ${queue.length > 3 ? '<div style="text-align:center;font-size:11px;color:var(--ov);padding:4px 0;">+ '+(queue.length-3)+' more contact'+(queue.length-3!==1?'s':'')+'</div>' : ''}
+        <button class="nq-generate" onclick="generateAllPDFs()"><span class="m" style="font-size:16px;">picture_as_pdf</span>Generate all packages (dry run)</button>
+      </div>`;
+  } else {
+    document.getElementById('home-nq').style.display = 'none';
+  }
+
+  // F01: Update pulse card styling when overdue (red instead of teal)
+  const pulseIcon = document.getElementById('pulse-icon');
+  const pulseLabel = document.getElementById('pulse-label');
+  const pulseTitle = document.getElementById('pulse-title');
+  const daysIcon = document.getElementById('days-icon');
+  const daysLabel = document.getElementById('days-label');
+
+  if(showOverdue){
+    pulseIcon.style.color = 'var(--er)';
+    pulseIcon.textContent = 'heart_broken';
+    pulseLabel.textContent = 'TAP TO CHECK IN';
+    pulseTitle.textContent = 'Check-in overdue';
+    pulseTitle.style.color = 'var(--er)';
+    daysIcon.style.color = 'var(--er)';
+    daysLabel.style.color = 'var(--er)';
+    daysLabel.innerHTML = '<span id="d-days">' + daysOverdue + '</span> day' + (daysOverdue!==1?'s':'') + ' overdue';
+  } else {
+    pulseIcon.style.color = 'var(--ac)';
+    pulseIcon.textContent = 'favorite';
+    pulseLabel.textContent = 'TAP TO CHECK IN';
+    pulseTitle.textContent = 'Alive & well';
+    pulseTitle.style.color = 'var(--p)';
+    daysIcon.style.color = 'var(--ac)';
+    daysLabel.style.color = 'var(--ac)';
+  }
+
   // F30: Apply pulse de-emphasis when completeness < 40%
-  // 40% = roughly 3 of 7 checks done — user has something meaningful in the vault
   const pulseCard=document.getElementById('pulse-card');
   const completenessCard=document.getElementById('completeness-card');
   const pulseHint=document.getElementById('pulse-hint');
-  const isDimmed=pct<40;
+  const isDimmed=pct<40 && !showOverdue; // Don't dim when overdue — pulse is critical then
   pulseCard.classList.toggle('pulse-dimmed',isDimmed);
   completenessCard.classList.toggle('pulse-dimmed-focus',isDimmed);
   pulseHint.style.display=isDimmed?'block':'none';
@@ -522,7 +808,24 @@ function render(){
   document.getElementById('d-sum').textContent=S.assets.length+' asset'+(S.assets.length!==1?'s':'')+' · '+S.wishes.length+' wish'+(S.wishes.length!==1?'es':'');
   document.getElementById('cp-lbl').textContent=pct+'%';document.getElementById('cp-bar').style.width=pct+'%';
   document.getElementById('cp-tips').innerHTML=tips.length===0?'<div style="color:var(--ac);font-size:13px;font-weight:600;padding:2px 0;">Home complete — well done!</div>':tips.map(t=>'<div class="ct"><span class="m" style="font-size:14px;color:var(--ac);flex-shrink:0;">arrow_circle_right</span><span>'+t+'</span></div>').join('');
-  if(S.lastCheckin){const dU=S.fu==='months'?(S.fc||2)*30:(S.fc||2)*7;const nd=new Date(S.lastCheckin+dU*86400000);document.getElementById('d-next').textContent=nd.toLocaleDateString('en-AU',{day:'numeric',month:'short'});const dl=Math.max(0,Math.ceil(dU-(Date.now()-S.lastCheckin)/86400000));document.getElementById('d-days').textContent=dl;const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);document.getElementById('lc-lbl').textContent=ago===0?'Confirmed today':'Confirmed '+ago+' day'+(ago!==1?'s':'')+' ago';}else{document.getElementById('d-next').textContent='Not set';document.getElementById('d-days').textContent='—';}
+
+  if(S.lastCheckin && !showOverdue){
+    const dU=S.fu==='months'?(S.fc||2)*30:(S.fc||2)*7;
+    const nd=new Date(S.lastCheckin+dU*86400000);
+    document.getElementById('d-next').textContent=nd.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    const dl=Math.max(0,Math.ceil(dU-(Date.now()-S.lastCheckin)/86400000));
+    daysLabel.innerHTML='<span id="d-days">'+dl+'</span> days remaining';
+    daysLabel.style.color='var(--ac)';
+    const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);
+    document.getElementById('lc-lbl').textContent=ago===0?'Confirmed today':'Confirmed '+ago+' day'+(ago!==1?'s':'')+' ago';
+  } else if(S.lastCheckin && showOverdue){
+    document.getElementById('d-next').textContent='Overdue';
+    const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);
+    document.getElementById('lc-lbl').textContent='Last confirmed '+ago+' day'+(ago!==1?'s':'')+' ago';
+  } else {
+    document.getElementById('d-next').textContent='Not set';
+  }
+
   document.getElementById('d-act').innerHTML=S.log.length===0?'<div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No activity yet</div>':S.log.slice(0,5).map(l=>'<div class="ai"><div class="aico"><span class="m">history</span></div><div><div style="font-weight:700;font-size:13px;color:var(--p);line-height:1.2;">'+l.msg+'</div><div style="font-size:11px;color:var(--ov);margin-top:1px;">'+l.time+'</div></div></div>').join('');
 
   // Ledger render

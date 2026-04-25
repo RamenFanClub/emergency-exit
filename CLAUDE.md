@@ -79,13 +79,22 @@ Planned platforms:
 ## App Structure — 5 Screens
 
 ### 1. Home (Dashboard)
-- Hero headline: "Your legacy is securely anchored"
-- Asset + wish count summary with Active status badge
+- Hero headline: "Everything is in order." (normal) / "Action needed." (overdue — F01)
+- Asset + wish count summary with status badge: Active (teal) or Overdue (red — F01)
 - **Privacy note** (F31): Small teal lock icon line below summary — "Your information is stored on this device only — it never leaves your phone." Update this copy when backend cloud storage launches.
+- **F01: Overdue alert banner** — red gradient card shown above Vitality Pulse when a check-in is overdue and grace period has expired. Contains:
+  - Warning icon + "Check-in overdue" title + grace period expiry info
+  - Protocol-specific detail text (adapts to ping_then_notify / notify_immediately / escalate)
+  - Two buttons: "I'm okay — check in" (white, dismisses overdue) and "View queue" (opens notification queue modal)
+  - Gentle pulse animation on the card shadow to draw attention without being alarming
+  - Only shows when contacts exist (no point alerting about notifications with no contacts)
 - **Vitality Pulse** — animated pulsing heart, tap to confirm "Alive & well"
-  - Fades to 45% opacity and scales down when completeness < 40% (F30)
+  - Switches to red `heart_broken` icon + "Check-in overdue" title when overdue (F01)
+  - Shows "X days overdue" instead of "X days remaining" when overdue (F01)
+  - Fades to 45% opacity and scales down when completeness < 40% (F30) — but NOT when overdue (pulse is critical then)
   - Completeness card gets teal highlight ring when pulse is dimmed (F30)
   - Contextual hint appears inside pulse card when dimmed (F30)
+- **F01: Notification queue card** — shown on Home only when overdue. Compact card with red accent showing first 3 queued contacts, their delivery method, and queue status (Queued/Waiting). "Details" button opens full queue modal. "Generate all packages (dry run)" button downloads PDFs for all contacts.
 - Next check-in date + days remaining countdown (combined with Vitality Pulse in one card)
 - Last confirmed timestamp shown below pulse
 - Asset Ledger CTA (full-width gradient button)
@@ -180,7 +189,8 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 - **Letter button:** Teal-tinted outlined style (`.letter-btn`), changes label to "Edit" once a letter exists
 - **Letter status pill:** Teal "Letter written" or orange "No letter yet" — rendered inside the contact card header row
 - **Preview button:** Outlined style (navy border, near-transparent background) at the bottom of each contact card
-- **Pulse de-emphasis (F30):** CSS classes `pulse-dimmed` (on `#pulse-card`) and `pulse-dimmed-focus` (on `#completeness-card`) are toggled by `render()` when `pct < 40`. Do not remove these IDs from the HTML elements.
+- **Pulse de-emphasis (F30):** CSS classes `pulse-dimmed` (on `#pulse-card`) and `pulse-dimmed-focus` (on `#completeness-card`) are toggled by `render()` when `pct < 40`. Do not remove these IDs from the HTML elements. Pulse de-emphasis is suppressed when overdue (F01) — the pulse is critical in that state.
+- **Overdue alert (F01):** CSS class `.overdue-banner` with red gradient, gentle pulse animation. `.nq-card` for notification queue card with red border accent. `.nq-item` for individual contact rows in the queue. Status badges: `.nq-queued` (red) and `.nq-waiting` (amber).
 
 ---
 
@@ -272,6 +282,56 @@ When the grace period expires, contacts receive a self-contained package. No app
 
 ---
 
+## F01: Overdue Detection & Notification Queue (Client-Side Simulation)
+
+The core "dead man's switch" logic is implemented as a client-side simulation. It detects overdue check-ins, shows an alert state, and previews the notification queue — but does NOT actually send messages (that requires backend — see F39).
+
+### How it works
+
+1. **`getOverdueStatus()`** — runs on every `render()` call. Calculates: `lastCheckin + interval + gracePeriod < now`. Returns `{overdue, daysOverdue, dueDate, graceEnd}`.
+
+2. **Overdue banner** — red gradient card at the top of Home. Shows protocol-specific detail text:
+   - *Ping first:* "You would receive X more daily reminders before contacts are alerted"
+   - *Immediately:* "All N contacts would be notified immediately"
+   - *Escalate:* "X of N contacts would have been notified so far"
+
+3. **`buildNotificationQueue(daysOverdue)`** — assigns `queueStatus` ('queued' or 'waiting') to each contact based on the active protocol and how many days overdue.
+
+4. **Notification queue card** — compact version on Home, full version in `#nqm` modal.
+
+5. **`generateAllPDFs()`** — batch generates PDFs for all contacts with a 600ms stagger (prevents browser freeze).
+
+6. **Pulse card changes** — icon switches to `heart_broken`, colour goes red, text changes to "X days overdue". F30 dimming is suppressed when overdue.
+
+### How to test it
+
+Open browser dev tools (F12 → Console) and paste:
+```javascript
+// Set lastCheckin to 90 days ago to simulate overdue
+let s = JSON.parse(localStorage.getItem('ee_v3'));
+s.lastCheckin = Date.now() - (90 * 86400000);
+localStorage.setItem('ee_v3', JSON.stringify(s));
+location.reload();
+```
+
+To reset: tap "I'm okay — check in" or paste:
+```javascript
+let s = JSON.parse(localStorage.getItem('ee_v3'));
+s.lastCheckin = Date.now();
+localStorage.setItem('ee_v3', JSON.stringify(s));
+location.reload();
+```
+
+### What the backend needs to do (see F39)
+
+The client-side version only checks when the user opens the app. In production:
+- `pulse-service` runs a scheduled job (cron) checking ALL users' check-in deadlines
+- `notification-service` actually sends emails/SMS/WhatsApp when triggered
+- Push notifications remind the user before and during the grace period
+- The client receives overdue state from the API, not from local calculation
+
+---
+
 ## Modals
 
 | ID | Purpose |
@@ -282,6 +342,7 @@ When the grace period expires, contacts receive a self-contained package. No app
 | `sdm` | Attach Supplementary Document |
 | `km` | Add Contact |
 | `lm` | Write / Edit Personal Letter (F03) — fields: `#lm-kin-id` (hidden, stores contact id), `#lt` (textarea) |
+| `nqm` | Notification Queue (F01) — shows full contact queue with protocol info, status badges, and batch PDF generation button |
 
 ---
 
@@ -330,6 +391,8 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - jsPDF loaded via CDN in `<head>` — access via `window.jspdf.jsPDF`
 - New contacts are initialised with `letter: ''` so the field is always present
 - `#pulse-card` and `#completeness-card` IDs on Home are required for F30 JS logic — do not remove
+- `#overdue-banner`, `#home-nq`, `#home-hero-normal`, `#home-hero-overdue`, `#status-badge` IDs on Home are required for F01 overdue logic — do not remove
+- `#pulse-icon`, `#pulse-label`, `#pulse-title`, `#days-icon`, `#days-label` IDs inside Vitality Pulse are required for F01 overdue styling — do not remove
 
 ---
 
@@ -352,6 +415,8 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - Do not use non-`.ob` styles for secondary add-action buttons in section headers (F26). The only exception is the Home screen quick-action pills (`.qb`).
 - Do not remove `id="pulse-card"` or `id="completeness-card"` from Home screen — required for F30 pulse de-emphasis logic.
 - Do not remove the privacy note line (F31) from Home without updating copy to reflect cloud storage.
+- Do not remove F01 element IDs (`#overdue-banner`, `#home-nq`, `#home-hero-normal`, `#home-hero-overdue`, `#status-badge`, `#pulse-icon`, `#pulse-label`, `#pulse-title`, `#days-icon`, `#days-label`) — required for overdue detection UI.
+- Do not remove the `#nqm` modal — it is the full notification queue view for F01.
 
 ---
 
@@ -367,7 +432,7 @@ These features complete the vault → heartbeat → delivery loop. Without them,
 
 | ID | User Story | Priority | Status | Notes |
 |----|-----------|----------|--------|-------|
-| F01 | As a user, I want the app to automatically notify my contacts if I miss a check-in and the grace period expires, so that my loved ones are alerted without relying on someone else to act. | Must | idea | This is the #1 differentiator. Requires backend (notification-service). |
+| F01 | As a user, I want the app to automatically notify my contacts if I miss a check-in and the grace period expires, so that my loved ones are alerted without relying on someone else to act. | Must | in-progress | **Client-side simulation: done.** Overdue detection, alert banner, notification queue preview, protocol-aware queue logic, batch PDF generation all implemented. **Backend delivery: not started** — requires F39. |
 | F02 | As a contact, I want to receive a self-contained PDF with the user's assets, wishes, and legal document locations, so I can act immediately without needing an app or login. | Must | done | All contacts receive the full package — no access level tiers. 6-page A4 PDF generated client-side via jsPDF. Preview button on each contact card ("Preview what [Name] will receive"). Also delivers F17. |
 | F03 | As a user, I want to write a personal letter for each contact that is included in their notification, so they receive a human message alongside the practical information. | Must | done | Letter stored as `k.letter` (string) on each contact object. Letter modal (`#lm`) with warm UX prompt. Status pill on contact card (teal "Letter written" / orange "No letter yet"). Letter button changes label to "Edit" once written. PDF Page 1 renders actual letter text in italic with teal accent bar; placeholder copy shown if not yet written. |
 | F04 | As a user, I want my data encrypted at rest and in transit, so that sensitive financial and legal information is protected from unauthorised access. | Must | idea | Current prototype uses plain localStorage. Production needs AES-256 or equivalent. |
@@ -413,7 +478,7 @@ These features address UX audit findings: visual consistency, tone of voice, emp
 | F27 | As a user, I want card backgrounds (grey vs white) to follow a clear visual rule, so the screen hierarchy makes sense at a glance. | Should | done | Rule enforced across all screens: `.cardw` (white + shadow) = interactive or primary sections; `.card` (grey) = informational or contextual grouping containers. Rule also documented in Key UI Patterns and What NOT to Do sections of this file. |
 | F28 | As a user, I want section headers to follow a consistent layout pattern across all screens, so the app feels cohesive. | Should | done | Home activity header changed from text-link to `.ob` button. All section headers now use `.sh` row with consistent left/right elements. |
 | F29 | As a user, I want to see my contacts' email and phone number on their card, so I can verify the details are correct without opening anything. | Should | done | Compact email and phone lines added below notification method on contact cards, with mail/phone icons and text overflow handling. |
-| F30 | As a user, I want the Vitality Pulse to be less prominent until I've set up my vault, so I'm guided toward adding content first rather than checking in to an empty vault. | Should | done | Pulse card (`#pulse-card`) fades to 45% opacity and scales slightly when completeness < 40%. Completeness card (`#completeness-card`) gains a teal highlight ring. A contextual hint appears inside the pulse card when dimmed. CSS classes `pulse-dimmed` and `pulse-dimmed-focus` toggled in `render()`. Threshold: pct < 40 (roughly 3 of 7 checks). |
+| F30 | As a user, I want the Vitality Pulse to be less prominent until I've set up my vault, so I'm guided toward adding content first rather than checking in to an empty vault. | Should | done | Pulse card (`#pulse-card`) fades to 45% opacity and scales slightly when completeness < 40%. Completeness card (`#completeness-card`) gains a teal highlight ring. A contextual hint appears inside the pulse card when dimmed. CSS classes `pulse-dimmed` and `pulse-dimmed-focus` toggled in `render()`. Threshold: pct < 40 (roughly 3 of 7 checks). **Updated:** Dimming is suppressed when overdue (F01) — the pulse is critical in that state. |
 | F31 | As a user, I want a brief privacy note on the Home screen or Settings, so I feel confident about where my sensitive data is stored. | Should | done | Small teal lock icon + line added below the asset/wish count on Home: "Your information is stored on this device only — it never leaves your phone." **Update this copy when backend cloud storage launches.** |
 | F32 | As a user, I want the Statement of Wishes nudge to include a brief plain-language explanation of what it is (and how it differs from a Will), so I understand why it matters. | Should | done | Grey info box added inside SOW nudge card: "A Statement of Wishes is a plain-language document — separate from your Will — that tells your people exactly what to do and where to find everything. Your Will is a legal document; this is the practical guide alongside it." |
 | F33 | As a user, I want the check-in label to say "Tap to check in" instead of "TAP TO CONFIRM", so it feels like a gentle habit rather than a transactional confirmation. | Should | done | Micro-label on Vitality Pulse changed to "TAP TO CHECK IN". |
@@ -421,6 +486,85 @@ These features address UX audit findings: visual consistency, tone of voice, emp
 | F35 | As a user, I want Settings to auto-save all changes consistently (not a mix of auto-save and manual confirm), so I don't wonder whether my changes were saved. | Could | specified | Currently: notification protocol auto-saves on tap; frequency/grace period require "Confirm Settings" button. Switch everything to auto-save with toast feedback. |
 | F36 | As a user, I want toast messages to feel consistent and occasionally warm, so small moments of feedback reinforce trust. | Could | specified | Standardise: all toasts include ✓. First few saves can use warmer copy like "Saved. One more thing taken care of." |
 | F37 | As a user, I want screen subtitles to be visually distinct from in-card body text, so the hierarchy is clear. | Could | done | `.ps` bumped to 15px and `font-weight: 500` to separate from in-card descriptions. |
+
+### Backend & Infrastructure
+
+| ID | User Story | Priority | Status | Notes |
+|----|-----------|----------|--------|-------|
+| F39 | As a user, I want the notification system to work even when I haven't opened the app, so my contacts are notified reliably regardless of whether my phone is on or the app is running. | Must | specified | **This is the backend counterpart to F01.** The client-side simulation (F01 frontend) detects overdue status when the app is opened, but real notification delivery requires server-side infrastructure that monitors check-ins independently. See detailed spec below. |
+
+#### F39: Backend Notification Infrastructure — Specification
+
+**Problem:** The F01 client-side simulation only works when the user opens the app. If a user dies or is incapacitated, they won't open the app — so the overdue detection and contact notification must happen on a server, independently of the client.
+
+**Services involved:**
+
+1. **pulse-service (port 8005)**
+   - Stores each user's `lastCheckin` timestamp, `fc`, `fu`, `gp`, and `notifyProto`
+   - Exposes `POST /checkin` endpoint (called by the app on tap)
+   - Exposes `GET /status` endpoint (returns overdue status for the client to display)
+   - Runs a **scheduled job** (cron, every 15 minutes) that scans all users:
+     - Calculates `dueDate + gracePeriod` for each user
+     - If `now > graceEnd` and no notification has been triggered yet, publishes a `CHECKIN_EXPIRED` event to RabbitMQ
+   - Manages a `notification_state` field per user: `active | grace_period | pinging | notifying | completed`
+   - For `ping_then_notify` protocol: publishes `PING_USER` events for 3 days before `CHECKIN_EXPIRED`
+
+2. **notification-service (port 8006)**
+   - Subscribes to `CHECKIN_EXPIRED` and `PING_USER` events from RabbitMQ
+   - On `PING_USER`: sends push notification / SMS / email to the vault owner ("You haven't checked in — are you okay?")
+   - On `CHECKIN_EXPIRED`: builds the delivery queue based on `notifyProto`:
+     - `notify_immediately` → send to all contacts at once
+     - `ping_then_notify` → send to all contacts at once (pinging phase already completed)
+     - `escalate` → send to contact #1, schedule contact #2 for +24h, etc.
+   - For each contact: generates PDF (server-side, replicating jsPDF logic), composes notification message, sends via:
+     - **Email:** SendGrid API — PDF attached, personal letter in body
+     - **SMS:** Twilio API — short message with link to download PDF from a time-limited secure URL
+     - **WhatsApp:** Twilio WhatsApp API — similar to SMS
+   - Logs delivery status per contact: `pending | sent | delivered | failed | bounced`
+   - Retry logic: 3 attempts with exponential backoff for failed sends
+
+3. **api-gateway (port 8000)**
+   - Proxies `/checkin` to pulse-service
+   - Proxies `/status` to pulse-service (client polls this to get overdue state from server)
+   - Auth middleware validates JWT + optional biometric token
+
+**Data flow:**
+```
+User taps "Check in" in app
+  → POST /api/checkin (via api-gateway)
+  → pulse-service updates lastCheckin, resets notification_state to 'active'
+  → Client receives confirmation, updates local state
+
+Every 15 minutes (server cron):
+  → pulse-service scans all users
+  → For overdue users: publishes CHECKIN_EXPIRED to RabbitMQ
+  → notification-service picks up event
+  → Builds queue, generates PDFs, sends messages
+  → Logs delivery status
+
+User opens app after being overdue:
+  → GET /api/status (via api-gateway)
+  → Client receives {overdue: true, contactsNotified: [...], ...}
+  → F01 UI renders overdue banner + notification queue with real delivery statuses
+```
+
+**Key decisions to make before building:**
+- **PDF generation on server:** Replicate jsPDF logic in Python (using ReportLab or WeasyPrint), or run a headless browser? ReportLab is lighter but requires rewriting the PDF layout. WeasyPrint lets you use HTML/CSS templates.
+- **Secure PDF hosting for SMS/WhatsApp:** PDFs can't be attached to SMS. Need a temporary secure URL (e.g. S3 presigned URL, 7-day expiry). Consider whether to encrypt the PDF itself with a passphrase sent separately.
+- **False alarm recovery:** If the user checks in after notifications have been sent, should contacts receive a "false alarm — they're okay" follow-up message? Probably yes.
+- **Rate limiting:** Prevent accidental mass-sends from bugs. Hard limit: 1 notification cycle per user per grace period.
+- **Monitoring:** Alert the ops team if notification-service fails to send to any contact. This is life-critical infrastructure.
+
+**Acceptance criteria:**
+- [ ] pulse-service correctly identifies overdue users via scheduled scan
+- [ ] notification-service sends email with PDF attachment to all contacts (notify_immediately protocol)
+- [ ] notification-service sends 3 daily pings before notifying contacts (ping_then_notify protocol)
+- [ ] notification-service sends to contacts in sequence with 24h gaps (escalate protocol)
+- [ ] Checking in after overdue resets state and stops further notifications
+- [ ] Delivery status is logged and visible to the user when they next open the app
+- [ ] SMS and WhatsApp contacts receive a secure link to download their PDF
+- [ ] Failed sends are retried 3 times with exponential backoff
+- [ ] System handles 10,000+ users without performance degradation on 15-minute scan
 
 ### Bug Fix
 
@@ -441,7 +585,7 @@ These features address UX audit findings: visual consistency, tone of voice, emp
 
 ### How to use this backlog
 
-- **Adding a new feature:** Add a row with the next ID number (F39, F40...), write the user story, set priority and status to `idea`.
+- **Adding a new feature:** Add a row with the next ID number (F40, F41...), write the user story, set priority and status to `idea`.
 - **When building:** Move status to `specified` once requirements are clear, `in-progress` when coding, `done` when shipped.
 - **Re-prioritising:** Change the MoSCoW priority and move the row to the correct section. Add a note explaining why.
 - **Removing a feature:** Move it to "Won't Have" with an explanation. Never delete — context matters.
