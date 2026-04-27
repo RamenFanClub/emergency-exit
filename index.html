@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-:root{--p:#002147;--pc:#002d5e;--s:#f8f9fb;--sl:#f2f4f6;--sc:#eceef0;--sh:#e6e8ea;--sx:#e0e3e5;--w:#ffffff;--os:#191c1e;--ov:#44474e;--ov2:#c4c6cf;--ac:#2d8a7a;--al:rgba(45,138,122,.10);--ab:rgba(45,138,122,.22);--sec:#54657d;--scc:#d1d9e6;--er:#ba1a1a;--fh:'Manrope',sans-serif;--fb:'Public Sans',sans-serif;--g:linear-gradient(135deg,#002147 0%,#003366 100%);--cs:0 2px 12px rgba(25,28,30,.07);--cn:0 -4px 20px rgba(0,0,0,.08);--rc:16px;--rb:14px;--rp:9999px;}
+:root{--p:#002147;--pc:#002d5e;--s:#f8f9fb;--sl:#f2f4f6;--sc:#eceef0;--sh:#e6e8ea;--sx:#e0e3e5;--w:#ffffff;--os:#191c1e;--ov:#44474e;--ov2:#c4c6cf;--ac:#2d8a7a;--al:rgba(45,138,122,.10);--ab:rgba(45,138,122,.22);--sec:#54657d;--scc:#d1d9e6;--er:#ba1a1a;--fh:'Manrope',sans-serif;--fb:'Public Sans',sans-serif;--g:linear-gradient(135deg,#002147 0%,#003366 100%);--cs:0 2px 12px rgba(25,28,30,.07);--cn:0 -4px 20px rgba(0,0,0,.08);--rc:16px;--rb:14px;--rp:9999px;--am:#c47a20;--am-bg:rgba(196,122,32,.08);--am-border:rgba(196,122,32,.25);}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:#f8f9fb;font-family:var(--fb);color:var(--os);-webkit-font-smoothing:antialiased;}
 #app{width:100%;max-width:430px;height:100vh;display:flex;flex-direction:column;background:var(--s);overflow:hidden;margin:0 auto;}
@@ -185,6 +185,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .nq-sent{background:rgba(45,138,122,.08);color:var(--ac);border:1px solid var(--ab);}
 .nq-generate{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:10px;border:1.5px solid rgba(186,26,26,.25);background:rgba(186,26,26,.04);cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--er);transition:all .18s;margin-top:8px;}
 .nq-generate:active{background:rgba(186,26,26,.1);transform:scale(.98);}
+
+/* F05: Reminder banner styling — warm amber tone, distinct from F01 red overdue */
+.reminder-banner{background:linear-gradient(135deg,#8a6514 0%,#c47a20 100%);border-radius:var(--rc);padding:16px 14px;margin-bottom:14px;box-shadow:0 4px 16px rgba(196,122,32,.20);border-bottom:3px solid rgba(0,0,0,.15);}
+.reminder-banner .rb-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.reminder-banner .rb-icon{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.reminder-banner .rb-icon .m{font-size:22px;color:#fff;}
+.reminder-banner .rb-title{font-family:var(--fh);font-size:16px;font-weight:800;color:#fff;line-height:1.2;}
+.reminder-banner .rb-sub{font-size:12px;color:rgba(255,255,255,.75);font-weight:500;margin-top:2px;}
+.reminder-banner .rb-detail{background:rgba(0,0,0,.12);border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,.9);line-height:1.5;}
+.reminder-banner .rb-btn{width:100%;padding:12px;border-radius:10px;border:none;background:#fff;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--am);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s;}
+.reminder-banner .rb-btn:active{transform:scale(.96);}
+
+/* F05: Pulse card amber accent when check-in due soon */
+#pulse-card.pulse-due-soon .vc{box-shadow:0 0 0 3px rgba(196,122,32,.25),0 8px 32px rgba(196,122,32,.14);}
+#pulse-card.pulse-due-soon .vr::before{background:rgba(196,122,32,.10);}
+#pulse-card.pulse-due-soon .vr::after{background:rgba(196,122,32,.08);}
 </style>
 </head>
 <body>
@@ -218,6 +234,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
             <button class="ob-btn overdue-btn-primary" onclick="checkin()"><span class="m mf" style="font-size:16px;">favorite</span>I'm okay — check in</button>
             <button class="ob-btn overdue-btn-secondary" onclick="openM('nqm')"><span class="m" style="font-size:16px;">group</span>View queue</button>
           </div>
+        </div>
+      </div>
+
+      <!-- F05: Reminder banner — shown when check-in is due soon but NOT yet overdue -->
+      <div id="reminder-banner" style="display:none;">
+        <div class="reminder-banner">
+          <div class="rb-header">
+            <div class="rb-icon"><span class="m mf">schedule</span></div>
+            <div>
+              <div class="rb-title">Check-in due soon</div>
+              <div class="rb-sub" id="reminder-sub">Your next check-in is approaching</div>
+            </div>
+          </div>
+          <div class="rb-detail" id="reminder-detail">
+            Tap below to check in now and reset your timer. If you miss this window, your grace period will begin.
+          </div>
+          <button class="rb-btn" onclick="checkin()"><span class="m mf" style="font-size:16px;">favorite</span>Check in now</button>
         </div>
       </div>
 
@@ -550,66 +583,64 @@ const notifyLabels={email:'Email',sms:'SMS',whatsapp:'WhatsApp',email_and_sms:'E
 const protoLabels={'ping_then_notify':'Ping me first, then notify contacts','notify_immediately':'Notify contacts immediately','escalate':'Escalate gradually'};
 
 // ─── F01: OVERDUE DETECTION ──────────────────────────────────────────────────
-// This function checks whether the user has missed a check-in AND the grace
-// period has expired. It runs on every render() call (which fires on load and
-// after every state change).
-//
-// BACKEND HOOK: In production, this logic would live in pulse-service. The
-// backend would run a scheduled job (cron) checking all users, not rely on
-// the user opening the app. The client-side version here is a simulation only.
 function getOverdueStatus(){
-  // Can't be overdue if never checked in
   if(!S.lastCheckin) return {overdue:false,daysOverdue:0,dueDate:null,graceEnd:null};
-
-  // Calculate when the next check-in was due
   const intervalDays = S.fu==='months' ? (S.fc||2)*30 : (S.fc||2)*7;
   const dueDate = new Date(S.lastCheckin + intervalDays * 86400000);
-
-  // Grace period starts after the due date
   const graceDays = S.gp || 3;
   const graceEnd = new Date(dueDate.getTime() + graceDays * 86400000);
-
   const now = Date.now();
   const overdue = now > graceEnd.getTime();
   const daysOverdue = overdue ? Math.floor((now - graceEnd.getTime()) / 86400000) : 0;
-
   return {overdue, daysOverdue, dueDate, graceEnd};
 }
 
-// F01: Build the notification queue based on the user's chosen protocol.
-// Returns an array of contact objects with an added `queueStatus` field.
+// ─── F05: REMINDER STATUS — "due soon" detection ────────────────────────────
+// This function checks whether the user's check-in is approaching but NOT yet
+// overdue. It returns a "due soon" state when the remaining time is within
+// the greater of 7 days or 25% of the total interval.
 //
-// BACKEND HOOK: In production, notification-service would manage this queue
-// and actually send messages via SendGrid (email), Twilio (SMS), or WhatsApp
-// API. This client-side version only assigns statuses for display.
+// Three possible states in priority order:
+//   1. Overdue (F01) — grace period has expired → red alert
+//   2. Due soon (F05) — approaching deadline → amber reminder
+//   3. All good — plenty of time left → normal teal
+//
+// BACKEND HOOK: In production, this would trigger push notifications, email,
+// or SMS reminders via notification-service. This client-side version only
+// shows the reminder when the user opens the app.
+function getReminderStatus(){
+  // Can't remind if never checked in — no deadline to approach
+  if(!S.lastCheckin) return {dueSoon:false,daysLeft:null,dueDate:null};
+
+  const intervalDays = S.fu==='months' ? (S.fc||2)*30 : (S.fc||2)*7;
+  const dueDate = new Date(S.lastCheckin + intervalDays * 86400000);
+  const now = Date.now();
+  const daysLeft = Math.ceil((dueDate.getTime() - now) / 86400000);
+
+  // If already past due date, F01 overdue logic takes over — not a reminder situation
+  if(daysLeft < 0) return {dueSoon:false, daysLeft:0, dueDate};
+
+  // Reminder threshold: the greater of 7 days or 25% of the interval
+  // This means short intervals (e.g. 2 weeks = 14 days) trigger at 7 days,
+  // while long intervals (e.g. 6 months = 180 days) trigger at 45 days.
+  const threshold = Math.max(7, Math.ceil(intervalDays * 0.25));
+  const dueSoon = daysLeft <= threshold;
+
+  return {dueSoon, daysLeft, dueDate};
+}
+
+// F01: Build the notification queue
 function buildNotificationQueue(daysOverdue){
   if(!S.kin.length) return [];
-
   const queue = S.kin.map((k,i) => ({...k, queueIndex: i}));
-
   if(S.notifyProto === 'ping_then_notify'){
-    // Protocol: 3 daily pings to user first, then notify all contacts at once
-    if(daysOverdue < 3){
-      // Still in ping phase — user is being reminded
-      queue.forEach(k => k.queueStatus = 'waiting');
-    } else {
-      // Pings exhausted — all contacts notified simultaneously
-      queue.forEach(k => k.queueStatus = 'queued');
-    }
+    if(daysOverdue < 3){ queue.forEach(k => k.queueStatus = 'waiting'); }
+    else { queue.forEach(k => k.queueStatus = 'queued'); }
   } else if(S.notifyProto === 'notify_immediately'){
-    // Protocol: skip pings, notify everyone at once
     queue.forEach(k => k.queueStatus = 'queued');
   } else if(S.notifyProto === 'escalate'){
-    // Protocol: notify contact #1 first, then wait 24h per subsequent contact
-    queue.forEach((k,i) => {
-      if(daysOverdue >= i){
-        k.queueStatus = 'queued';
-      } else {
-        k.queueStatus = 'waiting';
-      }
-    });
+    queue.forEach((k,i) => { k.queueStatus = daysOverdue >= i ? 'queued' : 'waiting'; });
   }
-
   return queue;
 }
 
@@ -646,12 +677,11 @@ function renderNQModal(){
   }).join('');
 }
 
-// F01: Generate PDFs for ALL contacts at once (dry run / demo)
+// F01: Generate PDFs for ALL contacts at once
 function generateAllPDFs(){
   if(!S.kin.length){toast('No contacts to generate packages for');return;}
   if(typeof window.jspdf === 'undefined'){toast('PDF library not loaded yet — try again');return;}
   let count = 0;
-  // Small stagger so the browser doesn't choke on simultaneous PDF generation
   S.kin.forEach((k, i) => {
     setTimeout(() => {
       generatePDF(k.id);
@@ -711,17 +741,41 @@ function render(){
   const hasContacts = S.kin.length > 0;
   const showOverdue = overdue && hasContacts;
 
+  // ─── F05: Reminder detection — only active when NOT overdue ───────────────
+  const {dueSoon, daysLeft} = getReminderStatus();
+  const showReminder = dueSoon && !showOverdue && !overdue;
+
   // Show/hide the overdue banner
   document.getElementById('overdue-banner').style.display = showOverdue ? 'block' : 'none';
+
+  // F05: Show/hide the reminder banner
+  document.getElementById('reminder-banner').style.display = showReminder ? 'block' : 'none';
+
+  // F05: Update reminder banner content with contextual detail
+  if(showReminder){
+    const graceDays = S.gp || 3;
+    if(daysLeft === 0){
+      document.getElementById('reminder-sub').textContent = 'Your check-in is due today';
+      document.getElementById('reminder-detail').textContent = 'If you don\'t check in today, your ' + graceDays + '-day grace period will begin. After that, your contacts may be notified.';
+    } else if(daysLeft === 1){
+      document.getElementById('reminder-sub').textContent = 'Your check-in is due tomorrow';
+      document.getElementById('reminder-detail').textContent = 'You have 1 day left before your grace period begins. A quick tap below keeps everything on track.';
+    } else {
+      document.getElementById('reminder-sub').textContent = daysLeft + ' days until your next check-in';
+      document.getElementById('reminder-detail').textContent = 'Your check-in is approaching. Tap below to reset your timer and keep your vault active.';
+    }
+  }
 
   // Switch hero text between normal and overdue
   document.getElementById('home-hero-normal').style.display = showOverdue ? 'none' : 'block';
   document.getElementById('home-hero-overdue').style.display = showOverdue ? 'block' : 'none';
 
-  // Switch status badge
+  // Switch status badge — three states: overdue (red), due soon (amber), active (teal)
   const badge = document.getElementById('status-badge');
   if(showOverdue){
     badge.innerHTML = '<div class="tag" style="background:rgba(186,26,26,.08);color:var(--er);border:1px solid rgba(186,26,26,.2);"><span class="m mf" style="font-size:10px;vertical-align:-1px;">warning</span> Overdue</div>';
+  } else if(showReminder){
+    badge.innerHTML = '<div class="tag" style="background:var(--am-bg);color:var(--am);border:1px solid var(--am-border);"><span class="m mf" style="font-size:10px;vertical-align:-1px;">schedule</span> Due Soon</div>';
   } else {
     badge.innerHTML = '<div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div>';
   }
@@ -731,7 +785,6 @@ function render(){
     const overdueStr = daysOverdue === 0 ? 'today' : daysOverdue + ' day' + (daysOverdue!==1?'s':'') + ' ago';
     document.getElementById('overdue-sub').textContent = 'Grace period expired ' + overdueStr;
 
-    // Build protocol-specific detail text
     let detailText = '';
     if(S.notifyProto === 'ping_then_notify'){
       if(daysOverdue < 3){
@@ -770,12 +823,16 @@ function render(){
     document.getElementById('home-nq').style.display = 'none';
   }
 
-  // F01: Update pulse card styling when overdue (red instead of teal)
+  // F01 + F05: Update pulse card styling — three states
   const pulseIcon = document.getElementById('pulse-icon');
   const pulseLabel = document.getElementById('pulse-label');
   const pulseTitle = document.getElementById('pulse-title');
   const daysIcon = document.getElementById('days-icon');
   const daysLabel = document.getElementById('days-label');
+  const pulseCard = document.getElementById('pulse-card');
+
+  // F05: Remove/add pulse-due-soon class for amber styling
+  pulseCard.classList.toggle('pulse-due-soon', showReminder);
 
   if(showOverdue){
     pulseIcon.style.color = 'var(--er)';
@@ -786,6 +843,16 @@ function render(){
     daysIcon.style.color = 'var(--er)';
     daysLabel.style.color = 'var(--er)';
     daysLabel.innerHTML = '<span id="d-days">' + daysOverdue + '</span> day' + (daysOverdue!==1?'s':'') + ' overdue';
+  } else if(showReminder){
+    // F05: Amber pulse state — gentle urgency, not alarm
+    pulseIcon.style.color = 'var(--am)';
+    pulseIcon.textContent = 'favorite';
+    pulseLabel.textContent = 'TAP TO CHECK IN';
+    pulseTitle.textContent = 'Check-in due soon';
+    pulseTitle.style.color = 'var(--am)';
+    daysIcon.style.color = 'var(--am)';
+    daysLabel.style.color = 'var(--am)';
+    daysLabel.innerHTML = '<span id="d-days">' + daysLeft + '</span> day' + (daysLeft!==1?'s':'') + ' remaining';
   } else {
     pulseIcon.style.color = 'var(--ac)';
     pulseIcon.textContent = 'favorite';
@@ -797,10 +864,9 @@ function render(){
   }
 
   // F30: Apply pulse de-emphasis when completeness < 40%
-  const pulseCard=document.getElementById('pulse-card');
   const completenessCard=document.getElementById('completeness-card');
   const pulseHint=document.getElementById('pulse-hint');
-  const isDimmed=pct<40 && !showOverdue; // Don't dim when overdue — pulse is critical then
+  const isDimmed=pct<40 && !showOverdue && !showReminder; // F05: Don't dim when due soon either
   pulseCard.classList.toggle('pulse-dimmed',isDimmed);
   completenessCard.classList.toggle('pulse-dimmed-focus',isDimmed);
   pulseHint.style.display=isDimmed?'block':'none';
@@ -813,9 +879,12 @@ function render(){
     const dU=S.fu==='months'?(S.fc||2)*30:(S.fc||2)*7;
     const nd=new Date(S.lastCheckin+dU*86400000);
     document.getElementById('d-next').textContent=nd.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
-    const dl=Math.max(0,Math.ceil(dU-(Date.now()-S.lastCheckin)/86400000));
-    daysLabel.innerHTML='<span id="d-days">'+dl+'</span> days remaining';
-    daysLabel.style.color='var(--ac)';
+    if(!showReminder){
+      // Normal state — show remaining days in teal
+      const dl=Math.max(0,Math.ceil(dU-(Date.now()-S.lastCheckin)/86400000));
+      daysLabel.innerHTML='<span id="d-days">'+dl+'</span> days remaining';
+      daysLabel.style.color='var(--ac)';
+    }
     const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);
     document.getElementById('lc-lbl').textContent=ago===0?'Confirmed today':'Confirmed '+ago+' day'+(ago!==1?'s':'')+' ago';
   } else if(S.lastCheckin && showOverdue){

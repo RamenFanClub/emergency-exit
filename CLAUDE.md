@@ -47,6 +47,7 @@ Planned platforms:
 - **Tone:** Calm, trustworthy, premium — a "Digital Sanctuary"
 - **Primary colour:** `#002147` (deep navy)
 - **Accent colour:** `#2d8a7a` (teal)
+- **Amber colour:** `#c47a20` (amber — used for F05 "due soon" reminders)
 - **Gradient:** `linear-gradient(135deg, #002147, #003366)`
 - **Fonts:** Manrope (headlines, 800 weight) + Public Sans (body)
 - **Design rules:**
@@ -80,8 +81,14 @@ Planned platforms:
 
 ### 1. Home (Dashboard)
 - Hero headline: "Everything is in order." (normal) / "Action needed." (overdue — F01)
-- Asset + wish count summary with status badge: Active (teal) or Overdue (red — F01)
+- Asset + wish count summary with status badge: Active (teal), Due Soon (amber — F05), or Overdue (red — F01)
 - **Privacy note** (F31): Small teal lock icon line below summary — "Your information is stored on this device only — it never leaves your phone." Update this copy when backend cloud storage launches.
+- **F05: Reminder banner** — amber gradient card shown above Vitality Pulse when a check-in is approaching but NOT yet overdue. Contains:
+  - Clock icon + "Check-in due soon" title + contextual subtitle (adapts: "due today" / "due tomorrow" / "X days until your next check-in")
+  - Detail text explaining what happens if the check-in is missed (grace period begins)
+  - Single button: "Check in now" (white, performs check-in)
+  - Only shows when: user has checked in before, check-in is within the reminder threshold, and NOT overdue
+  - Reminder threshold: the greater of 7 days or 25% of the total interval
 - **F01: Overdue alert banner** — red gradient card shown above Vitality Pulse when a check-in is overdue and grace period has expired. Contains:
   - Warning icon + "Check-in overdue" title + grace period expiry info
   - Protocol-specific detail text (adapts to ping_then_notify / notify_immediately / escalate)
@@ -89,9 +96,10 @@ Planned platforms:
   - Gentle pulse animation on the card shadow to draw attention without being alarming
   - Only shows when contacts exist (no point alerting about notifications with no contacts)
 - **Vitality Pulse** — animated pulsing heart, tap to confirm "Alive & well"
-  - Switches to red `heart_broken` icon + "Check-in overdue" title when overdue (F01)
-  - Shows "X days overdue" instead of "X days remaining" when overdue (F01)
-  - Fades to 45% opacity and scales down when completeness < 40% (F30) — but NOT when overdue (pulse is critical then)
+  - Normal state: teal icon and text
+  - Due soon state (F05): amber icon, title "Check-in due soon", countdown in amber, pulse ring tinted amber via `.pulse-due-soon` CSS class
+  - Overdue state (F01): red `heart_broken` icon, "Check-in overdue" title, "X days overdue" in red
+  - Fades to 45% opacity and scales down when completeness < 40% (F30) — but NOT when overdue (F01) or due soon (F05) — pulse is critical in those states
   - Completeness card gets teal highlight ring when pulse is dimmed (F30)
   - Contextual hint appears inside pulse card when dimmed (F30)
 - **F01: Notification queue card** — shown on Home only when overdue. Compact card with red accent showing first 3 queued contacts, their delivery method, and queue status (Queued/Waiting). "Details" button opens full queue modal. "Generate all packages (dry run)" button downloads PDFs for all contacts.
@@ -183,13 +191,16 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 - **Card background rule (F27):** `.cardw` (white + shadow) = interactive or primary sections. `.card` (grey) = informational or contextual grouping containers. Never mix these up.
 - **Secondary add-action buttons (F26):** All "add" actions in section headers use `.ob` style (navy outlined pill button). The only exceptions are the Home screen quick-action pills (`.qb`) which are primary actions, not section header adds.
 - **Tags/badges:** Uppercase, 10px, pill-shaped
+- **Status badge states:** Active (teal `ta`), Due Soon (amber, F05), Overdue (red, F01). Three distinct visual states on the Home screen summary row.
 - **Toast notifications:** Fixed, centred, navy pill, auto-dismiss 2.4s
 - **Stepper controls:** − value + (used for frequency and grace period)
 - **Icons:** Google Material Symbols Outlined
 - **Letter button:** Teal-tinted outlined style (`.letter-btn`), changes label to "Edit" once a letter exists
 - **Letter status pill:** Teal "Letter written" or orange "No letter yet" — rendered inside the contact card header row
 - **Preview button:** Outlined style (navy border, near-transparent background) at the bottom of each contact card
-- **Pulse de-emphasis (F30):** CSS classes `pulse-dimmed` (on `#pulse-card`) and `pulse-dimmed-focus` (on `#completeness-card`) are toggled by `render()` when `pct < 40`. Do not remove these IDs from the HTML elements. Pulse de-emphasis is suppressed when overdue (F01) — the pulse is critical in that state.
+- **Pulse de-emphasis (F30):** CSS classes `pulse-dimmed` (on `#pulse-card`) and `pulse-dimmed-focus` (on `#completeness-card`) are toggled by `render()` when `pct < 40`. Do not remove these IDs from the HTML elements. Pulse de-emphasis is suppressed when overdue (F01) or when due soon (F05) — the pulse is critical in those states.
+- **Reminder banner (F05):** CSS class `.reminder-banner` with amber gradient (`linear-gradient(135deg, #8a6514, #c47a20)`). Shown when check-in is approaching but not yet overdue. No animation (deliberately calmer than the overdue banner). Uses `--am` colour CSS variables for amber tone.
+- **Pulse due-soon styling (F05):** CSS class `.pulse-due-soon` on `#pulse-card` changes the pulse ring and shadow to amber tones. Toggled by `render()` when in reminder state.
 - **Overdue alert (F01):** CSS class `.overdue-banner` with red gradient, gentle pulse animation. `.nq-card` for notification queue card with red border accent. `.nq-item` for individual contact rows in the queue. Status badges: `.nq-queued` (red) and `.nq-waiting` (amber).
 
 ---
@@ -332,6 +343,63 @@ The client-side version only checks when the user opens the app. In production:
 
 ---
 
+## F05: Check-in Reminders (Client-Side In-App)
+
+The reminder system detects when a check-in is approaching and shows a gentle amber-toned nudge on the Home screen. This is distinct from the F01 overdue state (red/urgent) — reminders are warm and encouraging, not alarming.
+
+### How it works
+
+1. **`getReminderStatus()`** — runs on every `render()` call, after `getOverdueStatus()`. Calculates how many days remain until the check-in due date. Returns `{dueSoon, daysLeft, dueDate}`.
+
+2. **Reminder threshold** — the greater of **7 days** or **25% of the total interval**. This means:
+   - 2-week interval (14 days) → reminder at 7 days (the minimum)
+   - 2-month interval (60 days) → reminder at 15 days
+   - 6-month interval (180 days) → reminder at 45 days
+
+3. **Three priority states** (checked in this order):
+   - **Overdue** (F01) — grace period expired → red alert, notification queue
+   - **Due soon** (F05) — approaching deadline → amber reminder banner
+   - **All good** — plenty of time left → normal teal state
+
+4. **Reminder banner** — amber gradient card with contextual copy:
+   - Due today: "Your check-in is due today" + grace period warning
+   - Due tomorrow: "Your check-in is due tomorrow" + gentle nudge
+   - X days left: "X days until your next check-in" + reset prompt
+
+5. **Pulse card changes** — icon stays `favorite` (not broken), colour shifts to amber `--am`. Title changes to "Check-in due soon". F30 dimming is suppressed.
+
+6. **Status badge** — changes from "Active" (teal) to "Due Soon" (amber).
+
+### How to test it
+
+Open browser dev tools (F12 → Console) and paste:
+```javascript
+// Set lastCheckin to 50 days ago (within reminder window for 2-month interval)
+let s = JSON.parse(localStorage.getItem('ee_v3'));
+s.lastCheckin = Date.now() - (50 * 86400000);
+localStorage.setItem('ee_v3', JSON.stringify(s));
+location.reload();
+```
+
+To test "due today":
+```javascript
+let s = JSON.parse(localStorage.getItem('ee_v3'));
+s.lastCheckin = Date.now() - (60 * 86400000); // exactly 2 months ago
+localStorage.setItem('ee_v3', JSON.stringify(s));
+location.reload();
+```
+
+To reset: tap "Check in now" on the reminder banner.
+
+### What the backend needs to do (see F39)
+
+The client-side version only shows reminders when the user opens the app. In production:
+- `notification-service` sends push notifications, email, or SMS reminders before the deadline
+- Configurable reminder schedule (e.g. 7 days before, 3 days before, day of)
+- Multiple reminder channels as fallback (push → SMS → email)
+
+---
+
 ## Modals
 
 | ID | Purpose |
@@ -380,7 +448,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 
 ## Coding Conventions
 
-- CSS variables for all colours (`--p`, `--ac`, `--sec`, etc.)
+- CSS variables for all colours (`--p`, `--ac`, `--sec`, `--am`, etc.)
 - Short class names (`.scr`, `.ni`, `.mo`, `.fi`) to keep file size small
 - Mobile-first — max-width 430px, touch targets min 48px
 - State loading: `S={...S,...parsed}` to safely merge new default fields
@@ -393,6 +461,7 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - `#pulse-card` and `#completeness-card` IDs on Home are required for F30 JS logic — do not remove
 - `#overdue-banner`, `#home-nq`, `#home-hero-normal`, `#home-hero-overdue`, `#status-badge` IDs on Home are required for F01 overdue logic — do not remove
 - `#pulse-icon`, `#pulse-label`, `#pulse-title`, `#days-icon`, `#days-label` IDs inside Vitality Pulse are required for F01 overdue styling — do not remove
+- `#reminder-banner`, `#reminder-sub`, `#reminder-detail` IDs on Home are required for F05 reminder logic — do not remove
 
 ---
 
@@ -417,6 +486,8 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - Do not remove the privacy note line (F31) from Home without updating copy to reflect cloud storage.
 - Do not remove F01 element IDs (`#overdue-banner`, `#home-nq`, `#home-hero-normal`, `#home-hero-overdue`, `#status-badge`, `#pulse-icon`, `#pulse-label`, `#pulse-title`, `#days-icon`, `#days-label`) — required for overdue detection UI.
 - Do not remove the `#nqm` modal — it is the full notification queue view for F01.
+- Do not remove F05 element IDs (`#reminder-banner`, `#reminder-sub`, `#reminder-detail`) — required for check-in reminder UI.
+- Do not use red/alarm styling for the F05 reminder banner — amber only. Red is reserved for F01 overdue state.
 
 ---
 
@@ -436,7 +507,7 @@ These features complete the vault → heartbeat → delivery loop. Without them,
 | F02 | As a contact, I want to receive a self-contained PDF with the user's assets, wishes, and legal document locations, so I can act immediately without needing an app or login. | Must | done | All contacts receive the full package — no access level tiers. 6-page A4 PDF generated client-side via jsPDF. Preview button on each contact card ("Preview what [Name] will receive"). Also delivers F17. |
 | F03 | As a user, I want to write a personal letter for each contact that is included in their notification, so they receive a human message alongside the practical information. | Must | done | Letter stored as `k.letter` (string) on each contact object. Letter modal (`#lm`) with warm UX prompt. Status pill on contact card (teal "Letter written" / orange "No letter yet"). Letter button changes label to "Edit" once written. PDF Page 1 renders actual letter text in italic with teal accent bar; placeholder copy shown if not yet written. |
 | F04 | As a user, I want my data encrypted at rest and in transit, so that sensitive financial and legal information is protected from unauthorised access. | Must | idea | Current prototype uses plain localStorage. Production needs AES-256 or equivalent. |
-| F05 | As a user, I want to receive reminders (push notification, email, or SMS) when my check-in is due, so I don't accidentally miss one and trigger a false alarm. | Must | idea | Critical for preventing false positives. Configurable reminder frequency. |
+| F05 | As a user, I want to receive reminders (push notification, email, or SMS) when my check-in is due, so I don't accidentally miss one and trigger a false alarm. | Must | done | **Client-side in-app reminders: done.** Amber "due soon" banner + pulse card amber state shown when check-in approaches (within 7 days or 25% of interval). Contextual copy adapts to urgency (today/tomorrow/X days). Status badge changes to amber "Due Soon". F30 dimming suppressed when due soon. **Push/email/SMS reminders: not started** — requires backend (F39). |
 
 ### Should Have — High Value, Near-Term
 
@@ -478,7 +549,7 @@ These features address UX audit findings: visual consistency, tone of voice, emp
 | F27 | As a user, I want card backgrounds (grey vs white) to follow a clear visual rule, so the screen hierarchy makes sense at a glance. | Should | done | Rule enforced across all screens: `.cardw` (white + shadow) = interactive or primary sections; `.card` (grey) = informational or contextual grouping containers. Rule also documented in Key UI Patterns and What NOT to Do sections of this file. |
 | F28 | As a user, I want section headers to follow a consistent layout pattern across all screens, so the app feels cohesive. | Should | done | Home activity header changed from text-link to `.ob` button. All section headers now use `.sh` row with consistent left/right elements. |
 | F29 | As a user, I want to see my contacts' email and phone number on their card, so I can verify the details are correct without opening anything. | Should | done | Compact email and phone lines added below notification method on contact cards, with mail/phone icons and text overflow handling. |
-| F30 | As a user, I want the Vitality Pulse to be less prominent until I've set up my vault, so I'm guided toward adding content first rather than checking in to an empty vault. | Should | done | Pulse card (`#pulse-card`) fades to 45% opacity and scales slightly when completeness < 40%. Completeness card (`#completeness-card`) gains a teal highlight ring. A contextual hint appears inside the pulse card when dimmed. CSS classes `pulse-dimmed` and `pulse-dimmed-focus` toggled in `render()`. Threshold: pct < 40 (roughly 3 of 7 checks). **Updated:** Dimming is suppressed when overdue (F01) — the pulse is critical in that state. |
+| F30 | As a user, I want the Vitality Pulse to be less prominent until I've set up my vault, so I'm guided toward adding content first rather than checking in to an empty vault. | Should | done | Pulse card (`#pulse-card`) fades to 45% opacity and scales slightly when completeness < 40%. Completeness card (`#completeness-card`) gains a teal highlight ring. A contextual hint appears inside the pulse card when dimmed. CSS classes `pulse-dimmed` and `pulse-dimmed-focus` toggled in `render()`. Threshold: pct < 40 (roughly 3 of 7 checks). **Updated:** Dimming is suppressed when overdue (F01) or when due soon (F05) — the pulse is critical in those states. |
 | F31 | As a user, I want a brief privacy note on the Home screen or Settings, so I feel confident about where my sensitive data is stored. | Should | done | Small teal lock icon + line added below the asset/wish count on Home: "Your information is stored on this device only — it never leaves your phone." **Update this copy when backend cloud storage launches.** |
 | F32 | As a user, I want the Statement of Wishes nudge to include a brief plain-language explanation of what it is (and how it differs from a Will), so I understand why it matters. | Should | done | Grey info box added inside SOW nudge card: "A Statement of Wishes is a plain-language document — separate from your Will — that tells your people exactly what to do and where to find everything. Your Will is a legal document; this is the practical guide alongside it." |
 | F33 | As a user, I want the check-in label to say "Tap to check in" instead of "TAP TO CONFIRM", so it feels like a gentle habit rather than a transactional confirmation. | Should | done | Micro-label on Vitality Pulse changed to "TAP TO CHECK IN". |
