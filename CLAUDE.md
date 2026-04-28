@@ -116,7 +116,7 @@ Planned platforms:
 - Assets grouped by category with icons
 - Categories (11): Bank account, Property, Investment, Superannuation, Life insurance, Vehicle, Cryptocurrency, Business, Personal item, Digital account, Other
 - Per asset: name, category, estimated value, details (free-text), beneficiary, notes
-- Delete button per asset
+- Delete button per asset (`.del-btn` — F34)
 - Legacy completeness % shown in info box
 
 ### 3. My Wishes
@@ -124,7 +124,7 @@ Planned platforms:
 - **Will & Legal Documents** section (always at top):
   - Will status badge: Not recorded / Draft / Signed & witnessed
   - Will details: status, date signed, solicitor, primary location, secondary location, notes
-  - Supplementary Documents list with delete per item
+  - Supplementary Documents list with delete per item (`.del-btn` — F34)
   - Attach document button (`.ob` style in section header)
 - **Statement of Wishes prompt** (orange accent card — prominent nudge):
   - Shows when Statement of Wishes has NOT been recorded
@@ -133,7 +133,7 @@ Planned platforms:
   - Tapping opens Attach Document modal with "Statement of Wishes" pre-selected
 - **Wishes grouped by category** (like Ledger):
   - Shows only categories that have at least one wish
-  - Each wish: title, details preview, priority badge (high/medium/low), edit + delete
+  - Each wish: title, details preview, priority badge (high/medium/low), edit + delete (`.del-btn` — F34)
   - Edit opens modal pre-filled with existing data
 - Wish categories (9): Funeral & Service, Medical / end of life care, Guardian for children, Pet care, Business succession, Digital accounts, Personal message, Charitable giving, Other
 - Wish form fields: Category, Wish, Details, Priority
@@ -147,7 +147,7 @@ Planned platforms:
   - **Letter status pill** — teal "Letter written" badge or orange "No letter yet" badge
   - Notify via icon + label (Email / SMS / WhatsApp / Email+SMS)
   - Sequence number (#1, #2...) with up/down arrows to reorder
-  - Remove button
+  - Delete button (`.del-btn` — F34)
   - **"Write personal letter" / "Edit personal letter" button** — teal-tinted, opens letter modal
   - **"Preview what [Name] will receive" button** — generates and downloads a per-contact PDF package
 - Add Contact modal fields: First name, Last name, Relationship, Email, Phone, Notify via
@@ -162,7 +162,7 @@ Planned platforms:
   - "Escalate gradually" (notify first contact, wait 24h, then next)
 - **Verification** — FaceID/Biometrics or Secure Passcode
 - Info box: "Missed check-ins after X days will grant access to N contacts"
-- Confirm Settings button
+- All changes auto-save immediately with toast feedback (F35) — no manual confirm button
 
 ---
 
@@ -192,9 +192,10 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 - **Secondary add-action buttons (F26):** All "add" actions in section headers use `.ob` style (navy outlined pill button). The only exceptions are the Home screen quick-action pills (`.qb`) which are primary actions, not section header adds.
 - **Tags/badges:** Uppercase, 10px, pill-shaped
 - **Status badge states:** Active (teal `ta`), Due Soon (amber, F05), Overdue (red, F01). Three distinct visual states on the Home screen summary row.
-- **Toast notifications:** Fixed, centred, navy pill, auto-dismiss 2.4s
+- **Toast notifications:** Fixed, centred, navy pill, auto-dismiss 2.4s. All toasts include ✓ (F36). Early saves (first 3) show warm encouraging copy via `warmToast()` helper; destructive actions (delete/remove) always use neutral "Removed ✓".
 - **Stepper controls:** − value + (used for frequency and grace period)
 - **Icons:** Google Material Symbols Outlined
+- **Delete button (F34):** All delete actions use `.del-btn` CSS class — icon-only, 18px `delete` icon at `rgba(186,26,26,.55)`, 6px padding, 8px border-radius, subtle red background on `:active`. Used consistently across assets, wishes, contacts, and supplementary documents.
 - **Letter button:** Teal-tinted outlined style (`.letter-btn`), changes label to "Edit" once a letter exists
 - **Letter status pill:** Teal "Letter written" or orange "No letter yet" — rendered inside the contact card header row
 - **Preview button:** Outlined style (navy border, near-transparent background) at the bottom of each contact card
@@ -202,6 +203,7 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
 - **Reminder banner (F05):** CSS class `.reminder-banner` with amber gradient (`linear-gradient(135deg, #8a6514, #c47a20)`). Shown when check-in is approaching but not yet overdue. No animation (deliberately calmer than the overdue banner). Uses `--am` colour CSS variables for amber tone.
 - **Pulse due-soon styling (F05):** CSS class `.pulse-due-soon` on `#pulse-card` changes the pulse ring and shadow to amber tones. Toggled by `render()` when in reminder state.
 - **Overdue alert (F01):** CSS class `.overdue-banner` with red gradient, gentle pulse animation. `.nq-card` for notification queue card with red border accent. `.nq-item` for individual contact rows in the queue. Status badges: `.nq-queued` (red) and `.nq-waiting` (amber).
+- **Settings auto-save (F35):** All Settings controls save immediately on change with toast feedback. No manual "Confirm" button exists. Functions `setU()`, `adj()`, `setV()`, `adjGP()`, and `setProto()` all call `save()` directly.
 
 ---
 
@@ -244,7 +246,8 @@ Active tab: white icon/label on navy pill. Inactive: navy at 35% opacity.
   gp: number,               // grace period in DAYS (1–30, default 3)
   v: 'face' | 'pin',
   notifyProto: 'ping_then_notify' | 'notify_immediately' | 'escalate',
-  log: [{ msg: string, time: string }]
+  log: [{ msg: string, time: string }],
+  saveCount: number          // F36: tracks total saves for warm toast messages (incremented by warmToast())
 }
 ```
 
@@ -462,6 +465,9 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - `#overdue-banner`, `#home-nq`, `#home-hero-normal`, `#home-hero-overdue`, `#status-badge` IDs on Home are required for F01 overdue logic — do not remove
 - `#pulse-icon`, `#pulse-label`, `#pulse-title`, `#days-icon`, `#days-label` IDs inside Vitality Pulse are required for F01 overdue styling — do not remove
 - `#reminder-banner`, `#reminder-sub`, `#reminder-detail` IDs on Home are required for F05 reminder logic — do not remove
+- All delete buttons must use `.del-btn` class (F34) — do not use inline-styled delete buttons
+- `saveCount` field in state tracks total saves for warm toasts (F36) — initialised to 0, incremented by `warmToast()`
+- Settings functions (`setU`, `adj`, `setV`, `adjGP`, `setProto`) all call `save()` directly — no manual confirm step (F35)
 
 ---
 
@@ -488,6 +494,9 @@ CI is running but tests fail (expected — services are skeleton only, not yet i
 - Do not remove the `#nqm` modal — it is the full notification queue view for F01.
 - Do not remove F05 element IDs (`#reminder-banner`, `#reminder-sub`, `#reminder-detail`) — required for check-in reminder UI.
 - Do not use red/alarm styling for the F05 reminder banner — amber only. Red is reserved for F01 overdue state.
+- Do not use inline styles for delete buttons — always use the `.del-btn` class for consistency (F34).
+- Do not add a "Confirm Settings" button or manual save step to Settings — all changes auto-save with toast feedback (F35).
+- Do not use warm toast copy for destructive actions (delete/remove) — warm messages are only for constructive saves (F36).
 
 ---
 
@@ -553,9 +562,9 @@ These features address UX audit findings: visual consistency, tone of voice, emp
 | F31 | As a user, I want a brief privacy note on the Home screen or Settings, so I feel confident about where my sensitive data is stored. | Should | done | Small teal lock icon + line added below the asset/wish count on Home: "Your information is stored on this device only — it never leaves your phone." **Update this copy when backend cloud storage launches.** |
 | F32 | As a user, I want the Statement of Wishes nudge to include a brief plain-language explanation of what it is (and how it differs from a Will), so I understand why it matters. | Should | done | Grey info box added inside SOW nudge card: "A Statement of Wishes is a plain-language document — separate from your Will — that tells your people exactly what to do and where to find everything. Your Will is a legal document; this is the practical guide alongside it." |
 | F33 | As a user, I want the check-in label to say "Tap to check in" instead of "TAP TO CONFIRM", so it feels like a gentle habit rather than a transactional confirmation. | Should | done | Micro-label on Vitality Pulse changed to "TAP TO CHECK IN". |
-| F34 | As a user, I want all delete actions across the app to look and behave the same way, so destructive actions are predictable. | Could | specified | Currently: assets use icon only, contacts use text + icon ("Remove"), docs use icon only. Standardise to icon-only, same size and colour everywhere. |
-| F35 | As a user, I want Settings to auto-save all changes consistently (not a mix of auto-save and manual confirm), so I don't wonder whether my changes were saved. | Could | specified | Currently: notification protocol auto-saves on tap; frequency/grace period require "Confirm Settings" button. Switch everything to auto-save with toast feedback. |
-| F36 | As a user, I want toast messages to feel consistent and occasionally warm, so small moments of feedback reinforce trust. | Could | specified | Standardise: all toasts include ✓. First few saves can use warmer copy like "Saved. One more thing taken care of." |
+| F34 | As a user, I want all delete actions across the app to look and behave the same way, so destructive actions are predictable. | Could | done | All delete buttons now use `.del-btn` CSS class: 18px icon, 55% opacity red, 8px border-radius, subtle red background on tap. Applied consistently across assets, wishes, contacts, and supplementary documents. |
+| F35 | As a user, I want Settings to auto-save all changes consistently (not a mix of auto-save and manual confirm), so I don't wonder whether my changes were saved. | Could | done | All Settings changes now auto-save immediately with toast feedback. "Confirm Settings" button removed. Functions `setU()`, `adj()`, and `setV()` now call `save()` directly, matching the existing behaviour of `adjGP()` and `setProto()`. |
+| F36 | As a user, I want toast messages to feel consistent and occasionally warm, so small moments of feedback reinforce trust. | Could | done | All toasts now include ✓. `warmToast()` helper tracks `saveCount` in state — first 3 saves get encouraging suffixes ("great start", "you're on a roll", "one more thing taken care of"), then falls back to clean ✓. Delete toasts always use neutral "Removed ✓" (no warm copy for destructive actions). |
 | F37 | As a user, I want screen subtitles to be visually distinct from in-card body text, so the hierarchy is clear. | Could | done | `.ps` bumped to 15px and `font-weight: 500` to separate from in-card descriptions. |
 
 ### Backend & Infrastructure

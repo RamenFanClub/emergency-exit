@@ -201,6 +201,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 #pulse-card.pulse-due-soon .vc{box-shadow:0 0 0 3px rgba(196,122,32,.25),0 8px 32px rgba(196,122,32,.14);}
 #pulse-card.pulse-due-soon .vr::before{background:rgba(196,122,32,.10);}
 #pulse-card.pulse-due-soon .vr::after{background:rgba(196,122,32,.08);}
+
+/* F34: Standardised delete button */
+.del-btn{background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.del-btn:active{background:rgba(186,26,26,.08);}
+.del-btn .m{font-size:18px;color:rgba(186,26,26,.55);transition:color .15s;}
+.del-btn:active .m{color:var(--er);}
 </style>
 </head>
 <body>
@@ -422,7 +428,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       </div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">verified_user</span>Verification</div><div class="ri" onclick="setV('face')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">face</span><span style="font-weight:600;font-size:15px;color:var(--p);">FaceID / Biometrics</span></div><div class="rd on" id="rf"></div></div><div class="ri" onclick="setV('pin')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">password</span><span style="font-weight:600;font-size:15px;color:var(--p);">Secure Passcode</span></div><div class="rd" id="rp2"></div></div></div>
       <div class="ib2"><span class="m" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span><p>Missed check-ins after <strong id="ig">3 days</strong> will grant access to <strong id="ik">0 contacts</strong>.</p></div>
-      <button class="cfb" onclick="saveCfg()">Confirm Settings</button>
     </div>
   </div>
 
@@ -491,7 +496,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <div id="toast" class="toast"></div>
 
 <script>
-let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[]};
+let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[],saveCount:0};
 function load(){try{const d=localStorage.getItem('ee_v3');if(d){const p=JSON.parse(d);S={...S,...p};}}catch(e){}}
 function save(){try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){}render();}
 function go(s){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));document.getElementById('s-'+s).classList.add('on');document.getElementById('n-'+s).classList.add('on');document.querySelector('.body').scrollTop=0;}
@@ -526,7 +531,17 @@ function saveLetter(){
   log('Personal letter '+(text?'saved':'cleared')+' for '+k.first+' '+k.last);
   closeM();
   save();
-  toast(text?'Letter saved ✓':'Letter cleared');
+  toast(text?'Letter saved ✓':'Letter cleared ✓');
+}
+
+// F36: Warm toast messages for early saves — makes the app feel encouraging
+function warmToast(base){
+  S.saveCount=(S.saveCount||0)+1;
+  const count=S.saveCount;
+  if(count===1) return base+' — great start ✓';
+  if(count===2) return base+' — you\'re on a roll ✓';
+  if(count===3) return base+' — one more thing taken care of ✓';
+  return base+' ✓';
 }
 
 function saveA(){
@@ -535,7 +550,7 @@ function saveA(){
   const editId=document.getElementById('am-edit-id').value;
   const data={name:n,category:document.getElementById('ac2').value,value:parseFloat(document.getElementById('av').value)||0,details:document.getElementById('adet').value,beneficiary:document.getElementById('ab2').value,notes:document.getElementById('ano').value};
   if(editId){const idx=S.assets.findIndex(a=>a.id===parseInt(editId));if(idx>=0){Object.assign(S.assets[idx],data);log('Asset updated: '+n);}}else{S.assets.push({id:Date.now(),...data});log('Asset added: '+n);}
-  closeM();['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');document.getElementById('am-edit-id').value='';save();toast(editId?'Asset updated ✓':'Asset saved ✓');
+  closeM();['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');document.getElementById('am-edit-id').value='';save();toast(warmToast(editId?'Asset updated':'Asset saved'));
 }
 
 function editA(id){
@@ -543,11 +558,11 @@ function editA(id){
   document.getElementById('am-edit-id').value=id;document.getElementById('an').value=a.name;document.getElementById('ac2').value=a.category;document.getElementById('av').value=a.value||'';document.getElementById('adet').value=a.details||'';document.getElementById('ab2').value=a.beneficiary||'';document.getElementById('ano').value=a.notes||'';document.getElementById('am-title').textContent='Edit Asset';document.getElementById('am-save-btn').textContent='Update Asset';document.getElementById('am').classList.add('on');
 }
 
-function saveW(){const t=document.getElementById('wt').value.trim();if(!t){toast('Please enter a wish');return;}const editId=document.getElementById('wm-edit-id').value;if(editId){const idx=S.wishes.findIndex(w=>w.id===parseInt(editId));if(idx>=0){S.wishes[idx].category=document.getElementById('wc2').value;S.wishes[idx].title=t;S.wishes[idx].details=document.getElementById('wd').value;S.wishes[idx].priority=document.getElementById('wp').value;log('Wish updated: '+t);}}else{S.wishes.push({id:Date.now(),category:document.getElementById('wc2').value,title:t,details:document.getElementById('wd').value,priority:document.getElementById('wp').value});log('Wish recorded: '+t);}closeM();['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wm-edit-id').value='';save();toast(editId?'Wish updated ✓':'Wish recorded ✓');}
+function saveW(){const t=document.getElementById('wt').value.trim();if(!t){toast('Please enter a wish');return;}const editId=document.getElementById('wm-edit-id').value;if(editId){const idx=S.wishes.findIndex(w=>w.id===parseInt(editId));if(idx>=0){S.wishes[idx].category=document.getElementById('wc2').value;S.wishes[idx].title=t;S.wishes[idx].details=document.getElementById('wd').value;S.wishes[idx].priority=document.getElementById('wp').value;log('Wish updated: '+t);}}else{S.wishes.push({id:Date.now(),category:document.getElementById('wc2').value,title:t,details:document.getElementById('wd').value,priority:document.getElementById('wp').value});log('Wish recorded: '+t);}closeM();['wt','wd'].forEach(i=>document.getElementById(i).value='');document.getElementById('wm-edit-id').value='';save();toast(warmToast(editId?'Wish updated':'Wish recorded'));}
 function editW(id){const w=S.wishes.find(x=>x.id===id);if(!w)return;document.getElementById('wm-edit-id').value=id;document.getElementById('wc2').value=w.category;document.getElementById('wt').value=w.title;document.getElementById('wd').value=w.details||'';document.getElementById('wp').value=w.priority||'medium';document.getElementById('wm-title').textContent='Edit Wish';document.getElementById('wm-save-btn').textContent='Update Wish';document.getElementById('wm').classList.add('on');}
 function delW(id){S.wishes=S.wishes.filter(w=>w.id!==id);log('Wish removed');save();toast('Removed ✓');}
-function saveWill(){S.will={status:document.getElementById('wl-status').value,date:document.getElementById('wl-date').value,solicitor:document.getElementById('wl-solicitor').value,loc1:document.getElementById('wl-loc1').value,loc2:document.getElementById('wl-loc2').value,notes:document.getElementById('wl-notes').value};log('Will details recorded');closeM();save();toast('Will details saved ✓');}
-function saveSupp(){const n=document.getElementById('sd-name').value.trim();if(!n){toast('Please enter a document name');return;}if(!S.suppDocs)S.suppDocs=[];S.suppDocs.push({id:Date.now(),type:document.getElementById('sd-type').value,name:n,loc:document.getElementById('sd-loc').value,notes:document.getElementById('sd-notes').value});log('Document recorded: '+n);closeM();['sd-name','sd-loc','sd-notes'].forEach(i=>document.getElementById(i).value='');save();toast('Document saved ✓');}
+function saveWill(){S.will={status:document.getElementById('wl-status').value,date:document.getElementById('wl-date').value,solicitor:document.getElementById('wl-solicitor').value,loc1:document.getElementById('wl-loc1').value,loc2:document.getElementById('wl-loc2').value,notes:document.getElementById('wl-notes').value};log('Will details recorded');closeM();save();toast(warmToast('Will details saved'));}
+function saveSupp(){const n=document.getElementById('sd-name').value.trim();if(!n){toast('Please enter a document name');return;}if(!S.suppDocs)S.suppDocs=[];S.suppDocs.push({id:Date.now(),type:document.getElementById('sd-type').value,name:n,loc:document.getElementById('sd-loc').value,notes:document.getElementById('sd-notes').value});log('Document recorded: '+n);closeM();['sd-name','sd-loc','sd-notes'].forEach(i=>document.getElementById(i).value='');save();toast(warmToast('Document saved'));}
 function delSupp(id){S.suppDocs=S.suppDocs.filter(d=>d.id!==id);log('Document removed');save();toast('Removed ✓');}
 
 function saveK(){
@@ -555,7 +570,7 @@ function saveK(){
   const editId=document.getElementById('km-edit-id').value;
   const data={first:f,last:document.getElementById('kl').value.trim(),rel:document.getElementById('kr').value,email:document.getElementById('ke').value,phone:document.getElementById('kp').value,notifyVia:document.getElementById('k-notify').value};
   if(editId){const idx=S.kin.findIndex(k=>k.id===parseInt(editId));if(idx>=0){Object.assign(S.kin[idx],data);log('Contact updated: '+f);}}else{S.kin.push({id:Date.now(),...data,order:S.kin.length+1,letter:''});log('Contact added: '+f);}
-  closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');document.getElementById('km-edit-id').value='';save();toast(editId?'Contact updated ✓':'Contact added ✓');
+  closeM();['kf','kl','kr','ke','kp'].forEach(i=>document.getElementById(i).value='');document.getElementById('km-edit-id').value='';save();toast(warmToast(editId?'Contact updated':'Contact added'));
 }
 
 function editK(id){
@@ -568,12 +583,14 @@ function delK(id){S.kin=S.kin.filter(k=>k.id!==id);S.kin.forEach((k,i)=>k.order=
 function moveK(id,dir){const idx=S.kin.findIndex(k=>k.id===id);if(idx<0)return;const ni=idx+dir;if(ni<0||ni>=S.kin.length)return;[S.kin[idx],S.kin[ni]]=[S.kin[ni],S.kin[idx]];S.kin.forEach((k,i)=>k.order=i+1);save();}
 function checkin(){S.lastCheckin=Date.now();log('Check-in confirmed — alive');save();toast('You\'re confirmed alive ✓');}
 let fUnit='months',fCount=2;
-function setU(u){fUnit=u;document.getElementById('tw').classList.toggle('on',u==='weeks');document.getElementById('tm').classList.toggle('on',u==='months');document.getElementById('fu').textContent=u.charAt(0).toUpperCase()+u.slice(1);S.fu=u;}
-function adj(d){fCount=Math.max(1,Math.min(24,fCount+d));document.getElementById('fc').textContent=fCount;S.fc=fCount;}
-function adjGP(d){S.gp=Math.max(1,Math.min(30,S.gp+d));document.getElementById('gp-val').textContent=S.gp;save();}
-function setV(v){S.v=v;document.getElementById('rf').className='rd'+(v==='face'?' on':'');document.getElementById('rp2').className='rd'+(v==='pin'?' on':'');}
+// F35: Auto-save — setU now saves immediately instead of waiting for "Confirm Settings"
+function setU(u){fUnit=u;S.fu=u;document.getElementById('tw').classList.toggle('on',u==='weeks');document.getElementById('tm').classList.toggle('on',u==='months');document.getElementById('fu').textContent=u.charAt(0).toUpperCase()+u.slice(1);save();toast('Frequency updated ✓');}
+// F35: Auto-save — adj now saves immediately
+function adj(d){fCount=Math.max(1,Math.min(24,fCount+d));document.getElementById('fc').textContent=fCount;S.fc=fCount;save();toast('Frequency updated ✓');}
+function adjGP(d){S.gp=Math.max(1,Math.min(30,S.gp+d));document.getElementById('gp-val').textContent=S.gp;save();toast('Grace period updated ✓');}
+// F35: Auto-save — setV now saves immediately
+function setV(v){S.v=v;document.getElementById('rf').className='rd'+(v==='face'?' on':'');document.getElementById('rp2').className='rd'+(v==='pin'?' on':'');save();toast('Verification updated ✓');}
 function setProto(p){S.notifyProto=p;save();toast('Protocol updated ✓');}
-function saveCfg(){S.fc=fCount;S.fu=fUnit;save();toast('Settings saved ✓');}
 function log(msg){S.log.unshift({msg,time:new Date().toLocaleString()});if(S.log.length>20)S.log.pop();}
 function comp(){const sow=(S.suppDocs||[]).some(d=>d.type==='Statement of Wishes');const c=[{d:S.assets.length>0,t:'Add at least one asset'},{d:S.assets.some(a=>a.beneficiary),t:'Assign a beneficiary to an asset'},{d:S.wishes.length>0,t:'Record at least one wish'},{d:!!S.will,t:'Record your Will details'},{d:sow,t:'Record your Statement of Wishes'},{d:S.kin.length>0,t:'Add at least one contact'},{d:!!S.lastCheckin,t:'Complete your first check-in'}];return{pct:Math.round(c.filter(x=>x.d).length/c.length*100),tips:c.filter(x=>!x.d).slice(0,3).map(x=>x.t)};}
 const icons={'Bank account':'account_balance','Property':'home','Investment':'trending_up','Superannuation':'savings','Life insurance':'security','Vehicle':'directions_car','Cryptocurrency':'currency_bitcoin','Business':'business','Personal item':'diamond','Digital account':'cloud','Other':'category'};
@@ -596,36 +613,15 @@ function getOverdueStatus(){
 }
 
 // ─── F05: REMINDER STATUS — "due soon" detection ────────────────────────────
-// This function checks whether the user's check-in is approaching but NOT yet
-// overdue. It returns a "due soon" state when the remaining time is within
-// the greater of 7 days or 25% of the total interval.
-//
-// Three possible states in priority order:
-//   1. Overdue (F01) — grace period has expired → red alert
-//   2. Due soon (F05) — approaching deadline → amber reminder
-//   3. All good — plenty of time left → normal teal
-//
-// BACKEND HOOK: In production, this would trigger push notifications, email,
-// or SMS reminders via notification-service. This client-side version only
-// shows the reminder when the user opens the app.
 function getReminderStatus(){
-  // Can't remind if never checked in — no deadline to approach
   if(!S.lastCheckin) return {dueSoon:false,daysLeft:null,dueDate:null};
-
   const intervalDays = S.fu==='months' ? (S.fc||2)*30 : (S.fc||2)*7;
   const dueDate = new Date(S.lastCheckin + intervalDays * 86400000);
   const now = Date.now();
   const daysLeft = Math.ceil((dueDate.getTime() - now) / 86400000);
-
-  // If already past due date, F01 overdue logic takes over — not a reminder situation
   if(daysLeft < 0) return {dueSoon:false, daysLeft:0, dueDate};
-
-  // Reminder threshold: the greater of 7 days or 25% of the interval
-  // This means short intervals (e.g. 2 weeks = 14 days) trigger at 7 days,
-  // while long intervals (e.g. 6 months = 180 days) trigger at 45 days.
   const threshold = Math.max(7, Math.ceil(intervalDays * 0.25));
   const dueSoon = daysLeft <= threshold;
-
   return {dueSoon, daysLeft, dueDate};
 }
 
@@ -844,7 +840,6 @@ function render(){
     daysLabel.style.color = 'var(--er)';
     daysLabel.innerHTML = '<span id="d-days">' + daysOverdue + '</span> day' + (daysOverdue!==1?'s':'') + ' overdue';
   } else if(showReminder){
-    // F05: Amber pulse state — gentle urgency, not alarm
     pulseIcon.style.color = 'var(--am)';
     pulseIcon.textContent = 'favorite';
     pulseLabel.textContent = 'TAP TO CHECK IN';
@@ -866,7 +861,7 @@ function render(){
   // F30: Apply pulse de-emphasis when completeness < 40%
   const completenessCard=document.getElementById('completeness-card');
   const pulseHint=document.getElementById('pulse-hint');
-  const isDimmed=pct<40 && !showOverdue && !showReminder; // F05: Don't dim when due soon either
+  const isDimmed=pct<40 && !showOverdue && !showReminder;
   pulseCard.classList.toggle('pulse-dimmed',isDimmed);
   completenessCard.classList.toggle('pulse-dimmed-focus',isDimmed);
   pulseHint.style.display=isDimmed?'block':'none';
@@ -880,7 +875,6 @@ function render(){
     const nd=new Date(S.lastCheckin+dU*86400000);
     document.getElementById('d-next').textContent=nd.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
     if(!showReminder){
-      // Normal state — show remaining days in teal
       const dl=Math.max(0,Math.ceil(dU-(Date.now()-S.lastCheckin)/86400000));
       daysLabel.innerHTML='<span id="d-days">'+dl+'</span> days remaining';
       daysLabel.style.color='var(--ac)';
@@ -897,28 +891,29 @@ function render(){
 
   document.getElementById('d-act').innerHTML=S.log.length===0?'<div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No activity yet</div>':S.log.slice(0,5).map(l=>'<div class="ai"><div class="aico"><span class="m">history</span></div><div><div style="font-weight:700;font-size:13px;color:var(--p);line-height:1.2;">'+l.msg+'</div><div style="font-size:11px;color:var(--ov);margin-top:1px;">'+l.time+'</div></div></div>').join('');
 
-  // Ledger render
+  // Ledger render — F34: standardised delete button using .del-btn class
   const cats=['Bank account','Property','Investment','Superannuation','Life insurance','Vehicle','Cryptocurrency','Business','Personal item','Digital account','Other'];
   const lel=document.getElementById('l-content');
   if(!S.assets.length){
     lel.innerHTML='<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">account_balance</span></div><div class="empty-title">No assets yet — and that\'s okay</div><div class="empty-sub">Start with one, even something small like a bank account. You can always add more later.</div><button class="empty-cta" onclick="openM(\'am\')"><span class="m">add</span>Record your first asset</button></div>';
   }else{
     const ac=cats.filter(c=>S.assets.some(a=>a.category===c));
-    lel.innerHTML=ac.map(cat=>{const items=S.assets.filter(a=>a.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(icons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(a=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(icons[a.category]||'category')+'</span></div><div class="lib"><div class="lit">'+a.name+'</div><div class="lis">'+(a.details?a.details.substring(0,40)+(a.details.length>40?'...':''):a.category)+(a.beneficiary?' · '+a.beneficiary:'')+'</div></div><div style="display:flex;align-items:center;gap:6px;">'+(a.value?'<span style="font-size:12px;font-weight:700;color:var(--p);">$'+Math.round(a.value).toLocaleString()+'</span>':'')+'<button onclick="editA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');
+    lel.innerHTML=ac.map(cat=>{const items=S.assets.filter(a=>a.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(icons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(a=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(icons[a.category]||'category')+'</span></div><div class="lib"><div class="lit">'+a.name+'</div><div class="lis">'+(a.details?a.details.substring(0,40)+(a.details.length>40?'...':''):a.category)+(a.beneficiary?' · '+a.beneficiary:'')+'</div></div><div style="display:flex;align-items:center;gap:6px;">'+(a.value?'<span style="font-size:12px;font-weight:700;color:var(--p);">$'+Math.round(a.value).toLocaleString()+'</span>':'')+'<button onclick="editA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button class="del-btn" onclick="delA('+a.id+')"><span class="m">delete</span></button></div></div>').join('')+'</div>';}).join('');
   }
   document.getElementById('l-pct').textContent=pct+'%';
 
   // Will section
   const wb=document.getElementById('will-badge'),wtd=document.getElementById('will-title-display'),wld=document.getElementById('will-loc-display');
   if(S.will){wb.textContent=willStatusLabel[S.will.status]||S.will.status;wb.className='tag '+(S.will.status==='signed'?'tw':'ts');wtd.textContent=S.will.solicitor?'Will held by '+S.will.solicitor:'Will details recorded';wld.textContent=S.will.loc1||'Location not specified';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit</span> Edit Will details';}else{wb.textContent='Not recorded';wb.className='tag ts';wtd.textContent='No Will recorded yet';wld.textContent='Tap below to add your Will details';document.querySelector('#will-summary .upload-btn').innerHTML='<span class="m">edit_note</span> Record Will details';}
+  // F34: Supplementary docs — standardised delete button
   const sd=document.getElementById('supp-docs'),docs=S.suppDocs||[];
-  sd.innerHTML=docs.map(d=>'<div class="attach-row"><span class="m mf" style="font-size:18px;color:var(--ac);">description</span><div style="flex:1;"><div class="attach-name">'+d.name+'</div><div class="attach-size">'+d.type+(d.loc?' · '+d.loc:'')+'</div></div><button onclick="delSupp('+d.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div>').join('');
+  sd.innerHTML=docs.map(d=>'<div class="attach-row"><span class="m mf" style="font-size:18px;color:var(--ac);">description</span><div style="flex:1;"><div class="attach-name">'+d.name+'</div><div class="attach-size">'+d.type+(d.loc?' · '+d.loc:'')+'</div></div><button class="del-btn" onclick="delSupp('+d.id+')"><span class="m">delete</span></button></div>').join('');
   const sowDoc=(S.suppDocs||[]).find(d=>d.type==='Statement of Wishes');
   document.getElementById('sow-nudge').style.display=sowDoc?'none':'block';
   document.getElementById('sow-done').style.display=sowDoc?'block':'none';
   if(sowDoc)document.getElementById('sow-loc').textContent=sowDoc.loc?'Stored at: '+sowDoc.loc:'Location recorded';
 
-  // Wishes render
+  // Wishes render — F34: standardised delete button
   const wishCats=['Funeral & Service','Medical / end of life care','Guardian for children','Pet care','Business succession','Digital accounts','Personal message','Charitable giving','Other'];
   const wishIcons={'Funeral & Service':'church','Medical / end of life care':'medical_services','Guardian for children':'family_restroom','Pet care':'pets','Business succession':'business','Digital accounts':'devices','Personal message':'mail','Charitable giving':'volunteer_activism','Other':'category'};
   const priColors={high:'td',medium:'ts',low:'ta'};
@@ -927,10 +922,10 @@ function render(){
     wel.innerHTML='<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">auto_stories</span></div><div class="empty-title">No wishes recorded yet</div><div class="empty-sub">What would you like your people to know? Start with something that matters to you — it doesn\'t have to be everything at once.</div><button class="empty-cta" onclick="openM(\'wm\')"><span class="m">add</span>Record your first wish</button></div>';
   }else{
     const ac2=wishCats.filter(c=>S.wishes.some(w=>w.category===c));
-    wel.innerHTML=ac2.map(cat=>{const items=S.wishes.filter(w=>w.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(wishIcons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(wishIcons[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+(w.details?w.details.substring(0,40)+(w.details.length>40?'...':''):w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(priColors[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button onclick="delW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:rgba(186,26,26,.7);">delete</span></button></div></div>').join('')+'</div>';}).join('');
+    wel.innerHTML=ac2.map(cat=>{const items=S.wishes.filter(w=>w.category===cat);return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(wishIcons[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+items.length+' ITEM'+(items.length!==1?'S':'')+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(wishIcons[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+(w.details?w.details.substring(0,40)+(w.details.length>40?'...':''):w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(priColors[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button class="del-btn" onclick="delW('+w.id+')"><span class="m">delete</span></button></div></div>').join('')+'</div>';}).join('');
   }
 
-  // Contacts render
+  // Contacts render — F34: standardised delete button
   document.getElementById('k-list').innerHTML=S.kin.length===0
     ?'<div class="empty-state"><div class="empty-icon"><span class="m" style="font-size:28px;color:var(--sec);">group</span></div><div class="empty-title">No contacts added yet</div><div class="empty-sub">Who should be contacted if something happens to you? Add someone you trust — you can always update this later.</div><button class="empty-cta" onclick="openM(\'km\')"><span class="m">add</span>Add your first contact</button></div>'
     :S.kin.map((k,i)=>{
@@ -961,7 +956,7 @@ function render(){
           <button onclick="moveK(${k.id},1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_downward</span></button>
           <span style="flex:1;"></span>
           <span style="font-size:12px;font-weight:600;color:var(--sec);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="editK(${k.id})"><span class="m" style="font-size:13px;">edit</span>Edit</span>
-          <span style="font-size:12px;font-weight:600;color:var(--er);display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="delK(${k.id})"><span class="m" style="font-size:13px;">delete</span></span>
+          <button class="del-btn" onclick="delK(${k.id})"><span class="m">delete</span></button>
         </div>
         <button class="letter-btn ${hasLetter?'written':''}" onclick="openLetter(${k.id})">
           <span class="m" style="font-size:16px;">${hasLetter?'edit':'edit_note'}</span>
