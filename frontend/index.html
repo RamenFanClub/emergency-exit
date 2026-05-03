@@ -6,7 +6,50 @@
 <title>Emergency Exit</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+const API='http://34.40.222.5:8001';
+async function doLogin(){
+  const username=document.getElementById('li-user').value.trim();
+  const password=document.getElementById('li-pass').value;
+  const errEl=document.getElementById('login-err');
+  errEl.classList.remove('on');
+  if(!username||!password){errEl.textContent='Please enter your username and password.';errEl.classList.add('on');return;}
+  try{
+    const res=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    if(!res.ok){errEl.textContent='Incorrect username or password.';errEl.classList.add('on');return;}
+    const data=await res.json();
+    sessionStorage.setItem('ee_token',data.token);
+    sessionStorage.setItem('ee_user',JSON.stringify(data.user));
+    showApp(data.user);load();render();
+  }catch(e){errEl.textContent='Connection error - please try again.';errEl.classList.add('on');}
+}
+function showApp(user){
+  document.getElementById('login-wall').classList.add('hidden');
+  document.getElementById('logout-btn').classList.add('on');
+  const g=document.getElementById('user-greeting');
+  g.textContent='Hi, '+user.name.split(' ')[0];
+  g.classList.add('on');
+}
+function doLogout(){
+  sessionStorage.removeItem('ee_token');
+  sessionStorage.removeItem('ee_user');
+  document.getElementById('login-wall').classList.remove('hidden');
+  document.getElementById('logout-btn').classList.remove('on');
+  document.getElementById('user-greeting').classList.remove('on');
+  document.getElementById('li-pass').value='';
+  S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[],saveCount:0};
+  render();
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  ['li-user','li-pass'].forEach(id=>{
+    document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  });
+  const token=sessionStorage.getItem('ee_token');
+  const user=sessionStorage.getItem('ee_user');
+  if(token&&user){showApp(JSON.parse(user));load();render();}
+});
+
+</script>
 <style>
 :root{--p:#002147;--pc:#002d5e;--s:#f8f9fb;--sl:#f2f4f6;--sc:#eceef0;--sh:#e6e8ea;--sx:#e0e3e5;--w:#ffffff;--os:#191c1e;--ov:#44474e;--ov2:#c4c6cf;--ac:#2d8a7a;--al:rgba(45,138,122,.10);--ab:rgba(45,138,122,.22);--sec:#54657d;--scc:#d1d9e6;--er:#ba1a1a;--fh:'Manrope',sans-serif;--fb:'Public Sans',sans-serif;--g:linear-gradient(135deg,#002147 0%,#003366 100%);--cs:0 2px 12px rgba(25,28,30,.07);--cn:0 -4px 20px rgba(0,0,0,.08);--rc:16px;--rb:14px;--rp:9999px;--am:#c47a20;--am-bg:rgba(196,122,32,.08);--am-border:rgba(196,122,32,.25);}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -207,16 +250,48 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .del-btn:active{background:rgba(186,26,26,.08);}
 .del-btn .m{font-size:18px;color:rgba(186,26,26,.55);transition:color .15s;}
 .del-btn:active .m{color:var(--er);}
+
+#login-wall{position:fixed;inset:0;background:#f8f9fb;z-index:1000;display:flex;align-items:center;justify-content:center;}
+#login-wall.hidden{display:none;}
+.login-box{width:100%;max-width:380px;padding:32px 24px;background:#fff;border-radius:24px;box-shadow:0 8px 40px rgba(0,33,71,.12);margin:16px;}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;justify-content:center;}
+.login-logo-icon{width:44px;height:44px;border-radius:12px;background:var(--g);display:flex;align-items:center;justify-content:center;}
+.login-sub{font-size:13px;color:var(--ov);text-align:center;margin-bottom:24px;line-height:1.5;}
+.login-fi{margin-bottom:14px;}
+.login-fi label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sec);display:block;margin-bottom:6px;}
+.login-fi input{width:100%;background:var(--sx);border:none;border-radius:10px;padding:14px;font-size:16px;font-family:var(--fb);color:var(--p);outline:none;border-bottom:2px solid transparent;transition:border-color .15s;}
+.login-fi input:focus{border-bottom-color:var(--ac);}
+.login-btn{width:100%;background:var(--g);border:none;border-radius:var(--rb);padding:16px;font-family:var(--fh);font-size:17px;font-weight:800;color:#fff;cursor:pointer;margin-top:8px;border-bottom:3px solid rgba(0,0,0,.2);transition:transform .1s;}
+.login-btn:active{transform:scale(.97);}
+.login-err{background:rgba(186,26,26,.08);border:1px solid rgba(186,26,26,.2);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--er);text-align:center;margin-top:12px;display:none;}
+.login-err.on{display:block;}
+#logout-btn{background:none;border:1.5px solid rgba(0,33,71,.2);border-radius:var(--rp);padding:5px 12px;font-size:12px;font-weight:700;color:var(--p);cursor:pointer;display:none;font-family:var(--fb);}
+#logout-btn.on{display:block;}
+#user-greeting{font-size:12px;font-weight:700;color:var(--ac);display:none;}
+#user-greeting.on{display:block;}
 </style>
 </head>
 <body>
+<div id="login-wall">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon"><span class="m mf" style="font-size:24px;color:#fff;">emergency_home</span></div>
+      <span style="font-family:var(--fh);font-weight:800;font-size:20px;color:var(--p);margin-left:4px;">Emergency Exit</span>
+    </div>
+    <p class="login-sub">Sign in with your tester credentials to access your vault.</p>
+    <div class="login-fi"><label>Username</label><input id="li-user" type="text" placeholder="tester_01" autocomplete="username" autocapitalize="none"/></div>
+    <div class="login-fi"><label>Password</label><input id="li-pass" type="password" placeholder="password" autocomplete="current-password"/></div>
+    <button class="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="login-err" id="login-err">Incorrect username or password. Please try again.</div>
+  </div>
+</div>
 <div id="app">
   <div class="hdr">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:32px;height:32px;border-radius:8px;background:var(--g);display:flex;align-items:center;justify-content:center;"><span class="m mf" style="font-size:18px;color:#fff;">emergency_home</span></div>
       <h1>Emergency Exit</h1>
     </div>
-    <div style="width:34px;height:34px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;"><span class="m" style="font-size:19px;color:#fff;">person</span></div>
+    <div style="display:flex;align-items:center;gap:8px;"><span id="user-greeting"></span><button id="logout-btn" onclick="doLogout()">Sign out</button></div>
   </div>
   <div class="body">
 
@@ -979,7 +1054,7 @@ function render(){
   document.getElementById('rp-3').className='rd'+(S.notifyProto==='escalate'?' on':'');
 }
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);}
-load();render();
+// auth required before load
 </script>
 </body>
 </html>
