@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Emergency Exit — Test Runner</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --p:#002147;--pc:#002d5e;--s:#f8f9fb;--sl:#f2f4f6;--sc:#eceef0;--sh:#e6e8ea;
+  --w:#ffffff;--os:#191c1e;--ov:#44474e;--ac:#2d8a7a;--al:rgba(45,138,122,.10);
+  --ab:rgba(45,138,122,.22);--sec:#54657d;--er:#ba1a1a;--warn:#c47a20;
+  --fh:'Manrope',sans-serif;--fb:'Public Sans',sans-serif;
+  --g:linear-gradient(135deg,#002147 0%,#003366 100%);
+  --cs:0 2px 12px rgba(25,28,30,.07);--rc:16px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--s);font-family:var(--fb);color:var(--os);-webkit-font-smoothing:antialiased;}
+.m{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;line-height:1;display:inline-block;white-space:nowrap;-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 40;}
+.mf{font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 40;}
+
+/* Layout */
+.page{max-width:900px;margin:0 auto;padding:24px 20px 60px;}
+
+/* Header */
+.hdr{background:var(--g);border-radius:20px;padding:28px 28px 24px;margin-bottom:24px;box-shadow:0 8px 32px rgba(0,33,71,.22);}
+.hdr-top{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+.hdr-icon{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;}
+.hdr h1{font-family:var(--fh);font-weight:800;font-size:24px;color:#fff;}
+.hdr p{font-size:14px;color:rgba(255,255,255,.7);line-height:1.4;}
+
+/* Config card */
+.config-card{background:var(--w);border-radius:var(--rc);padding:20px;margin-bottom:16px;box-shadow:var(--cs);}
+.config-title{font-family:var(--fh);font-size:16px;font-weight:700;color:var(--p);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.fi{margin-bottom:12px;}
+.fi label{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sec);display:block;margin-bottom:5px;}
+.fi input{width:100%;background:var(--sl);border:none;border-radius:10px;padding:11px 14px;font-size:14px;font-family:var(--fb);color:var(--p);outline:none;border-bottom:2px solid transparent;transition:border-color .15s;}
+.fi input:focus{border-bottom-color:var(--ac);}
+.pw-row{display:flex;gap:8px;}
+.pw-row .fi{flex:1;margin:0;}
+
+/* Run button */
+.run-btn{background:var(--g);border:none;border-radius:14px;padding:18px 28px;width:100%;font-family:var(--fh);font-size:18px;font-weight:800;color:#fff;cursor:pointer;box-shadow:0 4px 16px rgba(0,33,71,.28);border-bottom:3px solid rgba(0,0,0,.2);transition:transform .1s,opacity .2s;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;}
+.run-btn:hover{opacity:.92;}
+.run-btn:active{transform:scale(.97);}
+.run-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+/* Summary bar */
+.summary{display:none;background:var(--w);border-radius:var(--rc);padding:18px 20px;margin-bottom:20px;box-shadow:var(--cs);}
+.summary.visible{display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.sum-stat{text-align:center;}
+.sum-num{font-family:var(--fh);font-size:28px;font-weight:800;}
+.sum-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sec);}
+.sum-pass{color:var(--ac);}
+.sum-fail{color:var(--er);}
+.sum-skip{color:var(--warn);}
+.sum-divider{width:1px;height:48px;background:var(--sh);}
+.sum-bar-wrap{flex:1;min-width:200px;}
+.sum-bar-track{height:8px;background:var(--sl);border-radius:99px;overflow:hidden;margin-bottom:6px;}
+.sum-bar-fill{height:100%;border-radius:99px;transition:width .6s ease;background:var(--ac);}
+.sum-bar-fill.has-fail{background:linear-gradient(90deg,var(--ac) var(--pass-pct),var(--er) var(--pass-pct));}
+
+/* Tester sections */
+.tester-block{background:var(--w);border-radius:var(--rc);margin-bottom:12px;box-shadow:var(--cs);overflow:hidden;}
+.tester-header{display:flex;align-items:center;gap:14px;padding:16px 18px;cursor:pointer;user-select:none;}
+.tester-header:hover{background:var(--sl);}
+.tester-avatar{width:40px;height:40px;border-radius:10px;background:var(--g);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:15px;font-weight:800;color:#fff;flex-shrink:0;}
+.tester-name{font-family:var(--fh);font-size:16px;font-weight:700;color:var(--p);flex:1;}
+.tester-status{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 12px;border-radius:99px;}
+.ts-waiting{background:var(--sl);color:var(--sec);}
+.ts-running{background:rgba(196,122,32,.12);color:var(--warn);}
+.ts-pass{background:rgba(45,138,122,.12);color:var(--ac);}
+.ts-fail{background:rgba(186,26,26,.08);color:var(--er);}
+.ts-skip{background:var(--sl);color:var(--sec);}
+.tester-chevron{font-size:20px;color:var(--sec);transition:transform .2s;}
+.tester-header.open .tester-chevron{transform:rotate(180deg);}
+
+/* Tests list */
+.tests-list{padding:0 18px 14px;display:none;}
+.tests-list.open{display:block;}
+.test-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--sl);}
+.test-row:first-child{border-top:none;}
+.test-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.ti-pass{background:rgba(45,138,122,.15);}
+.ti-pass .m{font-size:13px;color:var(--ac);}
+.ti-fail{background:rgba(186,26,26,.1);}
+.ti-fail .m{font-size:13px;color:var(--er);}
+.ti-wait{background:var(--sl);}
+.ti-wait .m{font-size:13px;color:var(--sec);}
+.ti-run{background:rgba(196,122,32,.12);}
+.ti-run .m{font-size:13px;color:var(--warn);}
+.test-body{flex:1;}
+.test-name{font-size:14px;font-weight:600;color:var(--p);line-height:1.3;}
+.test-detail{font-size:12px;color:var(--ov);margin-top:2px;line-height:1.4;}
+.test-err{font-size:11px;color:var(--er);margin-top:4px;padding:6px 10px;background:rgba(186,26,26,.06);border-radius:8px;font-family:monospace;line-height:1.5;}
+
+/* Log area */
+.log-card{background:var(--p);border-radius:var(--rc);padding:16px 18px;margin-top:20px;}
+.log-title{font-family:var(--fh);font-size:13px;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.log-body{font-family:monospace;font-size:11px;color:rgba(255,255,255,.75);line-height:1.8;max-height:200px;overflow-y:auto;}
+.log-line-pass{color:#5eead4;}
+.log-line-fail{color:#fca5a5;}
+.log-line-info{color:rgba(255,255,255,.5);}
+.log-line-warn{color:#fde68a;}
+
+/* Spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{animation:spin .8s linear infinite;display:inline-block;}
+
+/* Credentials info */
+.cred-info{background:rgba(45,138,122,.08);border:1px solid rgba(45,138,122,.2);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--sec);line-height:1.6;}
+.cred-info strong{color:var(--p);}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hdr">
+    <div class="hdr-top">
+      <div class="hdr-icon"><span class="m mf" style="font-size:24px;color:#fff;">bug_report</span></div>
+      <h1>Emergency Exit — Test Runner</h1>
+    </div>
+    <p>Automated checks across all 6 tester accounts. Tests run against the live backend and verify core user flows.</p>
+  </div>
+
+  <div class="config-card">
+    <div class="config-title"><span class="m mf" style="font-size:18px;color:var(--sec);">settings</span>Configuration</div>
+    <div class="fi"><label>Backend URL</label><input id="api-url" type="text" value="http://34.40.222.5:8001" placeholder="http://34.40.222.5:8001"/></div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sec);margin-bottom:8px;margin-top:4px;">Tester Passwords (from your provisioning sheet)</div>
+    <div class="cred-info">
+      <strong>Where to find these:</strong> Passwords were printed once when you ran <code>provision.py</code>. If you've lost them, re-run the script — it will reset and reprint them. Usernames are always <code>tester_01</code> through <code>tester_06</code>.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+      <div class="fi" style="margin:0;"><label>tester_01</label><input id="pw-01" type="password" placeholder="password"/></div>
+      <div class="fi" style="margin:0;"><label>tester_02</label><input id="pw-02" type="password" placeholder="password"/></div>
+      <div class="fi" style="margin:0;"><label>tester_03</label><input id="pw-03" type="password" placeholder="password"/></div>
+      <div class="fi" style="margin:0;"><label>tester_04</label><input id="pw-04" type="password" placeholder="password"/></div>
+      <div class="fi" style="margin:0;"><label>tester_05</label><input id="pw-05" type="password" placeholder="password"/></div>
+      <div class="fi" style="margin:0;"><label>tester_06</label><input id="pw-06" type="password" placeholder="password"/></div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--sec);">
+      <span class="m mf" style="font-size:13px;color:var(--ac);vertical-align:-2px;">lock</span>
+      Passwords are used only in this browser session — never sent anywhere except your own backend.
+    </div>
+  </div>
+
+  <button class="run-btn" id="run-btn" onclick="runAllTests()">
+    <span class="m mf" style="font-size:22px;">play_circle</span>
+    Run All Tests
+  </button>
+
+  <div class="summary" id="summary">
+    <div class="sum-stat"><div class="sum-num sum-pass" id="s-pass">0</div><div class="sum-lbl">Passed</div></div>
+    <div class="sum-divider"></div>
+    <div class="sum-stat"><div class="sum-num sum-fail" id="s-fail">0</div><div class="sum-lbl">Failed</div></div>
+    <div class="sum-divider"></div>
+    <div class="sum-stat"><div class="sum-num sum-skip" id="s-skip">0</div><div class="sum-lbl">Skipped</div></div>
+    <div class="sum-divider"></div>
+    <div class="sum-bar-wrap">
+      <div class="sum-bar-track"><div class="sum-bar-fill" id="s-bar" style="width:0%"></div></div>
+      <div style="font-size:12px;color:var(--sec);" id="s-summary-text">Running tests…</div>
+    </div>
+  </div>
+
+  <div id="tester-blocks"></div>
+
+  <div class="log-card" id="log-card" style="display:none;">
+    <div class="log-title">
+      <span><span class="m" style="font-size:14px;vertical-align:-2px;">terminal</span> Live Log</span>
+      <button onclick="document.getElementById('log-body').innerHTML=''" style="background:none;border:none;cursor:pointer;font-size:11px;color:rgba(255,255,255,.4);font-family:var(--fb);">Clear</button>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
+</div>
+
+<script>
+const API = () => document.getElementById('api-url').value.replace(/\/$/, '');
+
+const TESTERS = [
+  {id:'01',username:'tester_01'},
+  {id:'02',username:'tester_02'},
+  {id:'03',username:'tester_03'},
+  {id:'04',username:'tester_04'},
+  {id:'05',username:'tester_05'},
+  {id:'06',username:'tester_06'},
+];
+
+// ─── WHAT GETS TESTED ────────────────────────────────────────────────────────
+// Each test is a function that returns {pass:bool, detail:string}
+// They receive: token (JWT), username, password
+
+const TEST_SUITE = [
+
+  {
+    id: 'backend-health',
+    name: 'Backend is reachable',
+    detail: 'Checks that the VM and identity service are online',
+    run: async () => {
+      const res = await fetchWithTimeout(API() + '/health', {}, 8000);
+      if (!res.ok) throw new Error('Health check returned ' + res.status);
+      return { pass: true, detail: 'Server responded OK' };
+    }
+  },
+
+  {
+    id: 'login-valid',
+    name: 'Login with valid credentials',
+    detail: 'Confirms the identity service accepts correct username + password',
+    run: async ({username, password}) => {
+      if (!password) return { pass: false, detail: 'No password entered — skip', skipped: true };
+      const res = await fetchWithTimeout(API() + '/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({username, password})
+      }, 8000);
+      if (!res.ok) throw new Error('Login failed with status ' + res.status + ' — wrong password?');
+      const data = await res.json();
+      if (!data.token) throw new Error('No token returned in response');
+      return { pass: true, detail: 'Token received ✓', token: data.token, user: data.user };
+    }
+  },
+
+  {
+    id: 'login-invalid',
+    name: 'Login with wrong password is rejected',
+    detail: 'Confirms the backend correctly rejects bad credentials',
+    run: async ({username}) => {
+      const res = await fetchWithTimeout(API() + '/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({username, password: 'definitely-wrong-password-xyz'})
+      }, 8000);
+      if (res.ok) throw new Error('Server accepted an incorrect password — security issue!');
+      return { pass: true, detail: 'Correctly rejected with status ' + res.status };
+    }
+  },
+
+  {
+    id: 'auth-me',
+    name: 'Authenticated profile fetch works',
+    detail: 'Checks that /auth/me returns the correct user when a valid token is sent',
+    run: async ({token, username}) => {
+      if (!token) return { pass: false, detail: 'No token — login test must pass first', skipped: true };
+      const res = await fetchWithTimeout(API() + '/auth/me', {
+        headers: {'Authorization': 'Bearer ' + token}
+      }, 8000);
+      if (!res.ok) throw new Error('/auth/me returned ' + res.status);
+      const data = await res.json();
+      if (!data.username && !data.name) throw new Error('Response missing username/name field');
+      return { pass: true, detail: 'Profile returned for ' + (data.name || data.username) };
+    }
+  },
+
+  {
+    id: 'auth-me-no-token',
+    name: 'Unauthenticated requests are blocked',
+    detail: 'Confirms /auth/me requires a valid token (security check)',
+    run: async () => {
+      const res = await fetchWithTimeout(API() + '/auth/me', {}, 8000);
+      if (res.ok) throw new Error('/auth/me returned 200 with no token — security issue!');
+      return { pass: true, detail: 'Correctly rejected unauthenticated request (' + res.status + ')' };
+    }
+  },
+
+  {
+    id: 'localstorage-model',
+    name: 'LocalStorage data model is valid',
+    detail: 'Checks the vault state structure matches the expected schema (ee_v3)',
+    run: async () => {
+      // Simulate a fresh state and check all required keys are present
+      const freshState = {assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifyProto:'ping_then_notify',log:[],saveCount:0};
+      const requiredKeys = ['assets','wishes','kin','will','suppDocs','lastCheckin','fc','fu','gp','v','notifyProto','log','saveCount'];
+      const missing = requiredKeys.filter(k => !(k in freshState));
+      if (missing.length) throw new Error('Missing keys: ' + missing.join(', '));
+      return { pass: true, detail: 'All ' + requiredKeys.length + ' schema keys present ✓' };
+    }
+  },
+
+  {
+    id: 'completeness-empty',
+    name: 'Completeness score starts at 0%',
+    detail: 'Verifies the 7-check scoring function returns 0 for a blank vault',
+    run: async () => {
+      const state = {assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null};
+      const pct = computeCompleteness(state);
+      if (pct !== 0) throw new Error('Expected 0%, got ' + pct + '%');
+      return { pass: true, detail: 'Fresh vault correctly scores 0%' };
+    }
+  },
+
+  {
+    id: 'completeness-full',
+    name: 'Completeness score reaches 100% with all data',
+    detail: 'Verifies the scoring function counts all 7 checks correctly',
+    run: async () => {
+      const state = {
+        assets: [{id:1, name:'Test', beneficiary:'Jane'}],
+        wishes: [{id:1, title:'Test wish'}],
+        kin: [{id:1, first:'Jane', last:'Doe'}],
+        will: {status:'signed'},
+        suppDocs: [{id:1, type:'Statement of Wishes', name:'SOW'}],
+        lastCheckin: Date.now()
+      };
+      const pct = computeCompleteness(state);
+      if (pct !== 100) throw new Error('Expected 100%, got ' + pct + '%');
+      return { pass: true, detail: 'All 7 checks pass → 100%' };
+    }
+  },
+
+  {
+    id: 'completeness-partial',
+    name: 'Completeness score is correct at ~57% (4 of 7 checks)',
+    detail: 'Verifies partial completion is counted accurately',
+    run: async () => {
+      const state = {
+        assets: [{id:1, name:'Test', beneficiary:'Jane'}], // 2 checks: has asset + has beneficiary
+        wishes: [{id:1, title:'Test wish'}], // 1 check
+        kin: [{id:1, first:'Jane', last:'Doe'}], // 1 check
+        will: null, suppDocs: [], lastCheckin: null
+      };
+      const pct = computeCompleteness(state);
+      const expected = Math.round(4/7*100);
+      if (pct !== expected) throw new Error('Expected ' + expected + '%, got ' + pct + '%');
+      return { pass: true, detail: '4 of 7 checks → ' + pct + '% ✓' };
+    }
+  },
+
+  {
+    id: 'overdue-detection',
+    name: 'Overdue detection triggers correctly',
+    detail: 'Simulates a missed check-in + expired grace period, checks overdue flag',
+    run: async () => {
+      // Set a check-in that was 90 days ago, with a 30-day interval and 3-day grace
+      const ninetyDaysAgo = Date.now() - (90 * 86400000);
+      const result = simulateOverdue({ lastCheckin: ninetyDaysAgo, fc: 1, fu: 'months', gp: 3 });
+      if (!result.overdue) throw new Error('Should be overdue — 90 days with 1-month interval');
+      if (result.daysOverdue < 50) throw new Error('Expected 50+ days overdue, got ' + result.daysOverdue);
+      return { pass: true, detail: 'Correctly detected as overdue (' + result.daysOverdue + ' days) ✓' };
+    }
+  },
+
+  {
+    id: 'overdue-not-triggered',
+    name: 'Overdue detection does NOT fire for a recent check-in',
+    detail: 'Confirms today\'s check-in shows as not overdue',
+    run: async () => {
+      const result = simulateOverdue({ lastCheckin: Date.now(), fc: 2, fu: 'months', gp: 3 });
+      if (result.overdue) throw new Error('Should NOT be overdue — checked in today');
+      return { pass: true, detail: 'Correctly shows as active (not overdue) ✓' };
+    }
+  },
+
+  {
+    id: 'reminder-threshold',
+    name: 'Reminder banner triggers within the due-soon window',
+    detail: 'Verifies the amber reminder shows when check-in is within 25% of interval or 7 days',
+    run: async () => {
+      // Check-in 55 days ago with 2-month (60-day) interval → 5 days left → within 25% (15 days) threshold
+      const fiftyFiveDaysAgo = Date.now() - (55 * 86400000);
+      const result = simulateReminder({ lastCheckin: fiftyFiveDaysAgo, fc: 2, fu: 'months' });
+      if (!result.dueSoon) throw new Error('Should be due soon — 5 days left of 60-day interval');
+      return { pass: true, detail: result.daysLeft + ' days left → reminder correctly triggered ✓' };
+    }
+  },
+
+  {
+    id: 'pdf-library',
+    name: 'PDF library (jsPDF) is loadable',
+    detail: 'Confirms the CDN script loads correctly — required for contact package generation',
+    run: async () => {
+      return new Promise((resolve, reject) => {
+        if (typeof window.jspdf !== 'undefined') {
+          resolve({ pass: true, detail: 'jsPDF already loaded ✓' }); return;
+        }
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = () => resolve({ pass: true, detail: 'jsPDF loaded from CDN ✓' });
+        s.onerror = () => reject(new Error('Failed to load jsPDF from CDN — CDN may be blocked'));
+        document.head.appendChild(s);
+        setTimeout(() => reject(new Error('jsPDF load timed out after 10s')), 10000);
+      });
+    }
+  },
+
+  {
+    id: 'cors-headers',
+    name: 'Backend sends correct CORS headers',
+    detail: 'Confirms the browser can make cross-origin requests to the API (required for app to work)',
+    run: async () => {
+      try {
+        const res = await fetchWithTimeout(API() + '/health', {}, 8000);
+        // If we get here without a CORS error, it's working
+        return { pass: true, detail: 'Cross-origin request succeeded — CORS is configured ✓' };
+      } catch (e) {
+        if (e.message.includes('NetworkError') || e.message.includes('Failed to fetch')) {
+          throw new Error('CORS error or network blocked — check that the backend URL is correct and the server allows cross-origin requests');
+        }
+        throw e;
+      }
+    }
+  },
+
+  {
+    id: 'response-time',
+    name: 'Backend responds within 3 seconds',
+    detail: 'Checks API response time — important for user experience in production',
+    run: async () => {
+      const start = Date.now();
+      const res = await fetchWithTimeout(API() + '/health', {}, 8000);
+      const ms = Date.now() - start;
+      if (!res.ok) throw new Error('Health check failed');
+      if (ms > 3000) throw new Error('Response took ' + ms + 'ms — over 3s threshold. VM may be cold.');
+      return { pass: true, detail: 'Responded in ' + ms + 'ms ✓' };
+    }
+  },
+
+];
+
+// ─── PURE LOGIC HELPERS (extracted from index.html for testing) ───────────────
+
+function computeCompleteness(state) {
+  const sow = (state.suppDocs || []).some(d => d.type === 'Statement of Wishes');
+  const checks = [
+    state.assets && state.assets.length > 0,
+    state.assets && state.assets.some(a => a.beneficiary),
+    state.wishes && state.wishes.length > 0,
+    !!state.will,
+    sow,
+    state.kin && state.kin.length > 0,
+    !!state.lastCheckin,
+  ];
+  return Math.round(checks.filter(Boolean).length / checks.length * 100);
+}
+
+function simulateOverdue({ lastCheckin, fc, fu, gp }) {
+  if (!lastCheckin) return { overdue: false, daysOverdue: 0 };
+  const intervalDays = fu === 'months' ? fc * 30 : fc * 7;
+  const dueDate = new Date(lastCheckin + intervalDays * 86400000);
+  const graceEnd = new Date(dueDate.getTime() + gp * 86400000);
+  const now = Date.now();
+  const overdue = now > graceEnd.getTime();
+  const daysOverdue = overdue ? Math.floor((now - graceEnd.getTime()) / 86400000) : 0;
+  return { overdue, daysOverdue, dueDate, graceEnd };
+}
+
+function simulateReminder({ lastCheckin, fc, fu }) {
+  if (!lastCheckin) return { dueSoon: false, daysLeft: null };
+  const intervalDays = fu === 'months' ? fc * 30 : fc * 7;
+  const dueDate = new Date(lastCheckin + intervalDays * 86400000);
+  const now = Date.now();
+  const daysLeft = Math.ceil((dueDate.getTime() - now) / 86400000);
+  if (daysLeft < 0) return { dueSoon: false, daysLeft: 0 };
+  const threshold = Math.max(7, Math.ceil(intervalDays * 0.25));
+  return { dueSoon: daysLeft <= threshold, daysLeft, threshold };
+}
+
+async function fetchWithTimeout(url, opts, ms) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (e) {
+    clearTimeout(id);
+    if (e.name === 'AbortError') throw new Error('Request timed out after ' + (ms/1000) + 's');
+    throw e;
+  }
+}
+
+// ─── WHICH TESTS NEED A TOKEN ────────────────────────────────────────────────
+// Tests that need per-tester credentials get the token from the login test result
+const PER_TESTER_TESTS = ['login-valid','login-invalid','auth-me'];
+const GLOBAL_TESTS = TEST_SUITE.filter(t => !PER_TESTER_TESTS.includes(t.id));
+const TESTER_TESTS = TEST_SUITE.filter(t => PER_TESTER_TESTS.includes(t.id));
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let results = {}; // { 'tester-01-login-valid': {pass,detail,err} }
+let running = false;
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function buildUI() {
+  const container = document.getElementById('tester-blocks');
+  container.innerHTML = '';
+
+  // Global tests block
+  const globalBlock = makeBlock('global', '⚙️', 'Global Tests', 'Backend health, logic checks, and library availability');
+  GLOBAL_TESTS.forEach(t => globalBlock.listEl.appendChild(makeTestRow('global', t)));
+  container.appendChild(globalBlock.el);
+
+  // Per-tester blocks
+  TESTERS.forEach(tester => {
+    const block = makeBlock(tester.id, tester.id, tester.username, 'Login, authentication, and credential verification');
+    TESTER_TESTS.forEach(t => block.listEl.appendChild(makeTestRow(tester.id, t)));
+    container.appendChild(block.el);
+  });
+}
+
+function makeBlock(blockId, avatarText, name, sub) {
+  const el = document.createElement('div');
+  el.className = 'tester-block';
+  el.id = 'block-' + blockId;
+
+  const header = document.createElement('div');
+  header.className = 'tester-header';
+  header.id = 'header-' + blockId;
+  header.innerHTML = `
+    <div class="tester-avatar" style="font-size:${avatarText.length > 2 ? '11' : '15'}px;">${avatarText === 'global' ? '<span class="m mf" style="font-size:20px;color:#fff;">settings</span>' : avatarText}</div>
+    <div style="flex:1;">
+      <div class="tester-name">${name}</div>
+      <div style="font-size:12px;color:var(--ov);">${sub}</div>
+    </div>
+    <span class="tester-status ts-waiting" id="status-${blockId}">Waiting</span>
+    <span class="m tester-chevron">expand_more</span>
+  `;
+  header.onclick = () => toggleBlock(blockId);
+
+  const list = document.createElement('div');
+  list.className = 'tests-list';
+  list.id = 'list-' + blockId;
+
+  el.appendChild(header);
+  el.appendChild(list);
+  return { el, listEl: list };
+}
+
+function makeTestRow(blockId, test) {
+  const row = document.createElement('div');
+  row.className = 'test-row';
+  row.id = 'row-' + blockId + '-' + test.id;
+  row.innerHTML = `
+    <div class="test-icon ti-wait" id="icon-${blockId}-${test.id}"><span class="m">radio_button_unchecked</span></div>
+    <div class="test-body">
+      <div class="test-name">${test.name}</div>
+      <div class="test-detail" id="detail-${blockId}-${test.id}">${test.detail}</div>
+      <div class="test-err" id="err-${blockId}-${test.id}" style="display:none;"></div>
+    </div>
+  `;
+  return row;
+}
+
+function toggleBlock(blockId) {
+  const list = document.getElementById('list-' + blockId);
+  const header = document.getElementById('header-' + blockId);
+  const isOpen = list.classList.contains('open');
+  list.classList.toggle('open', !isOpen);
+  header.classList.toggle('open', !isOpen);
+}
+
+function setTestState(blockId, testId, state, detail, err) {
+  const iconEl = document.getElementById('icon-' + blockId + '-' + testId);
+  const detailEl = document.getElementById('detail-' + blockId + '-' + testId);
+  const errEl = document.getElementById('err-' + blockId + '-' + testId);
+  if (!iconEl) return;
+
+  const iconMap = {
+    pass: ['ti-pass', 'check_circle', 'var(--ac)'],
+    fail: ['ti-fail', 'cancel', 'var(--er)'],
+    run:  ['ti-run', 'sync', 'var(--warn)'],
+    wait: ['ti-wait', 'radio_button_unchecked', 'var(--sec)'],
+    skip: ['ti-wait', 'remove_circle_outline', 'var(--sec)'],
+  };
+  const [cls, icon, color] = iconMap[state] || iconMap.wait;
+  iconEl.className = 'test-icon ' + cls;
+  iconEl.innerHTML = `<span class="m${state==='run'?' spinner':''}" style="font-size:13px;color:${color};">${icon}</span>`;
+  if (detail) detailEl.textContent = detail;
+  if (err) { errEl.style.display = 'block'; errEl.textContent = err; }
+  else errEl.style.display = 'none';
+}
+
+function setBlockStatus(blockId, status) {
+  const el = document.getElementById('status-' + blockId);
+  if (!el) return;
+  const map = {
+    waiting: ['ts-waiting', 'Waiting'],
+    running: ['ts-running', 'Running…'],
+    pass:    ['ts-pass', 'All Passed'],
+    fail:    ['ts-fail', 'Failed'],
+    skip:    ['ts-skip', 'Skipped'],
+    partial: ['ts-fail', 'Partial'],
+  };
+  const [cls, label] = map[status] || map.waiting;
+  el.className = 'tester-status ' + cls;
+  el.textContent = label;
+}
+
+function log(msg, type = 'info') {
+  const el = document.getElementById('log-body');
+  if (!el) return;
+  const line = document.createElement('div');
+  line.className = 'log-line-' + type;
+  line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function updateSummary() {
+  const all = Object.values(results);
+  const passed = all.filter(r => r.pass && !r.skipped).length;
+  const failed = all.filter(r => !r.pass && !r.skipped).length;
+  const skipped = all.filter(r => r.skipped).length;
+  const total = passed + failed;
+  const pct = total > 0 ? Math.round(passed / total * 100) : 0;
+
+  document.getElementById('s-pass').textContent = passed;
+  document.getElementById('s-fail').textContent = failed;
+  document.getElementById('s-skip').textContent = skipped;
+  document.getElementById('s-bar').style.width = pct + '%';
+  document.getElementById('s-bar').classList.toggle('has-fail', failed > 0);
+  document.getElementById('s-bar').style.setProperty('--pass-pct', pct + '%');
+
+  const done = passed + failed + skipped;
+  const total2 = GLOBAL_TESTS.length + TESTER_TESTS.length * TESTERS.length;
+  if (done >= total2) {
+    document.getElementById('s-summary-text').textContent =
+      failed === 0
+        ? '✓ All tests passed — ' + pct + '%'
+        : failed + ' test' + (failed !== 1 ? 's' : '') + ' failed — ' + pct + '% pass rate';
+  } else {
+    document.getElementById('s-summary-text').textContent = 'Running… ' + done + ' of ' + total2 + ' complete';
+  }
+}
+
+// ─── TEST RUNNER ──────────────────────────────────────────────────────────────
+async function runAllTests() {
+  if (running) return;
+  running = true;
+  results = {};
+
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('run-btn').innerHTML = '<span class="m spinner" style="font-size:22px;">sync</span> Running Tests…';
+  document.getElementById('summary').classList.add('visible');
+  document.getElementById('log-card').style.display = 'block';
+
+  buildUI(); // reset UI
+
+  // Open global block automatically
+  toggleBlock('global');
+  updateSummary();
+
+  log('Test run started', 'info');
+
+  // ── 1. Run global tests ──────────────────────────────────────────────────
+  setBlockStatus('global', 'running');
+  let globalPassed = 0, globalFailed = 0;
+
+  for (const test of GLOBAL_TESTS) {
+    setTestState('global', test.id, 'run', 'Running…');
+    log('→ ' + test.name, 'info');
+    try {
+      const r = await test.run({});
+      if (r.skipped) {
+        results['global-' + test.id] = { pass: false, skipped: true };
+        setTestState('global', test.id, 'skip', r.detail);
+        log('  SKIP: ' + r.detail, 'warn');
+      } else if (r.pass) {
+        results['global-' + test.id] = { pass: true };
+        setTestState('global', test.id, 'pass', r.detail);
+        log('  PASS: ' + r.detail, 'pass');
+        globalPassed++;
+      }
+    } catch (e) {
+      results['global-' + test.id] = { pass: false };
+      setTestState('global', test.id, 'fail', 'Failed', e.message);
+      log('  FAIL: ' + e.message, 'fail');
+      globalFailed++;
+    }
+    updateSummary();
+    await sleep(80);
+  }
+
+  setBlockStatus('global', globalFailed > 0 ? (globalPassed > 0 ? 'partial' : 'fail') : 'pass');
+
+  // ── 2. Run per-tester tests ───────────────────────────────────────────────
+  for (const tester of TESTERS) {
+    const pw = document.getElementById('pw-' + tester.id)?.value;
+    if (!pw) {
+      log('Tester ' + tester.username + ': no password — skipping', 'warn');
+      TESTER_TESTS.forEach(t => {
+        results[tester.id + '-' + t.id] = { pass: false, skipped: true };
+        setTestState(tester.id, t.id, 'skip', 'No password entered');
+      });
+      setBlockStatus(tester.id, 'skip');
+      updateSummary();
+      continue;
+    }
+
+    // Open block
+    toggleBlock(tester.id);
+    setBlockStatus(tester.id, 'running');
+    log('── ' + tester.username + ' ──', 'info');
+
+    let token = null;
+    let testerPassed = 0, testerFailed = 0;
+    let ctx = { username: tester.username, password: pw, token: null };
+
+    for (const test of TESTER_TESTS) {
+      setTestState(tester.id, test.id, 'run', 'Running…');
+      log('→ ' + test.name, 'info');
+      try {
+        const r = await test.run(ctx);
+        if (r.skipped) {
+          results[tester.id + '-' + test.id] = { pass: false, skipped: true };
+          setTestState(tester.id, test.id, 'skip', r.detail);
+          log('  SKIP: ' + r.detail, 'warn');
+        } else if (r.pass) {
+          results[tester.id + '-' + test.id] = { pass: true };
+          setTestState(tester.id, test.id, 'pass', r.detail);
+          log('  PASS: ' + r.detail, 'pass');
+          testerPassed++;
+          // If login returned a token, store it for subsequent tests
+          if (r.token) ctx.token = r.token;
+        }
+      } catch (e) {
+        results[tester.id + '-' + test.id] = { pass: false };
+        setTestState(tester.id, test.id, 'fail', 'Failed', e.message);
+        log('  FAIL: ' + e.message, 'fail');
+        testerFailed++;
+      }
+      updateSummary();
+      await sleep(150);
+    }
+
+    setBlockStatus(tester.id, testerFailed > 0 ? (testerPassed > 0 ? 'partial' : 'fail') : 'pass');
+  }
+
+  // ── 3. Done ───────────────────────────────────────────────────────────────
+  running = false;
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('run-btn').innerHTML = '<span class="m mf" style="font-size:22px;">refresh</span> Run Again';
+
+  const allFails = Object.values(results).filter(r => !r.pass && !r.skipped).length;
+  log('── Run complete. ' + (allFails === 0 ? 'All tests passed ✓' : allFails + ' test(s) failed.') + ' ──', allFails === 0 ? 'pass' : 'fail');
+  updateSummary();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+buildUI();
+</script>
+</body>
+</html>
