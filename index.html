@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-const API='http://34.40.222.5:8001';
+const API='http://34.40.251.204:8001';
 async function doLogin(){
   const username=document.getElementById('li-user').value.trim();
   const password=document.getElementById('li-pass').value;
@@ -573,7 +573,24 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <script>
 let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[],saveCount:0};
 function load(){try{const d=localStorage.getItem('ee_v3');if(d){const p=JSON.parse(d);S={...S,...p};}}catch(e){}}
-function save(){try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){}render();}
+function save(){
+  try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){}
+  syncVault();
+  render();
+}
+async function syncVault(){
+  const token=sessionStorage.getItem('ee_token');
+  if(!token)return;
+  try{
+    await fetch(API+'/vault/sync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({vault:S})
+    });
+  }catch(e){
+    console.warn('Vault sync failed:',e);
+  }
+}
 function go(s){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));document.getElementById('s-'+s).classList.add('on');document.getElementById('n-'+s).classList.add('on');document.querySelector('.body').scrollTop=0;}
 function openM(id,cat){
   if(id==='am'){document.getElementById('am-edit-id').value='';document.getElementById('am-title').textContent='Record New Asset';document.getElementById('am-save-btn').textContent='Save Asset';['an','av','adet','ab2','ano'].forEach(i=>document.getElementById(i).value='');document.getElementById('ac2').selectedIndex=0;}
@@ -656,7 +673,25 @@ function editK(id){
 function delA(id){S.assets=S.assets.filter(a=>a.id!==id);log('Asset removed');save();toast('Removed ✓');}
 function delK(id){S.kin=S.kin.filter(k=>k.id!==id);S.kin.forEach((k,i)=>k.order=i+1);log('Contact removed');save();toast('Removed ✓');}
 function moveK(id,dir){const idx=S.kin.findIndex(k=>k.id===id);if(idx<0)return;const ni=idx+dir;if(ni<0||ni>=S.kin.length)return;[S.kin[idx],S.kin[ni]]=[S.kin[ni],S.kin[idx]];S.kin.forEach((k,i)=>k.order=i+1);save();}
-function checkin(){S.lastCheckin=Date.now();log('Check-in confirmed — alive');save();toast('You\'re confirmed alive ✓');}
+function checkin(){
+  S.lastCheckin=Date.now();
+  log('Check-in confirmed — alive');
+  save();
+  serverCheckin();
+  toast('You\'re confirmed alive ✓');
+}
+async function serverCheckin(){
+  const token=sessionStorage.getItem('ee_token');
+  if(!token)return;
+  try{
+    await fetch(API+'/checkin',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+token}
+    });
+  }catch(e){
+    console.warn('Server check-in failed:',e);
+  }
+}
 let fUnit='months',fCount=2;
 // F35: Auto-save — setU now saves immediately instead of waiting for "Confirm Settings"
 function setU(u){fUnit=u;S.fu=u;document.getElementById('tw').classList.toggle('on',u==='weeks');document.getElementById('tm').classList.toggle('on',u==='months');document.getElementById('fu').textContent=u.charAt(0).toUpperCase()+u.slice(1);save();toast('Frequency updated ✓');}
