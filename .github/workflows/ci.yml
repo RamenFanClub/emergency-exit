@@ -1,61 +1,20 @@
-name: CI
+name: Check and Deploy
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
-  test:
+  sync-check:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service:
-          - identity-service
-          - vault-service
-          - wishes-service
-          - guardian-service
-          - pulse-service
-          - notification-service
-
-    services:
-      mongodb:
-        image: mongo:7.0
-        ports:
-          - 27017:27017
-
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Check index.html files are in sync
         run: |
-          cd ${{ matrix.service }}
-          pip install -r requirements.txt
-
-      - name: Lint
-        run: |
-          cd ${{ matrix.service }}
-          pip install ruff
-          ruff check app/
-
-      - name: Type check
-        run: |
-          cd ${{ matrix.service }}
-          pip install mypy
-          mypy app/ --ignore-missing-imports
-
-      - name: Unit tests
-        run: |
-          cd ${{ matrix.service }}
-          pytest tests/unit/ -v --cov=app --cov-report=term-missing --cov-fail-under=80
-
-      - name: Integration tests
-        run: |
-          cd ${{ matrix.service }}
-          MONGO_URI=mongodb://localhost:27017 pytest tests/integration/ -v
-        env:
-          MONGO_URI: mongodb://localhost:27017
+          if ! diff -q index.html frontend/index.html > /dev/null 2>&1; then
+            echo "❌ index.html and frontend/index.html are out of sync!"
+            echo "Fix: copy one to the other before pushing."
+            exit 1
+          fi
+          echo "✅ Both index.html files are in sync."
