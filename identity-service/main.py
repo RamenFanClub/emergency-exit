@@ -16,14 +16,10 @@ app = FastAPI(title="Emergency Exit — Identity Service")
 # ─── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://ramenfanclub.github.io",
-        "http://localhost:3000",
-        "http://127.0.0.1:5500",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=False,
 )
 
 # ─── MONGODB CONNECTION ───────────────────────────────────────────────────────
