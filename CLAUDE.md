@@ -220,9 +220,7 @@ The backend is now on Railway (`emergency-exit-production.up.railway.app`), NOT 
 
 ### Environment Variables
 ```
-MONGO_URI=mongodb+srv://dba_emex:PASSWORD@emergency-exit.zygepvl.mongodb.net/emergency_exit?...
-JWT_SECRET=emergency_exit_super_secret_key_2024
-PORT=8001
+
 ```
 **Never commit the .env file.**
 
