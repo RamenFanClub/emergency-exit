@@ -1,7 +1,10 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-pymongo==4.17.0
-pydantic==2.4.2
-python-jose==3.3.0
-bcrypt==4.0.1
-python-dotenv==1.0.0
+fastapi
+uvicorn
+pymongo
+pydantic
+python-jose[cryptography]
+bcrypt
+python-dotenv
+resend
+apscheduler
+bson
