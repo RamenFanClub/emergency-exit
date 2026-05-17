@@ -232,6 +232,8 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 - Emails send from `onboarding@resend.dev` (Resend sandbox) — verify a custom domain before going live.
 - `overdueNotificationSent` flag in MongoDB prevents re-sending emails every hour for the same overdue event.
 - For `escalate` protocol, `overdueNotificationSent` is NOT set to True — scanner keeps running to notify new contacts each day.
+- `send_allclear_email()` — sends a warm reassuring email to each contact when vault holder checks in after being overdue. Called inside `POST /checkin` only when `overdueNotificationSent` was True before reset.
+- `POST /checkin` response includes `allclear_sent: true/false` and `allclear_count` so caller knows if all-clear emails were triggered.
 
 ### API Endpoints
 | Method | Endpoint | Auth required | Purpose |
@@ -350,7 +352,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 
 | ID | User Story | Priority | Status | Notes |
 |----|-----------|----------|--------|-------|
-| F01 | Automatically notify contacts if check-in missed and grace period expires | Must | in-progress | Client-side simulation done. Real email delivery live (F39-2, F39-3). PDF attachment pending F39-4. |
+| F01 | Automatically notify contacts if check-in missed and grace period expires | Must | in-progress | Client-side simulation done. Real email delivery live (F39-2, F39-3). All-clear email on recovery live (F39-8). PDF attachment pending F39-4. |
 | F02 | Self-contained PDF package for contacts | Must | done | 6-page A4 PDF, generated client-side via jsPDF. |
 | F03 | Personal letter for each contact included in notification | Must | done | Letter stored as `k.letter`. Status pill on contact card. |
 | F04 | Data encrypted at rest and in transit | Must | idea | Prototype uses plain localStorage. Production needs AES-256. |
@@ -419,7 +421,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F39-5 | Twilio SMS delivery | Should | specified | SMS with PDF link (not attachment). Requires cloud storage for PDF hosting. |
 | F39-6 | RabbitMQ event bus | Should | specified | Introduces retry resilience. Can skip initially — scanner calls worker directly. |
 | F39-7 | Notification protocol logic server-side | Must | done | Delivered as part of F39-2. ping_then_notify / notify_immediately / escalate all implemented. |
-| F39-8 | False alarm recovery — cancellation logic | Must | specified | POST /checkin already resets overdueNotificationSent. Full cancellation of in-flight queue pending. |
+| F39-8 | False alarm recovery — cancellation logic | Must | done | POST /checkin detects if overdueNotificationSent was True before resetting. If so, sends warm all-clear email to all contacts via send_allclear_email(). Returns allclear_sent: true in response. |
 | F39-9 | WhatsApp delivery via Twilio | Could | idea | Requires Meta Business API approval. Defer until core delivery stable. |
 
 ### Won't Have
