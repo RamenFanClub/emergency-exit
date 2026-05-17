@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
+from bson import ObjectId
 import bcrypt
 import resend
 import os
@@ -234,7 +235,7 @@ def run_pulse_scan():
             print(f"  🚨 User {user_id}: OVERDUE by {days_overdue} day(s)")
 
             # ── Step 6: Look up the vault owner's name ────────────────────────
-            user_record = users.find_one({"_id": __import__("bson").ObjectId(user_id)})
+            user_record = users.find_one({"_id": ObjectId(user_id)})
             owner_name = user_record["name"] if user_record else "The vault holder"
 
             # ── Step 7: Determine which contacts to notify ────────────────────
