@@ -13,6 +13,7 @@ import resend
 import os
 import base64
 import io
+import requests as http_requests
 
 # ─── F39-4: ReportLab imports ────────────────────────────────────────────────
 from reportlab.lib.pagesizes import A4
@@ -708,17 +709,17 @@ Emergency Exit — Digital Legacy Vault
 This is an automated message. Do not reply to this email.
 """
 
-    # ── F39-4: Generate the PDF and attach it to the email ───────────────────
+    # ── F39-4: Generate the PDF and base64-encode it for the email attachment ─
     pdf_attached = False
     attachments = []
     try:
         pdf_bytes = generate_pdf_for_contact(contact, vault, vault_owner_name)
+        # Resend's REST API requires content as a base64-encoded string.
+        pdf_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
         safe_name = f"{contact.get('first', 'Contact')}-{contact.get('last', 'Package')}".replace(" ", "-")
-        # Resend's Python SDK expects raw bytes in "content", NOT a base64 string.
-        # The SDK handles encoding internally before sending to the API.
         attachments = [{
             "filename": f"Emergency-Exit-{safe_name}.pdf",
-            "content": list(pdf_bytes),  # Resend SDK requires a list of ints (byte array)
+            "content": pdf_b64,
         }]
         pdf_attached = True
         print(f"  📄 PDF generated for {contact_name} ({len(pdf_bytes):,} bytes)")
@@ -728,19 +729,37 @@ This is an automated message. Do not reply to this email.
         print(f"  ⚠️  PDF generation failed for {contact_name}: {pdf_err} — sending email without attachment")
 
     try:
-        email_payload = {
+        # Use the Resend REST API directly via requests rather than the SDK.
+        # The SDK's attachment handling varies by version; calling the API
+        # directly gives us exact control over the payload and clearer errors.
+        api_key = os.getenv("RESEND_API_KEY")
+        payload = {
             "from": "onboarding@resend.dev",
-            "to": [TEST_INBOX],  # Resend requires "to" as a list, not a plain string
+            "to": [TEST_INBOX],  # must be a list
             "subject": f"[Emergency Exit] Action may be required — {vault_owner_name} has missed a check-in",
             "text": body,
         }
         if attachments:
-            email_payload["attachments"] = attachments
+            payload["attachments"] = attachments
 
-        resend.Emails.send(email_payload)
-        status = "with PDF attachment" if pdf_attached else "without PDF (fallback)"
-        print(f"✅ Email sent for contact: {contact_name} {status} (redirected to test inbox)")
-        return True
+        response = http_requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=30,
+        )
+
+        if response.status_code in (200, 201):
+            status = "with PDF attachment" if pdf_attached else "without PDF (fallback)"
+            print(f"✅ Email sent for contact: {contact_name} {status} (redirected to test inbox)")
+            return True
+        else:
+            print(f"❌ Resend API error {response.status_code}: {response.text}")
+            return False
+
     except Exception as e:
         print(f"❌ Email failed for contact {contact_name}: {e}")
         return False
