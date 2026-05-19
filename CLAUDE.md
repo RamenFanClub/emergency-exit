@@ -92,7 +92,8 @@ The `index.html` includes a login wall:
 - **Vault sync** (F39-1): every `save()` call silently POSTs vault to `/vault/sync` — server has a copy
 - **Pulse scanner** (F39-2): APScheduler runs `run_pulse_scan()` every hour inside the FastAPI app
 - **Email delivery** (F39-3): Resend sends plain-text notification emails to contacts when overdue detected
-- jsPDF (via CDN) for client-side PDF generation
+- **PDF attachment** (F39-4): ReportLab generates server-side PDF; attached to notification email via Resend REST API (direct HTTP, not SDK). PDF mirrors the 6-page jsPDF client-side package.
+- jsPDF (via CDN) for client-side PDF generation (unchanged)
 - **Frontend:** GitHub Pages (`ramenfanclub.github.io/emergency-exit`) — auto-deploys on `git push`
 - **Backend:** Railway (`emergency-exit-production.up.railway.app`) — auto-deploys on `git push`
 - **Database:** MongoDB Atlas on Google Cloud
@@ -219,9 +220,11 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 - Resend API key loaded from environment variable RESEND_API_KEY
 - APScheduler — runs run_pulse_scan() every hour
 - JWT auth helpers
-- send_notification_email() — sends plain-text email via Resend
+- ReportLab PDF generation — generate_pdf_for_contact()
+- send_notification_email() — generates PDF, attaches via Resend REST API direct HTTP call
+- send_allclear_email() — sends warm recovery email via Resend SDK
 - get_contacts_to_notify() — protocol logic (ping_then_notify / notify_immediately / escalate)
-- run_pulse_scan() — hourly scanner, detects overdue vaults, triggers emails
+- run_pulse_scan() — hourly scanner, detects overdue vaults, triggers emails with PDF
 - All API routes
 ```
 
@@ -234,6 +237,9 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 - For `escalate` protocol, `overdueNotificationSent` is NOT set to True — scanner keeps running to notify new contacts each day.
 - `send_allclear_email()` — sends a warm reassuring email to each contact when vault holder checks in after being overdue. Called inside `POST /checkin` only when `overdueNotificationSent` was True before reset.
 - `POST /checkin` response includes `allclear_sent: true/false` and `allclear_count` so caller knows if all-clear emails were triggered.
+- **F39-4 PDF generation:** Uses ReportLab (open source, BSD licence, pure Python — no system dependencies). PDF is built in-memory via `io.BytesIO()` — never touches the filesystem. Attached to email as base64 string via direct Resend REST API call (`requests.post` to `https://api.resend.com/emails`). The Resend Python SDK is NOT used for notification emails — the direct HTTP call is more reliable for attachments.
+- **Critical variable naming:** In `generate_pdf_for_contact()`, never use `doc` as a loop variable — it shadows the `SimpleDocTemplate` object. Use `supp_doc` for supplementary document loops.
+- `requests` library used for direct Resend API calls — confirm it is in `requirements.txt`.
 
 ### API Endpoints
 | Method | Endpoint | Auth required | Purpose |
@@ -260,7 +266,7 @@ RESEND_API_KEY=re_...
 3. Click Authorize (top right) → paste `Bearer <token>` → Authorize
 4. `POST /admin/force-overdue` — sets vault to overdue
 5. `POST /admin/trigger-pulse` — runs scanner immediately
-6. Check test inbox for email
+6. Check test inbox for email with PDF attachment
 7. `POST /checkin` — resets vault back to normal
 
 ---
@@ -339,6 +345,8 @@ checkInUnit, gracePeriodDays, notifyProto, contactCount, overdueNotificationSent
 - Do not commit the `.env` file
 - Do not show vault sync errors to the user — fail silently
 - Do not add `bson` to `requirements.txt` — pymongo bundles its own bson and they conflict
+- Do not use `doc` as a loop variable inside `generate_pdf_for_contact()` — it shadows the SimpleDocTemplate object. Use `supp_doc` instead.
+- Do not use the Resend Python SDK for notification emails with attachments — use `requests.post` to `https://api.resend.com/emails` directly
 
 ---
 
@@ -352,7 +360,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 
 | ID | User Story | Priority | Status | Notes |
 |----|-----------|----------|--------|-------|
-| F01 | Automatically notify contacts if check-in missed and grace period expires | Must | in-progress | Client-side simulation done. Real email delivery live (F39-2, F39-3). All-clear email on recovery live (F39-8). PDF attachment pending F39-4. |
+| F01 | Automatically notify contacts if check-in missed and grace period expires | Must | in-progress | Client-side simulation done. Real email delivery live (F39-2, F39-3). All-clear email on recovery live (F39-8). PDF attachment live (F39-4). |
 | F02 | Self-contained PDF package for contacts | Must | done | 6-page A4 PDF, generated client-side via jsPDF. |
 | F03 | Personal letter for each contact included in notification | Must | done | Letter stored as `k.letter`. Status pill on contact card. |
 | F04 | Data encrypted at rest and in transit | Must | idea | Prototype uses plain localStorage. Production needs AES-256. |
@@ -417,7 +425,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F39-1 | Vault sync endpoint + frontend sync on save() | Must | done | POST /vault/sync and POST /checkin live on Railway. |
 | F39-2 | Pulse service — scheduled overdue scanner | Must | done | APScheduler runs hourly inside FastAPI. Detects overdue vaults, honours all 3 protocols. |
 | F39-3 | Resend email delivery (plain text) | Must | done | Plain-text email sent via Resend to test inbox. From: onboarding@resend.dev. Swap to contact["email"] + verified domain for production. |
-| F39-4 | Server-side PDF generation | Must | specified | Python WeasyPrint or ReportLab. Attaches PDF to email. |
+| F39-4 | Server-side PDF generation + email attachment | Must | done | ReportLab (open source, BSD, pure Python). PDF built in-memory via io.BytesIO. Attached as base64 via direct Resend REST API HTTP call. Bug fixed: loop variable `doc` renamed to `supp_doc` to avoid shadowing SimpleDocTemplate object. |
 | F39-5 | Twilio SMS delivery | Should | specified | SMS with PDF link (not attachment). Requires cloud storage for PDF hosting. |
 | F39-6 | RabbitMQ event bus | Should | specified | Introduces retry resilience. Can skip initially — scanner calls worker directly. |
 | F39-7 | Notification protocol logic server-side | Must | done | Delivered as part of F39-2. ping_then_notify / notify_immediately / escalate all implemented. |
@@ -437,13 +445,12 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 
 ## End-of-Chat Checklist
 
-- [ ] Download the new `index.html` (if changed)
+- [ ] Download the new `main.py` (if changed)
 - [ ] Download the new `CLAUDE.md`
 - [ ] Did anything structural change? Update `CLAUDE.md`
-- [ ] Replace files in VS Code (`./index.html` AND `./frontend/index.html` if changed)
-- [ ] `cp index.html frontend/index.html` to ensure they are byte-for-byte identical (if changed)
+- [ ] Replace `identity-service/main.py` in VS Code
+- [ ] Add `reportlab` and `requests` to `identity-service/requirements.txt` if not already present
 - [ ] `git add -A`
 - [ ] `git commit -m "describe what changed"`
 - [ ] `git push`
-- [ ] GitHub Actions sync check should go green ✅
 - [ ] Railway redeploys backend automatically ✅
