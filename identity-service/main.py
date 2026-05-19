@@ -459,18 +459,18 @@ def generate_pdf_for_contact(contact: dict, vault: dict, owner_name: str) -> byt
 
     if supp_docs:
         story += _section_header("Supporting Documents", styles)
-        for doc in supp_docs:
-            doc_rows = [
-                [Paragraph(doc.get("name", ""), styles["subheading"])],
-                [Paragraph(doc.get("type", ""), styles["body_muted"])],
+        for supp_doc in supp_docs:
+            supp_rows = [
+                [Paragraph(supp_doc.get("name", ""), styles["subheading"])],
+                [Paragraph(supp_doc.get("type", ""), styles["body_muted"])],
             ]
-            if doc.get("loc"):
-                doc_rows.append([Paragraph(f"Location: {doc['loc']}", ParagraphStyle(
+            if supp_doc.get("loc"):
+                supp_rows.append([Paragraph(f"Location: {supp_doc['loc']}", ParagraphStyle(
                     "loc", fontName="Helvetica", fontSize=9, textColor=SAGE, leading=13
                 ))])
 
-            doc_table = Table(
-                doc_rows,
+            supp_table = Table(
+                supp_rows,
                 colWidths=[170 * mm],
                 style=TableStyle([
                     ("BACKGROUND", (0, 0), (-1, -1), OFFWHITE),
@@ -482,7 +482,7 @@ def generate_pdf_for_contact(contact: dict, vault: dict, owner_name: str) -> byt
                     ("LINEAFTER", (0, 0), (0, -1), 2, SAGE),
                 ]),
             )
-            story.append(doc_table)
+            story.append(supp_table)
             story.append(Spacer(1, 3 * mm))
 
     story.append(PageBreak())
