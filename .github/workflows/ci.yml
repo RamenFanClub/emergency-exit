@@ -1,20 +1,76 @@
-name: Check and Deploy
+name: Emergency Exit — CI
 
+# ─── WHEN THIS RUNS ───────────────────────────────────────────────────────────
+# Triggers on every push to main, and on every pull request targeting main.
+# This means tests run BEFORE code reaches production.
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  sync-check:
+
+  # ─── JOB 1: PYTHON BACKEND TESTS ──────────────────────────────────────────
+  # Runs the pytest suite against identity-service/main.py
+  # If any test fails, this job fails and Railway does NOT deploy.
+  backend-tests:
+    name: Backend Tests (pytest)
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      # Step 1: Check out the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Python (matches Railway's runtime)
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Step 3: Install all dependencies from requirements.txt
+      # plus pytest and pytest-mock which are test-only dependencies
+      - name: Install dependencies
+        working-directory: identity-service
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-mock
+
+      # Step 4: Run the test suite
+      # -v = verbose (shows each test name)
+      # --tb=short = short traceback on failure (easier to read)
+      # The job fails here if any test fails — Railway won't deploy
+      - name: Run pytest
+        working-directory: identity-service
+        env:
+          # Fake credentials for the test environment
+          # Tests mock all external calls so these values are never used
+          # but the imports expect them to exist
+          MONGO_URI: mongodb://localhost:27017
+          JWT_SECRET: test-secret-key-for-ci
+          RESEND_API_KEY: re_test_fake_key_for_ci
+        run: |
+          python -m pytest test_main.py -v --tb=short
+
+  # ─── JOB 2: FRONTEND SYNC CHECK ───────────────────────────────────────────
+  # Verifies that ./index.html and ./frontend/index.html are identical.
+  # Catches the common mistake of updating one file but forgetting the other.
+  frontend-sync:
+    name: Frontend Sync Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Check index.html files are in sync
         run: |
-          if ! diff -q index.html frontend/index.html > /dev/null 2>&1; then
+          if diff -q index.html frontend/index.html > /dev/null 2>&1; then
+            echo "✅ index.html and frontend/index.html are in sync"
+          else
             echo "❌ index.html and frontend/index.html are out of sync!"
-            echo "Fix: copy one to the other before pushing."
+            echo "Run: cp index.html frontend/index.html"
+            diff index.html frontend/index.html
             exit 1
           fi
-          echo "✅ Both index.html files are in sync."
