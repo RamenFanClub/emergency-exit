@@ -17,6 +17,7 @@ The `index.html` includes a login wall:
 - **API calls** point to `https://emergency-exit-production.up.railway.app`
 - **Enter key** submits the login form
 - **Session persistence** — if token exists in sessionStorage, login wall is skipped
+- **Tester accounts:** tester_01 through tester_06, all share password `Benny#07`
 
 ### Key element IDs for login:
 - `#login-wall` — the full-screen login overlay
@@ -27,9 +28,10 @@ The `index.html` includes a login wall:
 - `#user-greeting` — "Hi, [Name]" in header
 
 ### Key functions:
-- `doLogin()` — POSTs to `/auth/login`, stores token, shows app
+- `doLogin()` — POSTs to `/auth/login`, stores token, calls `showApp()` (now async)
 - `doLogout()` — clears session, resets state, shows login wall
-- `showApp(user)` — reveals the app after successful login
+- `showApp(user)` — async; awaits `loadFromServer()` before calling `render()`
+- `loadFromServer()` — async; fetches `GET /vault`, falls back to localStorage if server unreachable
 - `API` constant — set to `https://emergency-exit-production.up.railway.app`
 
 ---
@@ -88,7 +90,7 @@ The `index.html` includes a login wall:
 ### Current (user testing)
 - Single-file HTML/CSS/JavaScript (`index.html`)
 - **Login wall** — username + password, JWT token in sessionStorage
-- **localStorage** still used for vault data (will migrate to MongoDB in next phase)
+- **F41: Server-first vault load** — `loadFromServer()` fetches `GET /vault` on login; localStorage used as offline cache/fallback only. Server is now source of truth.
 - **Vault sync** (F39-1): every `save()` call silently POSTs vault to `/vault/sync` — server has a copy
 - **Pulse scanner** (F39-2): APScheduler runs `run_pulse_scan()` every hour inside the FastAPI app
 - **Email delivery** (F39-3): Resend sends plain-text notification emails to contacts when overdue detected
@@ -98,7 +100,8 @@ The `index.html` includes a login wall:
 - **Backend:** Railway (`emergency-exit-production.up.railway.app`) — auto-deploys on `git push`
 - **Database:** MongoDB Atlas on Google Cloud
 - **Email provider:** Resend (`resend.com`) — free tier, 100 emails/day
-- **CI:** GitHub Actions — `.github/workflows/ci.yml` runs a sync check between `./index.html` and `./frontend/index.html` on every push to `main`
+- **CI:** GitHub Actions — `.github/workflows/ci.yml` runs pytest + frontend sync check on every push to `main`
+- **Test suite:** `identity-service/test_main.py` — 69 pytest tests covering all backend features
 
 ### Planned (production)
 - **Frontend:** React Native (iOS + Android) + React (web)
@@ -114,14 +117,23 @@ The `index.html` includes a login wall:
 ## CI/CD
 
 - **GitHub Pages** auto-deploys on every push to `main` — CD is already live
-- **GitHub Actions** (`.github/workflows/ci.yml`) — runs a sync check to ensure `./index.html` and `./frontend/index.html` are identical before deploy
+- **GitHub Actions** (`.github/workflows/ci.yml`) — two jobs run on every push:
+  1. **Backend Tests** — runs `pytest test_main.py -v` inside `identity-service/`. Deploy does not proceed if any test fails.
+  2. **Frontend Sync Check** — confirms `./index.html` and `./frontend/index.html` are identical
 - **Railway** auto-deploys backend on every push to `main`
 - **Developer workflow:**
   1. Edit `./index.html` in VSCode
   2. Run `cp index.html frontend/index.html` in terminal
   3. `git add -A && git commit -m "..." && git push`
-  4. GitHub Actions runs sync check ✅ → Pages deploys automatically 🚀
+  4. GitHub Actions runs pytest + sync check ✅ → Pages deploys automatically 🚀
   5. Railway picks up backend changes and redeploys automatically 🚀
+
+### Running tests locally (before pushing)
+```bash
+cd identity-service
+python3 -m pytest test_main.py -v
+```
+Expected output: `69 passed` — if any fail, fix before pushing.
 
 ---
 
@@ -220,12 +232,14 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 - Resend API key loaded from environment variable RESEND_API_KEY
 - APScheduler — runs run_pulse_scan() every hour
 - JWT auth helpers
+- F41 schema helpers — ms_to_dt(), dt_to_ms(), extract_vault_fields(), reconstruct_vault_blob()
 - ReportLab PDF generation — generate_pdf_for_contact()
 - send_notification_email() — generates PDF, attaches via Resend REST API direct HTTP call
 - send_allclear_email() — sends warm recovery email via Resend SDK
 - get_contacts_to_notify() — protocol logic (ping_then_notify / notify_immediately / escalate)
 - run_pulse_scan() — hourly scanner, detects overdue vaults, triggers emails with PDF
 - All API routes
+- startup() — creates MongoDB indexes on boot
 ```
 
 ### Key implementation notes
@@ -240,6 +254,8 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 - **F39-4 PDF generation:** Uses ReportLab (open source, BSD licence, pure Python — no system dependencies). PDF is built in-memory via `io.BytesIO()` — never touches the filesystem. Attached to email as base64 string via direct Resend REST API call (`requests.post` to `https://api.resend.com/emails`). The Resend Python SDK is NOT used for notification emails — the direct HTTP call is more reliable for attachments.
 - **Critical variable naming:** In `generate_pdf_for_contact()`, never use `doc` as a loop variable — it shadows the `SimpleDocTemplate` object. Use `supp_doc` for supplementary document loops.
 - `requests` library used for direct Resend API calls — confirm it is in `requirements.txt`.
+- **F41 or-fallback bug:** Never use `content.get("kin") or fallback` — empty list `[]` is falsy in Python and would incorrectly fall through to the old schema. Always use explicit `None` check: `kin = content.get("kin"); contacts = kin if kin is not None else fallback`.
+- **MongoDB indexes** created on startup: `userId` (unique), `lastCheckin`, compound `(overdueNotificationSent, lastCheckin)`. Safe to call `create_index` on every startup — MongoDB skips silently if index already exists.
 
 ### API Endpoints
 | Method | Endpoint | Auth required | Purpose |
@@ -248,7 +264,8 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 | POST | `/auth/login` | No | Login with username + password, returns JWT token |
 | GET | `/auth/me` | Yes | Get current user's profile |
 | GET | `/admin/testers` | Yes | List all tester accounts |
-| POST | `/vault/sync` | Yes | Store full ee_v3 vault blob in MongoDB |
+| POST | `/vault/sync` | Yes | Store vault using structured MongoDB schema (F41) |
+| GET | `/vault` | Yes | Return vault blob to frontend on login (F41) |
 | POST | `/checkin` | Yes | Record check-in server-side, clear overdue flag |
 | POST | `/admin/trigger-pulse` | Yes | Manually trigger the pulse scan immediately (testing) |
 | POST | `/admin/force-overdue` | Yes | Set vault lastCheckin to 2020 to simulate overdue state (testing) |
@@ -274,7 +291,7 @@ RESEND_API_KEY=re_...
 ## Data Model
 
 ```javascript
-// localStorage key: 'ee_v3'
+// localStorage key: 'ee_v3' (also used as offline cache — server is source of truth from F41)
 {
   assets: [{ id, name, category, value, details, beneficiary, notes }],
   wishes: [{ id, category, title, details, priority: 'high'|'medium'|'low' }],
@@ -292,11 +309,66 @@ RESEND_API_KEY=re_...
 }
 ```
 
-### MongoDB vaults collection fields (server-side)
+### MongoDB vaults collection — F41 structured schema
 ```
-userId, vault (full blob), syncedAt, lastCheckin, checkInFrequency,
-checkInUnit, gracePeriodDays, notifyProto, contactCount, overdueNotificationSent
+{
+  userId: ObjectId,              ← indexed (unique), links to users collection
+  lastCheckin: ISODate,          ← indexed (top-level for pulse scanner queries)
+  checkInFrequency: Number,      ← maps to S.fc
+  checkInUnit: String,           ← "weeks" | "months"
+  gracePeriodDays: Number,       ← maps to S.gp
+  notifyProto: String,
+  overdueNotificationSent: Boolean,  ← indexed (compound with lastCheckin)
+  content: {                     ← vault data — always read/written together → embedded
+    assets, wishes, will, suppDocs, kin, v, notifySeq, saveCount
+  },
+  log: [...],                    ← capped at 20 entries in frontend — safe to embed
+  syncedAt: ISODate,
+  createdAt: ISODate,
+  updatedAt: ISODate
+}
 ```
+
+#### Schema design decisions (MongoDB best practices)
+- **Check-in fields at top level** — `lastCheckin`, `gracePeriodDays`, `overdueNotificationSent` are queried by the pulse scanner every hour. Top-level = indexable = fast.
+- **Vault content embedded** — assets, wishes, contacts always read and written together → embed, don't reference.
+- **Log embedded** — bounded at 20 entries in frontend JS, always read with vault → safe to embed.
+- **Revisit log schema when:** building an audit trail, admin dashboard, or unlimited history feature. At that point, move logs to a separate `logs` collection with `userId`, `event`, `detail`, `timestamp` fields.
+- **Backward compatibility** — old vault docs (pre-F41) stored content in a `vault` blob field. All fallback lookups use explicit `None` checks (not `or`) to handle empty arrays correctly.
+
+### MongoDB users collection
+```
+_id, username, password (bcrypt hash), name, ageGroup, hasWill,
+notes, isTester, createdAt, lastLogin
+```
+**Tester accounts:** tester_01 through tester_06. All passwords updated to bcrypt hash of `Benny#07`.
+
+---
+
+## Test Suite
+
+**File:** `identity-service/test_main.py`
+**Run:** `python3 -m pytest test_main.py -v`
+**Expected:** 69 passed
+
+### Coverage by feature
+
+| Test class | Feature covered | Count |
+|---|---|---|
+| `TestMsToDt` / `TestDtToMs` | F41 timestamp conversion | 7 |
+| `TestExtractVaultFields` | F41 schema structuring | 9 |
+| `TestReconstructVaultBlob` | F41 round-trip fidelity | 7 |
+| `TestGetContactsToNotify` | F39-7 all 3 protocols | 13 |
+| `TestPasswordHelpers` | F40 auth — bcrypt | 6 |
+| `TestCreateToken` | F40 auth — JWT | 3 |
+| `TestCleanUser` | F40 data safety | 5 |
+| `TestOverdueCalculationLogic` | F39-2 pulse scanner maths | 5 |
+| `TestBackwardCompatibility` | F41 migration safety | 3 |
+| `TestAllClearLogic` | F39-8 recovery emails | 4 |
+| `TestCompletenessLogic` | Completeness score (7 checks) | 6 |
+
+### Adding tests for new features
+When building a new feature, add a new `class TestFeatureName` block to `test_main.py` before implementing. Tests run automatically on every push via GitHub Actions.
 
 ---
 
@@ -325,6 +397,7 @@ checkInUnit, gracePeriodDays, notifyProto, contactCount, overdueNotificationSent
 - `API` constant in JS points to `https://emergency-exit-production.up.railway.app`
 - Login token stored in `sessionStorage` (not localStorage — clears on tab close)
 - Vault sync is silent — never show errors to the user if sync fails
+- **F41 fallback pattern:** always use explicit `None` check when reading from content sub-document: `kin = doc.get("content", {}).get("kin"); contacts = kin if kin is not None else doc.get("vault", {}).get("kin", [])`
 
 ---
 
@@ -347,6 +420,8 @@ checkInUnit, gracePeriodDays, notifyProto, contactCount, overdueNotificationSent
 - Do not add `bson` to `requirements.txt` — pymongo bundles its own bson and they conflict
 - Do not use `doc` as a loop variable inside `generate_pdf_for_contact()` — it shadows the SimpleDocTemplate object. Use `supp_doc` instead.
 - Do not use the Resend Python SDK for notification emails with attachments — use `requests.post` to `https://api.resend.com/emails` directly
+- Do not use `or` for fallback when reading `content.kin` — empty list `[]` is falsy and would silently fall through. Use explicit `None` check.
+- Do not push without running `python3 -m pytest test_main.py -v` first (or rely on GitHub Actions to catch it)
 
 ---
 
@@ -380,7 +455,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F19 | Passive liveness detection via phone activity | Should | idea | Requires native mobile APIs. |
 | F20 | Minimum information capture design | Should | idea | |
 | F21 | Document location recording (not upload) | Should | idea | Partially done via suppDocs location field. |
-| F41 | Migrate vault data from localStorage to MongoDB | Should | in-progress | Step 1 done via F39 vault sync. Full migration pending. |
+| F41 | Migrate vault data from localStorage to MongoDB | Should | done | Server-first load implemented. GET /vault returns vault on login. localStorage kept as offline cache. Structured MongoDB schema with indexes. 69 automated tests. |
 
 ### Could Have
 
@@ -416,6 +491,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F37 | Screen subtitle visual hierarchy | Could | done | |
 | F38 | Remove Access Level dropdown from contact form | Must | done | |
 | F42 | Palette redesign — linen cream + warm sage | Should | done | Navy/teal replaced. See CSS variable reference above. |
+| F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 69 tests + frontend sync check. Blocks deploy on failure. |
 
 ### Backend & Infrastructure
 
@@ -446,11 +522,16 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 ## End-of-Chat Checklist
 
 - [ ] Download the new `main.py` (if changed)
+- [ ] Download the new `test_main.py` (if changed)
 - [ ] Download the new `CLAUDE.md`
 - [ ] Did anything structural change? Update `CLAUDE.md`
 - [ ] Replace `identity-service/main.py` in VS Code
+- [ ] Replace `identity-service/test_main.py` in VS Code
 - [ ] Add `reportlab` and `requests` to `identity-service/requirements.txt` if not already present
+- [ ] Run `python3 -m pytest test_main.py -v` — confirm 69 passed before pushing
+- [ ] `cp index.html frontend/index.html`
 - [ ] `git add -A`
 - [ ] `git commit -m "describe what changed"`
 - [ ] `git push`
+- [ ] GitHub Actions runs pytest + sync check ✅
 - [ ] Railway redeploys backend automatically ✅
