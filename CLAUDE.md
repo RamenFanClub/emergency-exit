@@ -4,6 +4,11 @@
 > Update it at the end of every session and push to `main` before closing.
 > Both `./index.html` AND `./frontend/index.html` must always be kept in sync.
 
+> **SESSION START INSTRUCTION:** At the beginning of every new chat, always check
+> the project-level files synced from GitHub (CLAUDE.md and index.html). These are
+> the source of truth. Do not rely on memory summaries alone — read the actual
+> documents provided in context before making any assumptions about current state.
+
 ---
 
 ## Login (Frontend)
@@ -435,7 +440,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 
 | ID | User Story | Priority | Status | Notes |
 |----|-----------|----------|--------|-------|
-| F01 | Automatically notify contacts if check-in missed and grace period expires | Must | in-progress | Client-side simulation done. Real email delivery live (F39-2, F39-3). All-clear email on recovery live (F39-8). PDF attachment live (F39-4). |
+| F01 | Automatically notify contacts if check-in missed and grace period expires | Must | done | Client-side simulation done. Real email delivery live (F39-2, F39-3). All-clear email on recovery live (F39-8). PDF attachment live (F39-4). Notification queue modal updated to reflect real delivery. |
 | F02 | Self-contained PDF package for contacts | Must | done | 6-page A4 PDF, generated client-side via jsPDF. |
 | F03 | Personal letter for each contact included in notification | Must | done | Letter stored as `k.letter`. Status pill on contact card. |
 | F04 | Data encrypted at rest and in transit | Must | idea | Prototype uses plain localStorage. Production needs AES-256. |
