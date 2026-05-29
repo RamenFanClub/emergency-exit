@@ -370,12 +370,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
 
-      <div id="home-hero-normal">
-        <div style="font-family:var(--fh);font-weight:800;font-size:23px;color:var(--p);letter-spacing:-.4px;line-height:1.2;">Everything is <span style="color:var(--ac);">in order.</span></div>
-      </div>
-      <div id="home-hero-overdue" style="display:none;">
-        <div style="font-family:var(--fh);font-weight:800;font-size:23px;color:var(--er);letter-spacing:-.4px;line-height:1.2;">Action needed.</div>
-      </div>
+      <!-- F45: Hero text changes based on completeness state + overdue state -->
+      <div id="home-hero" style="font-family:var(--fh);font-weight:800;font-size:23px;letter-spacing:-.4px;line-height:1.2;"></div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;margin-bottom:6px;">
         <div style="font-size:13px;color:var(--ov);font-weight:600;" id="d-sum">0 assets · 0 wishes</div>
@@ -989,8 +985,21 @@ function render(){
     }
   }
 
-  document.getElementById('home-hero-normal').style.display = showOverdue ? 'none' : 'block';
-  document.getElementById('home-hero-overdue').style.display = showOverdue ? 'block' : 'none';
+  // F45: Hero text reflects actual vault state — overdue always wins, otherwise completeness-driven
+  const heroEl = document.getElementById('home-hero');
+  if(showOverdue){
+    heroEl.style.color = 'var(--er)';
+    heroEl.innerHTML = 'Action needed.';
+  } else if(pct < 30){
+    heroEl.style.color = 'var(--p)';
+    heroEl.innerHTML = 'Let\'s get you <span style="color:var(--ac);">set up.</span>';
+  } else if(pct < 70){
+    heroEl.style.color = 'var(--p)';
+    heroEl.innerHTML = 'You\'re making <span style="color:var(--ac);">progress.</span>';
+  } else {
+    heroEl.style.color = 'var(--p)';
+    heroEl.innerHTML = 'Everything is <span style="color:var(--ac);">in order.</span>';
+  }
 
   const badge = document.getElementById('status-badge');
   if(showOverdue){
