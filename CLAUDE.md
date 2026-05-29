@@ -148,6 +148,7 @@ Expected output: `69 passed` — if any fail, fix before pushing.
 - Hero headline: "Everything is in order." (normal) / "Action needed." (overdue — F01)
 - Asset + wish count summary with status badge: Active (sage), Due Soon (amber — F05), or Overdue (red — F01)
 - **Privacy note** (F31): Small sage lock icon line below summary — "Your information is stored on this device only — it never leaves your phone." Update when backend cloud storage launches.
+- **F44: First-run explainer card** — shown once on first login, above the Vitality Pulse card, below the privacy note. Three numbered steps explaining the core mechanic. Dismissed with a tap; sets `ee_onboarded = true` in localStorage permanently.
 - **F05: Reminder banner** — amber gradient card shown above Vitality Pulse when check-in approaching but NOT yet overdue
 - **F01: Overdue alert banner** — red gradient card shown when grace period has expired and contacts exist
 - **Vitality Pulse** — animated pulsing heart, tap to confirm alive. Normal: sage. Due soon: amber. Overdue: red `heart_broken`.
@@ -223,6 +224,7 @@ Active tab: linen cream icon/label on charcoal pill. Inactive: charcoal at 35% o
 - **Toast notifications:** Fixed, centred, charcoal pill with linen cream text, auto-dismiss 2.4s. All toasts include ✓
 - **Delete button (F34):** All delete actions use `.del-btn` CSS class
 - **Settings auto-save (F35):** All Settings controls save immediately on change with toast feedback
+- **First-run explainer (F44):** `.explainer-card` with `.explainer-step` numbered list. Dismissed via `dismissExplainer()` which sets `ee_onboarded = true` in localStorage. `showExplainerIfNew()` called inside `render()` on every render. Smooth fade-out on dismiss.
 
 ---
 
@@ -314,6 +316,11 @@ RESEND_API_KEY=re_...
 }
 ```
 
+### localStorage flags (outside ee_v3)
+```
+ee_onboarded: 'true'   ← set on first dismissal of F44 explainer card. Persists forever.
+```
+
 ### MongoDB vaults collection — F41 structured schema
 ```
 {
@@ -372,6 +379,9 @@ notes, isTester, createdAt, lastLogin
 | `TestAllClearLogic` | F39-8 recovery emails | 4 |
 | `TestCompletenessLogic` | Completeness score (7 checks) | 6 |
 
+### Frontend test coverage
+F44 (explainer card) and other frontend features are not covered by the pytest suite — pytest only covers the Python backend. Frontend test coverage requires a browser automation tool (e.g. Playwright). This is tracked as a future infrastructure task. See F58 in the backlog.
+
 ### Adding tests for new features
 When building a new feature, add a new `class TestFeatureName` block to `test_main.py` before implementing. Tests run automatically on every push via GitHub Actions.
 
@@ -397,6 +407,7 @@ When building a new feature, add a new `class TestFeatureName` block to `test_ma
 - State loading: `S={...S,...parsed}` to safely merge new default fields
 - Monetary values: always `Math.round().toLocaleString()`
 - localStorage key is `ee_v3`
+- Separate localStorage flags (outside `ee_v3`) used for one-time UI state: `ee_onboarded`
 - When editing index.html, always update BOTH `./index.html` AND `./frontend/index.html`
 - jsPDF loaded via CDN in `<head>`
 - `API` constant in JS points to `https://emergency-exit-production.up.railway.app`
@@ -427,6 +438,7 @@ When building a new feature, add a new `class TestFeatureName` block to `test_ma
 - Do not use the Resend Python SDK for notification emails with attachments — use `requests.post` to `https://api.resend.com/emails` directly
 - Do not use `or` for fallback when reading `content.kin` — empty list `[]` is falsy and would silently fall through. Use explicit `None` check.
 - Do not push without running `python3 -m pytest test_main.py -v` first (or rely on GitHub Actions to catch it)
+- Do not store one-time UI flags (like `ee_onboarded`) inside the `ee_v3` blob — keep them as separate localStorage keys so they survive vault resets
 
 ---
 
@@ -497,7 +509,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F38 | Remove Access Level dropdown from contact form | Must | done | |
 | F42 | Palette redesign — linen cream + warm sage | Should | done | Navy/teal replaced. See CSS variable reference above. |
 | F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 69 tests + frontend sync check. Blocks deploy on failure. |
-| F44 | First-run explainer card — core mechanic | Must | backlog | Show once on first login. Explain the dead man's switch in plain English: add info → add contacts → check in regularly → contacts notified if you stop. Dismiss on tap. Use localStorage flag `ee_onboarded` to ensure it shows only once. |
+| F44 | First-run explainer card — core mechanic | Must | done | F44-1 (card + HTML), F44-2 (ee_onboarded persistence), F44-3 (copy refinement) all done. Card shows once on first login between privacy note and pulse card. Smooth fade-out on dismiss. ee_onboarded stored as separate localStorage key (not inside ee_v3). F44 frontend test coverage deferred — see F58. |
 | F45 | Fix Home hero text for empty/incomplete state | Must | backlog | "Everything is in order" is misleading when completeness is 0%. Show "Let's get you set up" below ~30% completeness. Only show "Everything is in order" above 70%. Middle state (30–70%): "You're making progress." |
 | F46 | Contacts screen — explain what contacts receive | Must | backlog | Add one-line explainer above the contact list: "These people will receive a full package of your information — assets, wishes, and any personal letters — if your check-in is overdue." |
 | F47 | Fix privacy note — no longer device-only | Must | backlog | Current copy says "stored on this device only" which is false since F41 (data now syncs to Railway/MongoDB). Update to: "Your information is encrypted and stored securely in the cloud." |
@@ -511,6 +523,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F55 | Label or hide unbuilt WhatsApp notify option | Could | backlog | WhatsApp delivery (F39-9) is not built. Either hide from the dropdown or add "(coming soon)" label so testers don't expect it to work. |
 | F56 | Change grace period default from 3 to 7 days | Could | backlog | 3 days is very short — a user could be in hospital or travelling. Default to 7. Add helper text recommending at least 7 days. |
 | F57 | Remove "tester" language from login screen | Could | backlog | "Sign in with your tester credentials" is internal language. Change to "Sign in to your account" so testers experience realistic copy. |
+| F58 | Frontend test coverage infrastructure | Should | backlog | F44 and other frontend features have no automated test coverage. pytest only covers the Python backend. Set up Playwright or similar browser automation tool to test: ee_onboarded flag behaviour, explainer card show/hide, dismissal persistence, and other client-side logic. Required before production launch. |
 
 ### Backend & Infrastructure
 
