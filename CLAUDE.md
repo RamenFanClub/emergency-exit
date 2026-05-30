@@ -188,7 +188,7 @@ Expected output: `69 passed` — if any fail, fix before pushing.
 
 ### 5. Settings
 - **Check-in Frequency** — stepper (1–24 Weeks or Months)
-- **Grace Period** — stepper in days (1–30 days, default 3)
+- **Grace Period** — stepper in days (1–30 days, default 7). Helper text recommends at least 7 days. (F56)
 - **Notification Protocol** — 3 radio options (ping_then_notify / notify_immediately / escalate)
 - **Verification** — FaceID/Biometrics or Secure Passcode
 - All changes auto-save immediately with toast feedback (F35)
@@ -308,7 +308,7 @@ RESEND_API_KEY=re_...
   lastCheckin: timestamp | null,
   fc: number,           // check-in frequency count
   fu: 'weeks'|'months', // frequency unit
-  gp: number,           // grace period in days
+  gp: number,           // grace period in days — default 7 (F56)
   v: 'face'|'pin',
   notifyProto: 'ping_then_notify'|'notify_immediately'|'escalate',
   log: [{ msg, time }],
@@ -328,7 +328,7 @@ ee_onboarded: 'true'   ← set on first dismissal of F44 explainer card. Persist
   lastCheckin: ISODate,          ← indexed (top-level for pulse scanner queries)
   checkInFrequency: Number,      ← maps to S.fc
   checkInUnit: String,           ← "weeks" | "months"
-  gracePeriodDays: Number,       ← maps to S.gp
+  gracePeriodDays: Number,       ← maps to S.gp — default 7 (F56)
   notifyProto: String,
   overdueNotificationSent: Boolean,  ← indexed (compound with lastCheckin)
   content: {                     ← vault data — always read/written together → embedded
@@ -444,7 +444,7 @@ When building a new feature, add a new `class TestFeatureName` block to `test_ma
 
 ## Feature Backlog — User Stories
 
-> **Last groomed:** Session backlog review — all items re-evaluated for relevance, duplicates removed, priorities re-assessed against current product state (6 testers active, core notification loop live).
+> **Last groomed:** F56 and F57 implemented and marked done.
 
 Features are prioritised using MoSCoW: **Must**, **Should**, **Could**, **Won't**
 
@@ -473,8 +473,8 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F08 | Export/backup vault data | Should | idea | User-facing JSON or PDF export of their own data. Useful for trust and portability. Spec before building. |
 | F41 | Migrate vault data from localStorage to MongoDB | Should | done | Server-first load implemented. GET /vault returns vault on login. localStorage kept as offline cache. Structured MongoDB schema with indexes. 69 automated tests. |
 | F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 69 tests + frontend sync check. Blocks deploy on failure. |
-| F56 | Change grace period default from 3 to 7 days | Should | backlog | 3 days is too short — a user could be travelling or briefly hospitalised. Default to 7 days. Add helper text in Settings recommending at least 7 days. Small change, meaningful UX improvement for testers. |
-| F57 | Remove tester language from login screen | Should | backlog | "Sign in with your tester credentials" is internal language. Change to "Sign in to your account". Testers should experience realistic product copy. |
+| F56 | Change grace period default from 3 to 7 days | Should | done | Default `gp` changed from 3 to 7 in all state initialisations. Helper text added in Settings recommending at least 7 days. Settings summary text also updated. |
+| F57 | Remove tester language from login screen | Should | done | Login subtitle changed from "Sign in with your tester credentials to access your vault." to "Sign in to your account." |
 | F58 | Frontend test coverage infrastructure | Should | backlog | pytest only covers the Python backend. Set up Playwright or similar browser automation tool to test client-side logic (ee_onboarded flag, explainer card, completeness score, overdue detection). Hard gate before production launch. |
 | F59 | Cloud storage for file uploads | Should | idea | Actual file upload (not just location recording) requires secure cloud storage (e.g. S3-compatible). This is the dependency that blocks SMS (F39-5) and WhatsApp (F39-9), which need a hosted PDF URL rather than an email attachment. Spec before building. |
 | F60 | Server-side reminder delivery | Should | idea | F05 covers client-side reminders (amber banner). The remaining gap is proactive push notification or email sent by the server when a check-in is approaching — so the user is reminded even if they haven't opened the app. Requires push notification infrastructure or a scheduled Resend email. |
@@ -498,7 +498,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F39-6 | RabbitMQ event bus | Could | specified | Adds retry resilience between scanner and delivery. Can skip initially — scanner calls worker directly. Only needed at scale. Demoted from Should. |
 | F39-9 | WhatsApp delivery via Twilio | Could | idea | Requires Meta Business API approval + F59. Defer until core delivery is stable. |
 | F48 | Pulse card first-visit explainer | Could | backlog | On first visit (before first check-in), show subtitle under pulse card: "Check in regularly to confirm you're okay. If you stop, your contacts will be notified." Hide after first check-in. F44 (done) reduces urgency. |
-| F49 | Rewrite Notification Protocol labels in plain English | Could | backlog | Replace "Ping me first, then notify contacts" → "Warn me first (3 reminders, then notify contacts)". "Escalate gradually" → "Notify contacts one at a time, 24 hours apart". Batch with F57 (copy audit). |
+| F49 | Rewrite Notification Protocol labels in plain English | Could | backlog | Replace "Ping me first, then notify contacts" → "Warn me first (3 reminders, then notify contacts)". "Escalate gradually" → "Notify contacts one at a time, 24 hours apart". Batch with other copy updates. |
 | F50 | Overdue banner — add cancellation reassurance | Could | backlog | Add one calm line: "Checking in now will immediately cancel any notifications." Reduces false-alarm anxiety. |
 | F51 | First check-in milestone confirmation | Could | backlog | On the very first check-in only, show a richer confirmation: "You're all set. Emergency Exit is now active." Uses localStorage flag `ee_first_checkin_done`. |
 | F52 | Promote personal letter feature on contact card | Could | backlog | Move "Write personal letter" button higher on the contact card. Reframe: "Write [Name] a personal message — it'll be the first thing they read." |

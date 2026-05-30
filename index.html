@@ -48,7 +48,8 @@ function doLogout(){
   document.getElementById('user-greeting').classList.remove('on');
   document.getElementById('li-pass').value='';
   // Reset in-memory state. Does NOT wipe localStorage — keeps it as offline cache.
-  S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[],saveCount:0};
+  // F56: default gp changed from 3 to 7
+  S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:7,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[],saveCount:0};
   render();
 }
 
@@ -313,7 +314,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <div class="login-logo-icon"><span class="m mf" style="font-size:24px;color:#fff;">emergency_home</span></div>
       <span style="font-family:var(--fh);font-weight:800;font-size:20px;color:var(--p);margin-left:4px;">Emergency Exit</span>
     </div>
-    <p class="login-sub">Sign in with your tester credentials to access your vault.</p>
+    <!-- F57: Updated from "Sign in with your tester credentials to access your vault." -->
+    <p class="login-sub">Sign in to your account.</p>
     <div class="login-fi"><label>Username</label><input id="li-user" type="text" placeholder="tester_01" autocomplete="username" autocapitalize="none"/></div>
     <div class="login-fi"><label>Password</label><input id="li-pass" type="password" placeholder="password" autocomplete="current-password"/></div>
     <button class="login-btn" onclick="doLogin()">Sign in</button>
@@ -549,7 +551,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m" style="font-size:17px;color:var(--sec);">hourglass_bottom</span>Grace Period</div>
         <div style="background:var(--w);border-radius:12px;padding:14px;">
           <div style="font-size:12px;color:var(--ov);margin-bottom:10px;">How many days after a missed check-in before contacts are alerted?</div>
-          <div class="cc"><button class="cb" onclick="adjGP(-1)">−</button><div><div class="cv" id="gp-val">3</div><div class="cu">Days</div></div><button class="cb" onclick="adjGP(1)">+</button></div>
+          <!-- F56: Helper text recommending at least 7 days -->
+          <div style="display:flex;align-items:flex-start;gap:8px;background:var(--al);border:1px solid var(--ab);border-radius:10px;padding:9px 12px;margin-bottom:10px;"><span class="m mf" style="font-size:14px;color:var(--ac);flex-shrink:0;margin-top:1px;">info</span><span style="font-size:12px;color:var(--ov);line-height:1.5;">We recommend at least <strong>7 days</strong> — this gives you enough buffer if you're travelling, unwell, or simply away from your phone.</span></div>
+          <div class="cc"><button class="cb" onclick="adjGP(-1)">−</button><div><div class="cv" id="gp-val">7</div><div class="cu">Days</div></div><button class="cb" onclick="adjGP(1)">+</button></div>
         </div>
       </div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">notifications_active</span>Notification Protocol</div>
@@ -568,7 +572,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">verified_user</span>Verification</div><div class="ri" onclick="setV('face')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">face</span><span style="font-weight:600;font-size:15px;color:var(--p);">FaceID / Biometrics</span></div><div class="rd on" id="rf"></div></div><div class="ri" onclick="setV('pin')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">password</span><span style="font-weight:600;font-size:15px;color:var(--p);">Secure Passcode</span></div><div class="rd" id="rp2"></div></div></div>
-      <div class="ib2"><span class="m" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span><p>Missed check-ins after <strong id="ig">3 days</strong> will grant access to <strong id="ik">0 contacts</strong>.</p></div>
+      <div class="ib2"><span class="m" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span><p>Missed check-ins after <strong id="ig">7 days</strong> will grant access to <strong id="ik">0 contacts</strong>.</p></div>
     </div>
   </div>
 
@@ -637,17 +641,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <div id="toast" class="toast"></div>
 
 <script>
-let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:3,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[],saveCount:0};
+// F56: default gp changed from 3 to 7
+let S={assets:[],wishes:[],kin:[],will:null,suppDocs:[],lastCheckin:null,fc:2,fu:'months',gp:7,v:'face',notifySeq:'in_order',notifyProto:'ping_then_notify',log:[],saveCount:0};
 
 // ─── F41: SERVER-FIRST VAULT LOAD ────────────────────────────────────────────
-// Strategy: server is source of truth. On login/refresh:
-//   1. Fetch GET /vault from server (requires auth token)
-//   2. If successful → use server vault, write to localStorage as offline cache
-//   3. If server is unreachable or returns no vault → fall back to localStorage
-//   4. If localStorage is also empty → start fresh (new user)
-//
-// "Server wins": we always trust the server over localStorage.
-// This means a user on a second device always gets the latest version.
 async function loadFromServer(){
   const token=sessionStorage.getItem('ee_token');
   if(token){
@@ -656,22 +653,18 @@ async function loadFromServer(){
       if(res.ok){
         const data=await res.json();
         if(data.ok&&data.vault){
-          // Server has vault — merge into S, update localStorage as offline cache
           S={...S,...data.vault};
           try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){}
-          return; // success — skip localStorage fallback
+          return;
         }
       }
     }catch(e){
-      // Server unreachable — fall through to localStorage silently
       console.warn('F41: Server vault fetch failed, using localStorage fallback',e);
     }
   }
-  // Fallback: load from localStorage (offline or first-ever login with no server vault)
   try{const d=localStorage.getItem('ee_v3');if(d){const p=JSON.parse(d);S={...S,...p};}}catch(e){}
 }
 
-// Legacy local-only load (kept as internal fallback)
 function load(){try{const d=localStorage.getItem('ee_v3');if(d){const p=JSON.parse(d);S={...S,...p};}}catch(e){}}
 
 // ─── F44: FIRST-RUN EXPLAINER ────────────────────────────────────────────────
@@ -690,15 +683,11 @@ function showExplainerIfNew(){
 }
 
 function save(){
-  // Write to localStorage immediately (instant, works offline)
   try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){}
-  // Then sync to server silently in the background (fire-and-forget)
   syncVault();
   render();
 }
 
-// Background sync — fires after every save()
-// The server restructures the flat S blob into a proper MongoDB schema
 async function syncVault(){
   const token=sessionStorage.getItem('ee_token');
   if(!token)return;
@@ -748,7 +737,6 @@ function saveLetter(){
   toast(text?'Letter saved ✓':'Letter cleared ✓');
 }
 
-// F36: Warm toast messages for early saves
 function warmToast(base){
   S.saveCount=(S.saveCount||0)+1;
   const count=S.saveCount;
@@ -833,7 +821,7 @@ function getOverdueStatus(){
   if(!S.lastCheckin) return {overdue:false,daysOverdue:0,dueDate:null,graceEnd:null};
   const intervalDays = S.fu==='months' ? (S.fc||2)*30 : (S.fc||2)*7;
   const dueDate = new Date(S.lastCheckin + intervalDays * 86400000);
-  const graceDays = S.gp || 3;
+  const graceDays = S.gp || 7;
   const graceEnd = new Date(dueDate.getTime() + graceDays * 86400000);
   const now = Date.now();
   const overdue = now > graceEnd.getTime();
@@ -959,17 +947,14 @@ function generatePDF(kinId) {
 }
 
 function render(){
-  // F44: Show first-run explainer card only if user hasn't dismissed it yet
   showExplainerIfNew();
 
   const{pct,tips}=comp();
 
-  // ─── F01: Overdue detection ───────────────────────────────────────────────
   const {overdue, daysOverdue, dueDate, graceEnd} = getOverdueStatus();
   const hasContacts = S.kin.length > 0;
   const showOverdue = overdue && hasContacts;
 
-  // ─── F05: Reminder detection — only active when NOT overdue ──────────────
   const {dueSoon, daysLeft} = getReminderStatus();
   const showReminder = dueSoon && !showOverdue && !overdue;
 
@@ -977,7 +962,7 @@ function render(){
   document.getElementById('reminder-banner').style.display = showReminder ? 'block' : 'none';
 
   if(showReminder){
-    const graceDays = S.gp || 3;
+    const graceDays = S.gp || 7;
     if(daysLeft === 0){
       document.getElementById('reminder-sub').textContent = 'Your check-in is due today';
       document.getElementById('reminder-detail').textContent = 'If you don\'t check in today, your ' + graceDays + '-day grace period will begin. After that, your contacts may be notified.';
@@ -990,7 +975,6 @@ function render(){
     }
   }
 
-  // F45: Hero text reflects actual vault state — overdue always wins, otherwise completeness-driven
   const heroEl = document.getElementById('home-hero');
   if(showOverdue){
     heroEl.style.color = 'var(--er)';
@@ -1199,8 +1183,8 @@ function render(){
     }).join('');
 
   fCount=S.fc||2;fUnit=S.fu||'months';document.getElementById('fc').textContent=fCount;document.getElementById('fu').textContent=fUnit.charAt(0).toUpperCase()+fUnit.slice(1);document.getElementById('tw').classList.toggle('on',fUnit==='weeks');document.getElementById('tm').classList.toggle('on',fUnit==='months');
-  document.getElementById('gp-val').textContent=S.gp||3;
-  document.getElementById('ig').textContent=(S.gp||3)+' day'+(S.gp!==1?'s':'');
+  document.getElementById('gp-val').textContent=S.gp||7;
+  document.getElementById('ig').textContent=(S.gp||7)+' day'+(S.gp!==1?'s':'');
   document.getElementById('ik').textContent=S.kin.length+' contact'+(S.kin.length!==1?'s':'');
   setV(S.v||'face');
   document.getElementById('rp-1').className='rd'+(S.notifyProto==='ping_then_notify'?' on':'');
