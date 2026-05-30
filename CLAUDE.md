@@ -499,7 +499,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F39-9 | WhatsApp delivery via Twilio | Could | idea | Requires Meta Business API approval + F59. Defer until core delivery is stable. |
 | F48 | Pulse card first-visit explainer | Could | backlog | On first visit (before first check-in), show subtitle under pulse card: "Check in regularly to confirm you're okay. If you stop, your contacts will be notified." Hide after first check-in. F44 (done) reduces urgency. |
 | F49 | Rewrite Notification Protocol labels in plain English | Could | done | Replace "Ping me first, then notify contacts" → "Warn me first (3 reminders, then notify contacts)". "Escalate gradually" → "Notify contacts one at a time, 24 hours apart". Batch with other copy updates. |
-| F50 | Overdue banner — add cancellation reassurance | Could | backlog | Add one calm line: "Checking in now will immediately cancel any notifications." Reduces false-alarm anxiety. |
+| F50 | Overdue banner — add cancellation reassurance | Could | done | Add one calm line: "Checking in now will immediately cancel any notifications." Reduces false-alarm anxiety. |
 | F51 | First check-in milestone confirmation | Could | backlog | On the very first check-in only, show a richer confirmation: "You're all set. Emergency Exit is now active." Uses localStorage flag `ee_first_checkin_done`. |
 | F52 | Promote personal letter feature on contact card | Could | backlog | Move "Write personal letter" button higher on the contact card. Reframe: "Write [Name] a personal message — it'll be the first thing they read." |
 | F53 | Rename "Asset Ledger" to "My Assets" | Could | done | "Asset Ledger" is jargon. Update screen title, nav label, and all references. Nav label: "Ledger" → "Assets". |

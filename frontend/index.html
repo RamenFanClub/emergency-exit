@@ -1021,7 +1021,12 @@ function render(){
       const notifiedCount = Math.min(S.kin.length, daysOverdue + 1);
       detailText = notifiedCount + ' of ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would have been notified so far. Next contact in ' + (24 - (daysOverdue % 1) * 24).toFixed(0) + ' hours. Check in now to cancel.';
     }
-    document.getElementById('overdue-detail').textContent = detailText;
+    document.getElementById('overdue-detail').innerHTML =
+      detailText +
+      '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:rgba(255,255,255,.80);display:flex;align-items:center;gap:5px;">' +
+      '<span class="m mf" style="font-size:13px;">check_circle</span>' +
+      'Checking in now will immediately cancel any notifications.' +
+      '</div>';
 
     const queue = buildNotificationQueue(daysOverdue);
     const homeNQ = document.getElementById('home-nq');
