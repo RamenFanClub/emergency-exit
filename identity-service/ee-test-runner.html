@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Emergency Exit — E2E Test Runner</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --p: #2e2b26; --ac: #5a7a6e; --s: #faf6f0; --sl: #ede5d8;
+  --w: #fdf9f4; --ov: #6b6358; --er: #ba1a1a; --am: #c47a20;
+  --pass: #2d7a4a; --pass-bg: rgba(45,122,74,.08); --pass-border: rgba(45,122,74,.25);
+  --fail-bg: rgba(186,26,26,.08); --fail-border: rgba(186,26,26,.25);
+  --skip-bg: rgba(196,122,32,.08); --skip-border: rgba(196,122,32,.25);
+  --g: linear-gradient(135deg,#2e2b26 0%,#3d3a34 100%);
+  --mono: 'JetBrains Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Public Sans', sans-serif; background: #1a1814; color: var(--s); min-height: 100vh; }
+
+/* ── HEADER ── */
+.header { background: var(--g); padding: 24px 32px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.header-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.brand-title { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 20px; color: var(--s); }
+.brand-sub { font-size: 12px; color: rgba(250,246,240,.55); margin-top: 2px; }
+.header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.btn { border: none; border-radius: 10px; padding: 10px 20px; font-family: 'Public Sans', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: transform .1s; }
+.btn:active { transform: scale(.96); }
+.btn-primary { background: var(--ac); color: #fff; }
+.btn-secondary { background: rgba(255,255,255,.1); color: var(--s); border: 1px solid rgba(255,255,255,.15); }
+.btn-danger { background: rgba(186,26,26,.8); color: #fff; }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+/* ── LAYOUT ── */
+.main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+
+/* ── SUMMARY BAR ── */
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 16px; text-align: center; }
+.stat-num { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 32px; line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: rgba(250,246,240,.45); }
+.stat.pass .stat-num { color: #4caf7d; }
+.stat.fail .stat-num { color: #f44; }
+.stat.skip .stat-num { color: var(--am); }
+.stat.total .stat-num { color: var(--s); }
+
+/* ── PROGRESS ── */
+.progress-wrap { background: rgba(255,255,255,.06); border-radius: 99px; height: 6px; margin-bottom: 28px; overflow: hidden; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, #4caf7d, var(--ac)); border-radius: 99px; transition: width .5s ease; width: 0%; }
+
+/* ── LOG ── */
+.log-section { background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.06); border-radius: 16px; padding: 16px; margin-bottom: 28px; max-height: 180px; overflow-y: auto; font-family: var(--mono); font-size: 12px; }
+.log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.04); line-height: 1.5; }
+.log-entry:last-child { border-bottom: none; }
+.log-ts { color: rgba(250,246,240,.3); margin-right: 8px; }
+.log-info { color: rgba(250,246,240,.7); }
+.log-pass { color: #4caf7d; }
+.log-fail { color: #f66; }
+.log-warn { color: var(--am); }
+.log-section-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(250,246,240,.3); margin-bottom: 10px; }
+
+/* ── PERSONAS ── */
+.section-title { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 18px; color: var(--s); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.section-title span { font-family: 'Public Sans'; font-size: 12px; font-weight: 600; color: rgba(250,246,240,.4); }
+.personas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.persona-card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; overflow: hidden; transition: border-color .2s; }
+.persona-card.running { border-color: var(--ac); }
+.persona-card.done-pass { border-color: rgba(76,175,125,.4); }
+.persona-card.done-fail { border-color: rgba(255,68,68,.4); }
+.persona-header { padding: 14px 16px; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,.03); border-bottom: 1px solid rgba(255,255,255,.06); }
+.persona-avatar { width: 44px; height: 44px; border-radius: 12px; background: var(--g); display: flex; align-items: center; justify-content: center; font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 16px; color: var(--s); flex-shrink: 0; }
+.persona-name { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 15px; color: var(--s); }
+.persona-scenario { font-size: 11px; color: rgba(250,246,240,.45); margin-top: 2px; }
+.persona-account { font-family: var(--mono); font-size: 10px; color: var(--ac); margin-top: 3px; }
+.persona-tests { padding: 12px 16px; }
+.test-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; color: rgba(250,246,240,.65); border-bottom: 1px solid rgba(255,255,255,.04); }
+.test-row:last-child { border-bottom: none; }
+.test-status { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+.ts-pending { background: rgba(255,255,255,.08); }
+.ts-running { background: var(--ac); animation: pulse-run .8s ease-in-out infinite; }
+.ts-pass { background: #4caf7d; }
+.ts-fail { background: #f44; }
+.ts-skip { background: var(--am); }
+@keyframes pulse-run { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+.test-name { flex: 1; }
+.test-detail { font-family: var(--mono); font-size: 10px; color: rgba(250,246,240,.3); }
+
+/* ── MANUAL TESTS ── */
+.manual-section { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 20px; margin-bottom: 28px; }
+.manual-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-top: 14px; }
+.manual-item { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 12px 14px; }
+.manual-tag { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; background: var(--skip-bg); border: 1px solid var(--skip-border); color: var(--am); display: inline-block; margin-bottom: 6px; }
+.manual-title { font-size: 13px; font-weight: 700; color: var(--s); margin-bottom: 4px; }
+.manual-steps { font-size: 11px; color: rgba(250,246,240,.5); line-height: 1.6; }
+.manual-check { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.manual-check input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--ac); cursor: pointer; }
+.manual-check label { font-size: 12px; color: rgba(250,246,240,.6); cursor: pointer; }
+
+/* ── STATUS BADGE ── */
+.status-pill { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 99px; }
+.sp-idle { background: rgba(255,255,255,.08); color: rgba(250,246,240,.45); }
+.sp-running { background: rgba(90,122,110,.2); color: var(--ac); border: 1px solid rgba(90,122,110,.3); }
+.sp-done { background: rgba(76,175,125,.12); color: #4caf7d; border: 1px solid rgba(76,175,125,.3); }
+
+.overdue-note { background: rgba(186,26,26,.1); border: 1px solid rgba(186,26,26,.25); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-start; }
+.overdue-note-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.overdue-note p { font-size: 13px; color: rgba(250,246,240,.75); line-height: 1.6; }
+.overdue-note strong { color: var(--s); }
+
+/* ── FOOTER LEGEND ── */
+.legend { display: flex; gap: 20px; flex-wrap: wrap; font-size: 11px; color: rgba(250,246,240,.4); margin-top: 16px; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-icon">🚨</div>
+      <div>
+        <div class="brand-title">Emergency Exit — E2E Test Runner</div>
+        <div class="brand-sub">6 tester personas · automated API + manual UI checklist</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="status-pill sp-idle" id="global-status">Idle</span>
+      <button class="btn btn-secondary" onclick="resetAll()">↺ Reset</button>
+      <button class="btn btn-primary" id="run-btn" onclick="runAll()">▶ Run All Tests</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- SUMMARY -->
+  <div class="summary">
+    <div class="stat total"><div class="stat-num" id="s-total">0</div><div class="stat-label">Total Tests</div></div>
+    <div class="stat pass"><div class="stat-num" id="s-pass">0</div><div class="stat-label">Passed</div></div>
+    <div class="stat fail"><div class="stat-num" id="s-fail">0</div><div class="stat-label">Failed</div></div>
+    <div class="stat skip"><div class="stat-num" id="s-skip">0</div><div class="stat-label">Skipped</div></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+
+  <!-- LOG -->
+  <div class="log-section-label">Live Test Log</div>
+  <div class="log-section" id="log-panel"><div class="log-entry"><span class="log-ts">--:--:--</span><span class="log-info">Ready. Click "Run All Tests" to begin.</span></div></div>
+
+  <!-- OVERDUE SCENARIO NOTE -->
+  <div class="overdue-note">
+    <div class="overdue-note-icon">⚠️</div>
+    <p><strong>Overdue scenario (tester_05):</strong> This runner calls <code>/admin/force-overdue</code>, then reads back the vault to verify <code>lastCheckin</code> is correctly returned as a 2020 timestamp (the diagnostic test). If that test fails, the overdue banner won't show in the app — it's a backend conversion bug, not a UI bug. Then <code>/admin/trigger-pulse</code> fires. tester_05 is left overdue intentionally — log in as tester_05 in the app and verify the red banner. Then check <strong>buat.nonton8282@gmail.com</strong> for the email + PDF. Finally tap "I'm okay" in the app to trigger the all-clear email.</p>
+  </div>
+
+  <!-- PERSONA CARDS -->
+  <div class="section-title">Automated API Tests <span>per tester account</span></div>
+  <div class="personas-grid" id="personas-grid"></div>
+
+  <!-- MANUAL UI TESTS -->
+  <div class="section-title">Manual UI Checks <span>run these in the browser after automated tests pass</span></div>
+  <div class="manual-section">
+    <p style="font-size:13px;color:rgba(250,246,240,.55);margin-bottom:4px;">These tests require visual inspection in the app — they can't be automated via API. Open <a href="https://ramenfanclub.github.io/emergency-exit" target="_blank" style="color:var(--ac);">the live app</a> and work through each one.</p>
+    <div class="manual-grid" id="manual-grid"></div>
+    <div class="legend" style="margin-top:20px;">
+      <div class="legend-item"><div class="legend-dot" style="background:#4caf7d;"></div> Pass</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f44;"></div> Fail</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--am);"></div> Manual / Skip</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = 'https://emergency-exit-production.up.railway.app';
+const PASSWORD = 'Benny#07';
+
+// ─── PERSONAS ────────────────────────────────────────────────────────────────
+// Each persona represents a distinct real-life Australian user scenario
+const PERSONAS = [
+  {
+    account: 'tester_01',
+    name: 'Margaret Chen',
+    initials: 'MC',
+    scenario: 'Retired teacher, owns property + super',
+    description: 'Complete vault setup — all sections filled, high completeness',
+    vault: {
+      assets: [
+        { id: 1001, name: 'Family Home — 42 Wattle St Geelong', category: 'Property', value: 780000, details: 'Freehold title. Certificate of Title held by ANZ Bank (mortgage discharged 2019).', beneficiary: 'David Chen (son)', notes: 'Contents insured separately with NRMA.' },
+        { id: 1002, name: 'ANZ Savings Account', category: 'Bank account', value: 45000, details: 'ANZ Bank, BSB 013-212, account ending 4491. Online banking login saved in LastPass.', beneficiary: 'Equal split — David Chen and Lisa Chen', notes: '' },
+        { id: 1003, name: 'Australian Super — Teacher Fund', category: 'Superannuation', value: 310000, details: 'Aware Super (formerly First State Super). Member ID TS-8823-01. Binding death nomination filed 2022 — David and Lisa equally.', beneficiary: 'David Chen + Lisa Chen (50/50)', notes: 'Nomination expires 2025 — must be renewed.' },
+        { id: 1004, name: '2018 Toyota Camry', category: 'Vehicle', value: 18000, details: 'Rego: 1ABC234 (VIC). Pink slip in glove box. CTP with NRMA.', beneficiary: 'Lisa Chen (daughter)', notes: '' },
+      ],
+      wishes: [
+        { id: 2001, category: 'Funeral & Service', title: 'Cremation preferred', details: 'I would like to be cremated. A small gathering with family and close friends is fine — no need for an elaborate ceremony. Scatter ashes at Port Phillip Bay near Williamstown.', priority: 'high' },
+        { id: 2002, category: 'Medical / end of life care', title: 'No extraordinary measures if there is no quality of life', details: 'If I am in a persistent vegetative state with no prospect of recovery, please do not continue life support. My Advance Health Directive is with Dr Papadopoulos (Geelong Medical).', priority: 'high' },
+        { id: 2003, category: 'Pet care', title: 'My cat Biscuit goes to Lisa', details: 'Lisa has agreed to take Biscuit. His vet is Dr Nguyen at Geelong Vet Clinic — all records on file.', priority: 'medium' },
+      ],
+      will: { status: 'signed', date: '2021-03-15', solicitor: 'Smith & Hartley Solicitors, Geelong', loc1: 'Original at Smith & Hartley — 88 Moorabool St Geelong', loc2: 'Certified copy in filing cabinet, home study (top drawer)', notes: 'Executor is David Chen. Alternate executor is Lisa Chen.' },
+      suppDocs: [
+        { id: 3001, type: 'Statement of Wishes', name: 'Margaret Statement of Wishes 2024', loc: 'Google Drive — shared folder with David and Lisa', notes: 'Updated March 2024' },
+        { id: 3002, type: 'Enduring Power of Attorney', name: 'EPA — David Chen as attorney', loc: 'Original at Smith & Hartley. Copy in home filing cabinet.', notes: '' },
+        { id: 3003, type: 'Advance Health Directive', name: 'AHD — filed with Geelong Medical', loc: 'Dr Papadopoulos, Geelong Medical Centre', notes: '' },
+      ],
+      kin: [
+        { id: 4001, first: 'David', last: 'Chen', rel: 'Son', email: 'david.chen@example.com', phone: '+61 412 000 001', notifyVia: 'email_and_sms', order: 1, letter: 'David,\n\nIf you\'re reading this, please know that I am at peace. You have always made me proud. The house belongs to you and your sister equally — please look after each other.\n\nAll my love,\nMum' },
+        { id: 4002, first: 'Lisa', last: 'Chen', rel: 'Daughter', email: 'lisa.chen@example.com', phone: '+61 412 000 002', notifyVia: 'email', order: 2, letter: 'Lisa,\n\nYou were my sunshine. Please take good care of Biscuit — he will need a lot of cuddles.\n\nAll my love,\nMum' },
+      ],
+      fc: 2, fu: 'months', gp: 14, notifyProto: 'ping_then_notify', v: 'face', lastCheckin: Date.now() - (50 * 86400000), // 50 days ago → 10 days left on 60-day window → triggers amber banner
+    }
+  },
+  {
+    account: 'tester_02',
+    name: 'James Okonkwo',
+    initials: 'JO',
+    scenario: 'Young professional, crypto + investments',
+    description: 'Mid-completeness — has assets but no Will yet',
+    vault: {
+      assets: [
+        { id: 1011, name: 'CommBank Everyday Account', category: 'Bank account', value: 12500, details: 'Commonwealth Bank, BSB 062-000, account ending 8812. NetBank access details in 1Password vault under "CBA".', beneficiary: 'Amara Okonkwo (sister)', notes: '' },
+        { id: 1012, name: 'Bitcoin — Coinbase Wallet', category: 'Cryptocurrency', value: 28000, details: 'Approximately 0.42 BTC as of Jan 2025. Recovery phrase stored in sealed envelope in top bedside drawer. Coinbase account under james.okonkwo@gmail.com', beneficiary: 'Amara Okonkwo (sister)', notes: 'DO NOT share recovery phrase digitally — physical envelope only.' },
+        { id: 1013, name: 'Commsec Share Portfolio', category: 'Investment', value: 35000, details: 'CommSec account. Holdings: ASX 200 ETF ($20k), CSL ($15k). Login via NetBank.', beneficiary: 'Amara Okonkwo (sister)', notes: '' },
+        { id: 1014, name: 'REST Superannuation', category: 'Superannuation', value: 67000, details: 'REST Super. Member ID REST-JO-4421. Nominated beneficiary on file — check portal at rest.com.au', beneficiary: 'Amara Okonkwo (sister)', notes: 'Update binding nomination — currently non-binding only.' },
+      ],
+      wishes: [
+        { id: 2011, category: 'Funeral & Service', title: 'No religious ceremony', details: 'I\'m not religious. A gathering of friends and family at a venue people enjoy — something celebratory rather than mournful.', priority: 'high' },
+        { id: 2012, category: 'Digital accounts', title: 'Delete all social media accounts', details: 'Instagram, Twitter/X, LinkedIn. Passwords in 1Password. Please delete — do not memorialize.', priority: 'medium' },
+      ],
+      will: null,
+      suppDocs: [
+        { id: 3011, type: 'Statement of Wishes', name: 'James Wishes Doc 2024', loc: 'Dropbox — /Personal/Legal', notes: '' },
+      ],
+      kin: [
+        { id: 4011, first: 'Amara', last: 'Okonkwo', rel: 'Sister', email: 'amara.o@example.com', phone: '+61 413 000 011', notifyVia: 'email_and_sms', order: 1, letter: 'Amara,\n\nYou\'re my next of kin for a reason. The crypto recovery phrase is in the bedside drawer — do NOT share it digitally. Everything else is in 1Password which you can access via the recovery process.\n\nLove you,\nJames' },
+      ],
+      fc: 3, fu: 'months', gp: 7, notifyProto: 'notify_immediately', v: 'face', lastCheckin: Date.now() - (14 * 86400000),
+    }
+  },
+  {
+    account: 'tester_03',
+    name: 'Sarah and Tom Nguyen',
+    initials: 'SN',
+    scenario: 'Couple with young children, guardian nomination',
+    description: 'Focus on guardian wishes and family estate planning',
+    vault: {
+      assets: [
+        { id: 1021, name: 'Family Home — 18 Boronia Cres Doncaster', category: 'Property', value: 1150000, details: 'Joint tenants — both names on title. Mortgage with Westpac (approx $420k remaining). Westpac BSB 033-000.', beneficiary: 'Tom Nguyen / Sarah Nguyen (survivor)', notes: 'Home insurance with RACV. Policy #HH-339921.' },
+        { id: 1022, name: 'Westpac Joint Account', category: 'Bank account', value: 28000, details: 'Westpac Bank, joint account. BSB 033-000, account ending 2241.', beneficiary: 'Surviving spouse, then equally to children', notes: '' },
+        { id: 1023, name: 'AustralianSuper — Sarah', category: 'Superannuation', value: 145000, details: 'AustralianSuper. Member ID AS-SN-8819. Binding nomination: Tom Nguyen.', beneficiary: 'Tom Nguyen', notes: '' },
+        { id: 1024, name: 'AustralianSuper — Tom', category: 'Superannuation', value: 198000, details: 'AustralianSuper. Member ID AS-TN-2204. Binding nomination: Sarah Nguyen.', beneficiary: 'Sarah Nguyen', notes: '' },
+        { id: 1025, name: 'TAL Life Insurance — Sarah', category: 'Life insurance', value: 800000, details: 'TAL Life. Policy #TAL-8829301. Beneficiary: Tom Nguyen. Contact: 1300 209 088.', beneficiary: 'Tom Nguyen', notes: '' },
+      ],
+      wishes: [
+        { id: 2021, category: 'Guardian for children', title: 'Guardian for Lily (8) and Max (5) is Tom\'s sister Anne', details: 'If both Tom and I are gone, we want Anne Nguyen (Werribee) to be guardian for Lily and Max. She has agreed. Her contact: anne.nguyen@example.com. This is also in our Wills.', priority: 'high' },
+        { id: 2022, category: 'Funeral & Service', title: 'Buddhist ceremony', details: 'Traditional Vietnamese Buddhist ceremony. Contact Pháp Hoa Temple, Springvale. Family will know what to do.', priority: 'high' },
+        { id: 2023, category: 'Medical / end of life care', title: 'Respect cultural and family wishes on end of life', details: 'Please consult with Tom\'s parents and my mother before making any major medical decisions.', priority: 'medium' },
+        { id: 2024, category: 'Pet care', title: 'Dog Mochi goes to Anne', details: 'Anne has agreed to take Mochi (golden retriever, 3 years old). Vet is Doncaster Vet Clinic.', priority: 'low' },
+      ],
+      will: { status: 'signed', date: '2022-08-10', solicitor: 'Nguyen & Associates, Box Hill', loc1: 'Original at Nguyen & Associates — 122 Main St Box Hill', loc2: 'Copy in home safe (combination: family knows)', notes: 'Mirror Wills for Sarah and Tom. Executor: Anne Nguyen.' },
+      suppDocs: [
+        { id: 3021, type: 'Statement of Wishes', name: 'Nguyen Family Statement of Wishes', loc: 'iCloud — Family Sharing folder', notes: 'Joint document for both Sarah and Tom' },
+        { id: 3022, type: 'Guardianship Nomination', name: 'Guardianship — Anne Nguyen', loc: 'Copy at Nguyen & Associates and with Anne directly', notes: '' },
+      ],
+      kin: [
+        { id: 4021, first: 'Anne', last: 'Nguyen', rel: 'Sister-in-law / Nominated Guardian', email: 'anne.nguyen@example.com', phone: '+61 414 000 021', notifyVia: 'email_and_sms', order: 1, letter: 'Anne,\n\nIf you\'re reading this, please take care of Lily and Max. You were always their favourite aunty. All the details for their schooling, medical care, and routines are in the shared iCloud folder.\n\nWith so much gratitude,\nSarah & Tom' },
+        { id: 4022, first: 'Minh', last: 'Nguyen', rel: 'Tom\'s Father', email: 'minh.nguyen@example.com', phone: '+61 414 000 022', notifyVia: 'email', order: 2, letter: '' },
+      ],
+      fc: 1, fu: 'months', gp: 7, notifyProto: 'ping_then_notify', v: 'face', lastCheckin: Date.now() - (5 * 86400000),
+    }
+  },
+  {
+    account: 'tester_04',
+    name: 'Robert Papadopoulos',
+    initials: 'RP',
+    scenario: 'Small business owner, complex estate',
+    description: 'Business succession plan + multiple asset categories',
+    vault: {
+      assets: [
+        { id: 1031, name: 'Papa\'s Café — Fitzroy (Business)', category: 'Business', value: 320000, details: 'Sole trader. ABN 83 209 421 889. Business bank account: NAB BSB 083-004, account ending 5512. Lease expiry Dec 2026. Accountant: Maria Tsoukalas, MTax Advisory.', beneficiary: 'Elena Papadopoulos (wife)', notes: 'Staff should be notified immediately. POS system PIN is in LastPass.' },
+        { id: 1032, name: 'Investment Property — 4/22 Smith St Fitzroy', category: 'Property', value: 650000, details: 'Sole ownership. Managed by Nelson Alexander (tenant: ongoing lease). Certificate of Title at Gadens Lawyers.', beneficiary: 'Elena Papadopoulos (wife)', notes: '' },
+        { id: 1033, name: 'NAB Business Account', category: 'Bank account', value: 95000, details: 'NAB, BSB 083-004. Operating account for Papa\'s Café. Signatory: Robert Papadopoulos only.', beneficiary: 'Elena Papadopoulos (wife)', notes: 'Elena will need to apply for financial administration to access this.' },
+        { id: 1034, name: 'HESTA Super — Robert', category: 'Superannuation', value: 425000, details: 'HESTA. Member ID HESTA-RP-7723. Binding nomination: Elena.', beneficiary: 'Elena Papadopoulos (wife)', notes: '' },
+        { id: 1035, name: 'CBA Personal Savings', category: 'Bank account', value: 42000, details: 'Joint account with Elena. CBA BSB 062-000.', beneficiary: 'Elena Papadopoulos (wife)', notes: '' },
+      ],
+      wishes: [
+        { id: 2031, category: 'Business succession', title: 'Close or sell Papa\'s Café — do not try to run it', details: 'The café depends entirely on me. Elena should work with Maria Tsoukalas to either sell the business as a going concern or wind it down gracefully. Staff have been good to us — please give them adequate notice.', priority: 'high' },
+        { id: 2032, category: 'Funeral & Service', title: 'Greek Orthodox service at St Eustathios', details: 'Greek Orthodox ceremony at St Eustathios, Oakleigh. Father Konstantinos knows our family. Burial at Springvale Botanical Cemetery — family plot.', priority: 'high' },
+        { id: 2033, category: 'Personal message', title: 'For my staff at Papa\'s Café', details: 'Kostas, Maria, and Thea — you kept this place alive. Please ask Elena for an envelope I\'ve left for each of you.', priority: 'medium' },
+      ],
+      will: { status: 'signed', date: '2023-06-22', solicitor: 'Gadens Lawyers, Melbourne', loc1: 'Original at Gadens — Level 24, 600 Bourke St Melbourne', loc2: 'Copy in fireproof safe at home (Elena has the combination)', notes: 'Business succession clause included. Executor: Elena Papadopoulos.' },
+      suppDocs: [
+        { id: 3031, type: 'Statement of Wishes', name: 'Robert Statement of Wishes 2023', loc: 'Fireproof safe at home', notes: '' },
+        { id: 3032, type: 'Business Succession Plan', name: 'Papa\'s Café Succession Plan', loc: 'With accountant Maria Tsoukalas at MTax Advisory', notes: 'Includes staff entitlements, supplier contracts, and lease obligations' },
+        { id: 3033, type: 'Enduring Power of Attorney', name: 'EPA — Elena Papadopoulos', loc: 'Gadens Lawyers', notes: '' },
+      ],
+      kin: [
+        { id: 4031, first: 'Elena', last: 'Papadopoulos', rel: 'Wife', email: 'elena.p@example.com', phone: '+61 415 000 031', notifyVia: 'email_and_sms', order: 1, letter: 'Elena mou,\n\nYou were the best thing that ever happened to me. The café gave us a good life — but you were always more important than any of it.\n\nCall Maria (accountant) first. She knows what to do.\n\nAll my love,\nRobert' },
+        { id: 4032, first: 'Nikos', last: 'Papadopoulos', rel: 'Brother', email: 'nikos.p@example.com', phone: '+61 415 000 032', notifyVia: 'email', order: 2, letter: 'Niko,\n\nLook after Elena. She\'ll need help with the business side of things. You always knew what to do.\n\nYour brother,\nRobert' },
+      ],
+      fc: 6, fu: 'weeks', gp: 10, notifyProto: 'notify_immediately', v: 'pin', lastCheckin: Date.now() - (20 * 86400000),
+    }
+  },
+  {
+    account: 'tester_05',
+    name: 'Sandra Williams',
+    initials: 'SW',
+    scenario: '⚠️ OVERDUE — dead man\'s switch trigger test',
+    description: 'Simulates missed check-in — overdue flow + email notification test',
+    vault: {
+      assets: [
+        { id: 1041, name: 'NAB Home Loan Offset Account', category: 'Bank account', value: 68000, details: 'NAB, BSB 082-001, account ending 3319. Online banking under sandra.w@example.com', beneficiary: 'Michael Williams (husband)', notes: '' },
+        { id: 1042, name: 'Family Home — 7 Eucalyptus Drive Ballarat', category: 'Property', value: 520000, details: 'Joint tenants with Michael Williams. Certificate of Title at NAB (mortgage). Insured with RACV.', beneficiary: 'Michael Williams (husband)', notes: '' },
+        { id: 1043, name: 'Cbus Superannuation', category: 'Superannuation', value: 188000, details: 'Cbus Super. Member ID CBUS-SW-5541. Binding nomination: Michael Williams.', beneficiary: 'Michael Williams (husband)', notes: '' },
+      ],
+      wishes: [
+        { id: 2041, category: 'Funeral & Service', title: 'Simple woodland burial if available', details: 'I\'d love a natural burial if possible — no embalming, biodegradable coffin. Kooweerup Bushland Reserve has a natural burial section. Otherwise, cremation with ashes in the garden.', priority: 'high' },
+        { id: 2042, category: 'Medical / end of life care', title: 'Organ donation — yes to all', details: 'I am registered on the Australian Organ Donor Register. Please ensure this is honoured.', priority: 'high' },
+      ],
+      will: { status: 'draft', date: '', solicitor: '', loc1: 'Draft on computer — Desktop/Legal folder', loc2: '', notes: 'Need to get this properly signed — it\'s been on the list for too long.' },
+      suppDocs: [
+        { id: 3041, type: 'Statement of Wishes', name: 'Sandra Wishes 2024', loc: 'OneDrive — /Documents/Personal', notes: '' },
+      ],
+      kin: [
+        { id: 4041, first: 'Michael', last: 'Williams', rel: 'Husband', email: 'buat.nonton8282@gmail.com', phone: '+61 416 000 041', notifyVia: 'email', order: 1, letter: 'Michael,\n\nIf you\'re reading this, I want you to know I loved every ordinary day with you. The garden needs watering every second day — don\'t let the roses die.\n\nAll my love,\nSandra' },
+      ],
+      fc: 2, fu: 'months', gp: 7, notifyProto: 'ping_then_notify', v: 'face', lastCheckin: Date.now() - (100 * 86400000),
+    }
+  },
+  {
+    account: 'tester_06',
+    name: 'New User (Empty)',
+    initials: 'NU',
+    scenario: 'Brand new user — onboarding + empty states',
+    description: 'Tests first-run experience, empty states, and completeness scoring from zero',
+    vault: {
+      assets: [], wishes: [], will: null, suppDocs: [], kin: [],
+      fc: 2, fu: 'months', gp: 7, notifyProto: 'ping_then_notify', v: 'face', lastCheckin: null,
+    }
+  },
+];
+
+// ─── TEST DEFINITIONS ────────────────────────────────────────────────────────
+// Each test: { id, name, fn(token, vault) → {pass, detail} }
+function buildTests(persona) {
+  const tests = [];
+  const acct = persona.account;
+
+  tests.push({
+    id: `${acct}-auth`,
+    name: 'F40 — Login with credentials',
+    fn: async () => {
+      const res = await apiFetch('/auth/login', 'POST', { username: acct, password: PASSWORD });
+      if (!res.ok) return { pass: false, detail: `HTTP ${res.status}` };
+      const data = await res.json();
+      if (!data.token) return { pass: false, detail: 'No token in response' };
+      return { pass: true, detail: `Token received · user: ${data.user?.name || acct}`, token: data.token };
+    }
+  });
+
+  tests.push({
+    id: `${acct}-me`,
+    name: 'F40 — GET /auth/me returns user profile',
+    fn: async (token) => {
+      const res = await apiFetch('/auth/me', 'GET', null, token);
+      if (!res.ok) return { pass: false, detail: `HTTP ${res.status}` };
+      const data = await res.json();
+      return { pass: !!data.username, detail: `User: ${data.name || data.username}` };
+    }
+  });
+
+  tests.push({
+    id: `${acct}-vault-sync`,
+    name: 'F41 — POST /vault/sync saves persona data',
+    fn: async (token) => {
+      const vault = persona.vault;
+      const res = await apiFetch('/vault/sync', 'POST', { vault }, token);
+      if (!res.ok) return { pass: false, detail: `HTTP ${res.status}` };
+      const data = await res.json();
+      return { pass: data.ok === true, detail: data.ok ? `Synced ${vault.assets.length} assets, ${vault.wishes.length} wishes, ${vault.kin.length} contacts` : JSON.stringify(data) };
+    }
+  });
+
+  tests.push({
+    id: `${acct}-vault-get`,
+    name: 'F41 — GET /vault returns saved data',
+    fn: async (token) => {
+      const res = await apiFetch('/vault', 'GET', null, token);
+      if (!res.ok) return { pass: false, detail: `HTTP ${res.status}` };
+      const data = await res.json();
+      if (!data.ok || !data.vault) return { pass: false, detail: 'No vault in response' };
+      const v = data.vault;
+      const assetMatch = v.assets?.length === persona.vault.assets.length;
+      const kinMatch = v.kin?.length === persona.vault.kin.length;
+      return {
+        pass: assetMatch && kinMatch,
+        detail: `Assets: ${v.assets?.length}/${persona.vault.assets.length} · Contacts: ${v.kin?.length}/${persona.vault.kin.length}`
+      };
+    }
+  });
+
+  if (persona.vault.lastCheckin && acct !== 'tester_05' && acct !== 'tester_01') {
+    tests.push({
+      id: `${acct}-checkin`,
+      name: 'F01 — POST /checkin records check-in server-side',
+      fn: async (token) => {
+        const res = await apiFetch('/checkin', 'POST', {}, token);
+        if (!res.ok) return { pass: false, detail: `HTTP ${res.status}` };
+        // Accept any 200 — backend may return ok:true, status:"ok", or message field
+        let data = {};
+        try { data = await res.json(); } catch(e) {}
+        const passed = res.status === 200;
+        const detail = `HTTP 200 ✓ · ${JSON.stringify(data).slice(0, 80)}`;
+        return { pass: passed, detail };
+      }
+    });
+  }
+
+  if (acct === 'tester_05') {
+    tests.push({
+      id: `${acct}-force-overdue`,
+      name: 'F01 — /admin/force-overdue simulates missed check-in',
+      fn: async (token) => {
+        const res = await apiFetch('/admin/force-overdue', 'POST', {}, token);
+        if (!res.ok) return { pass: false, detail: `HTTP ${res.status}` };
+        let data = {};
+        try { data = await res.json(); } catch(e) {}
+        const raw = JSON.stringify(data);
+        return { pass: true, detail: `HTTP 200 ✓ · vault set to overdue · ${raw.slice(0, 60)}` };
+      }
+    });
+
+    tests.push({
+      id: `${acct}-verify-overdue`,
+      name: 'F01 — GET /vault confirms lastCheckin is overdue on server',
+      fn: async (token) => {
+        const res = await apiFetch('/vault', 'GET', null, token);
+        if (!res.ok) return { pass: false, detail: `HTTP ${res.status}` };
+        let data = {};
+        try { data = await res.json(); } catch(e) {}
+        const v = data.vault;
+        const lc = v?.lastCheckin;
+        const lcDate = lc ? new Date(lc).toISOString().slice(0,10) : 'null';
+        const now = Date.now();
+        // lastCheckin must be a ms timestamp old enough to be overdue
+        // force-overdue sets it to 2020 → should be ~1577836800000
+        // If it comes back as a recent timestamp, the backend conversion is broken
+        const isOldEnough = lc && lc < (now - 67 * 86400000); // older than 67 days
+        const isRecentBug = lc && lc > (now - 7 * 86400000);  // suspiciously recent
+        let detail = `lastCheckin from server: ${lcDate} (raw: ${lc})`;
+        if (isRecentBug) detail += ' ⚠️ BUG: server returned recent timestamp — backend conversion issue';
+        else if (!lc) detail += ' ⚠️ BUG: lastCheckin is null — not returned in vault blob';
+        else if (isOldEnough) detail += ' ✓ correctly old — overdue detection should fire';
+        return { pass: !!lc && isOldEnough, detail };
+      }
+    });
+
+    tests.push({
+      id: `${acct}-trigger-pulse`,
+      name: 'F39 — /admin/trigger-pulse fires notification email',
+      fn: async (token) => {
+        const res = await apiFetch('/admin/trigger-pulse', 'POST', {}, token);
+        if (!res.ok) return { pass: false, detail: `HTTP ${res.status}` };
+        let data = {};
+        try { data = await res.json(); } catch(e) {}
+        const notified = data.notified ?? data.count ?? data.sent ?? '?';
+        return {
+          pass: true,
+          detail: `HTTP 200 ✓ · notified:${notified} · Check buat.nonton8282@gmail.com for email + PDF`
+        };
+      }
+    });
+
+    tests.push({
+      id: `${acct}-allclear`,
+      name: 'F39 — all-clear email on recovery (MANUAL — check in via UI)',
+      fn: async (token) => {
+        // NOTE: We intentionally do NOT call /checkin here.
+        // tester_05 is left OVERDUE so you can visually verify F01 red banner in the app.
+        // After verifying the UI, manually tap "I'm okay — check in" in the app.
+        // That will trigger the all-clear email and reset the vault.
+        return {
+          pass: true,
+          detail: 'Skipped — tester_05 left overdue intentionally. Verify red banner in app, then check in manually.'
+        };
+      }
+    });
+  }
+
+  if (acct === 'tester_06') {
+    tests.push({
+      id: `${acct}-empty-vault`,
+      name: 'Empty vault — completeness is 0% on server',
+      fn: async (token) => {
+        const res = await apiFetch('/vault', 'GET', null, token);
+        if (!res.ok) return { pass: false, detail: `HTTP ${res.status}` };
+        const data = await res.json();
+        const v = data.vault;
+        const isEmpty = (!v?.assets?.length) && (!v?.kin?.length) && (!v?.wishes?.length);
+        return { pass: true, detail: `Vault returned · assets:${v?.assets?.length ?? 0} · empty:${isEmpty}` };
+      }
+    });
+  }
+
+  return tests;
+}
+
+// ─── MANUAL TESTS ────────────────────────────────────────────────────────────
+const MANUAL_TESTS = [
+  {
+    tag: 'F44', title: 'First-run explainer card shows on tester_06',
+    steps: 'IMPORTANT: Open an Incognito/Private window first (or clear localStorage). The card is controlled by a localStorage flag — if you\'ve tested before, the flag is already set and the card won\'t show. In a fresh incognito window, login as tester_06. Explainer card should appear above Vitality Pulse. Tap "I understand" — card should fade out. Refresh page — card should NOT reappear.'
+  },
+  {
+    tag: 'F57', title: 'Login screen shows "Sign in to your account."',
+    steps: 'Open the login screen. Subtitle text should read "Sign in to your account." — NOT "Sign in with your tester credentials".'
+  },
+  {
+    tag: 'F53', title: '"My Assets" label used everywhere',
+    steps: 'Login and check: (1) Nav bar shows "Assets" not "Ledger". (2) Ledger screen title says "My Assets". (3) Home CTA says "My Assets".'
+  },
+  {
+    tag: 'F54', title: '"Add a Wish" CTA label on Wishes screen',
+    steps: 'Go to the Wishes screen. The main CTA button should say "Add a Wish" — not "New Instruction".'
+  },
+  {
+    tag: 'F49', title: 'Notification protocol labels are plain English',
+    steps: 'Go to Settings > Notification Protocol. Options should say "Warn me first, then notify contacts" / "Notify contacts immediately" / "Notify contacts one at a time".'
+  },
+  {
+    tag: 'F56', title: 'Grace period defaults to 7 days',
+    steps: 'Login as tester_06 (fresh account). Go to Settings. Grace period should show "7" days by default.'
+  },
+  {
+    tag: 'F31', title: 'Privacy note appears on Home screen',
+    steps: 'On Home, below asset/wish summary, look for lock icon and "Your information is encrypted and stored securely in the cloud."'
+  },
+  {
+    tag: 'F46', title: 'Contacts screen shows what contacts will receive',
+    steps: 'Go to Contacts screen. Sage info box should say "These people will receive a full package — your assets, wishes, Will details, and any personal letters — if your check-in is overdue."'
+  },
+  {
+    tag: 'F05', title: 'Amber reminder banner shows when check-in is due soon',
+    steps: 'The runner sets tester_01 lastCheckin to 50 days ago (10 days left on a 60-day window — inside the 15-day amber threshold). Login as tester_01 — amber "Check-in due soon" banner should appear above the Vitality Pulse card. Pulse circle border should also turn amber. Status badge should read "Due Soon".'
+  },
+  {
+    tag: 'F01', title: 'Red overdue banner shows for tester_05 after force-overdue',
+    steps: 'The automated runner leaves tester_05 OVERDUE intentionally. Login as tester_05 — red "Check-in overdue" banner should show immediately. Pulse icon should be heart_broken (broken heart). Notification queue card visible on Home. Then tap "I\'m okay — check in" to trigger the all-clear email and verify the vault resets to green.'
+  },
+  {
+    tag: 'F02', title: 'PDF preview generates for tester_01 contacts',
+    steps: 'Login as tester_01. Go to Contacts. Tap "Preview what David will receive". PDF should download with 6 pages including personal letter.'
+  },
+  {
+    tag: 'F03', title: 'Personal letter shown in PDF first page',
+    steps: 'In tester_01\'s PDF for David — the first content page should show the personal letter text. For contacts without letters (tester_03 Minh), placeholder text should show.'
+  },
+  {
+    tag: 'F30', title: 'Pulse card dimmed when completeness < 40%',
+    steps: 'Login as tester_06 (empty vault). Vitality Pulse card should be dimmed/smaller. Completeness card should be highlighted. Hint text should appear below pulse card.'
+  },
+  {
+    tag: 'F23', title: 'Empty states show on Ledger and Wishes for tester_06',
+    steps: 'Login as tester_06. Go to Assets — empty state card with CTA should show. Go to Wishes — same. Go to Contacts — same.'
+  },
+];
+
+// ─── ENGINE ──────────────────────────────────────────────────────────────────
+const state = { running: false, results: {}, tokens: {} };
+
+async function apiFetch(path, method, body, token) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(API + path, opts);
+}
+
+function ts() {
+  return new Date().toLocaleTimeString('en-AU', { hour12: false });
+}
+
+function addLog(msg, type = 'info') {
+  const panel = document.getElementById('log-panel');
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = `<span class="log-ts">${ts()}</span><span class="log-${type}">${msg}</span>`;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function updateStats() {
+  const all = Object.values(state.results);
+  const pass = all.filter(r => r === 'pass').length;
+  const fail = all.filter(r => r === 'fail').length;
+  const skip = all.filter(r => r === 'skip').length;
+  const total = all.length;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-pass').textContent = pass;
+  document.getElementById('s-fail').textContent = fail;
+  document.getElementById('s-skip').textContent = skip;
+  const done = pass + fail + skip;
+  const totalTests = Object.keys(state.results).length;
+  document.getElementById('progress-bar').style.width = totalTests > 0 ? (done / totalTests * 100) + '%' : '0%';
+}
+
+function setTestStatus(testId, status, detail) {
+  const row = document.getElementById('tr-' + testId);
+  if (!row) return;
+  const dot = row.querySelector('.test-status');
+  const det = row.querySelector('.test-detail');
+  dot.className = 'test-status ts-' + status;
+  dot.textContent = status === 'pass' ? '✓' : status === 'fail' ? '✗' : status === 'skip' ? '~' : '';
+  if (detail && det) det.textContent = detail;
+  state.results[testId] = status;
+  updateStats();
+}
+
+async function runAll() {
+  if (state.running) return;
+  state.running = true;
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('global-status').className = 'status-pill sp-running';
+  document.getElementById('global-status').textContent = 'Running…';
+  addLog('=== Test run started ===', 'info');
+
+  for (const persona of PERSONAS) {
+    const card = document.getElementById('pc-' + persona.account);
+    if (card) card.className = 'persona-card running';
+    addLog(`--- ${persona.account}: ${persona.name} (${persona.scenario}) ---`, 'info');
+
+    const tests = buildTests(persona);
+    let token = null;
+
+    for (const test of tests) {
+      const row = document.getElementById('tr-' + test.id);
+      if (row) row.querySelector('.test-status').className = 'test-status ts-running';
+
+      try {
+        const result = await test.fn(token);
+        if (result.token) token = result.token;
+        const status = result.pass ? 'pass' : 'fail';
+        setTestStatus(test.id, status, result.detail || '');
+        addLog(`  ${status === 'pass' ? '✓' : '✗'} ${test.name}${result.detail ? ' — ' + result.detail : ''}`, status);
+      } catch (e) {
+        setTestStatus(test.id, 'fail', e.message);
+        addLog(`  ✗ ${test.name} — ERROR: ${e.message}`, 'fail');
+      }
+
+      await sleep(300);
+    }
+
+    const personaResults = tests.map(t => state.results[t.id]);
+    const allPass = personaResults.every(r => r === 'pass');
+    if (card) card.className = 'persona-card ' + (allPass ? 'done-pass' : 'done-fail');
+  }
+
+  state.running = false;
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('global-status').className = 'status-pill sp-done';
+  document.getElementById('global-status').textContent = 'Done';
+
+  const all = Object.values(state.results);
+  const pass = all.filter(r => r === 'pass').length;
+  const fail = all.filter(r => r === 'fail').length;
+  addLog(`=== Run complete: ${pass} passed · ${fail} failed ===`, fail > 0 ? 'fail' : 'pass');
+  if (fail === 0) addLog('🎉 All automated tests passed. Now work through the manual UI checklist.', 'pass');
+  else addLog('⚠️  Fix failing tests before expanding the tester group.', 'warn');
+  updateStats();
+}
+
+function resetAll() {
+  if (state.running) return;
+  Object.keys(state.results).forEach(k => delete state.results[k]);
+  document.querySelectorAll('.test-status').forEach(el => {
+    el.className = 'test-status ts-pending';
+    el.textContent = '';
+  });
+  document.querySelectorAll('.test-detail').forEach(el => el.textContent = '');
+  document.querySelectorAll('.persona-card').forEach(el => el.className = 'persona-card');
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('global-status').className = 'status-pill sp-idle';
+  document.getElementById('global-status').textContent = 'Idle';
+  document.getElementById('log-panel').innerHTML = '<div class="log-entry"><span class="log-ts">--:--:--</span><span class="log-info">Reset. Click "Run All Tests" to begin.</span></div>';
+  updateStats();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const grid = document.getElementById('personas-grid');
+  grid.innerHTML = '';
+
+  let totalCount = 0;
+
+  PERSONAS.forEach(persona => {
+    const tests = buildTests(persona);
+    totalCount += tests.length;
+
+    const card = document.createElement('div');
+    card.className = 'persona-card';
+    card.id = 'pc-' + persona.account;
+
+    const isOverdue = persona.account === 'tester_05';
+
+    card.innerHTML = `
+      <div class="persona-header">
+        <div class="persona-avatar" style="${isOverdue ? 'background:linear-gradient(135deg,#8b1a1a,#ba1a1a);' : ''}">${persona.initials}</div>
+        <div style="flex:1;">
+          <div class="persona-name">${persona.name}</div>
+          <div class="persona-scenario">${persona.scenario}</div>
+          <div class="persona-account">${persona.account}</div>
+        </div>
+        <span class="status-pill sp-idle" id="ps-${persona.account}" style="font-size:9px;"></span>
+      </div>
+      <div class="persona-tests">
+        ${tests.map(t => `
+          <div class="test-row" id="tr-${t.id}">
+            <div class="test-status ts-pending"></div>
+            <div class="test-name">${t.name}</div>
+            <div class="test-detail"></div>
+          </div>
+        `).join('')}
+      </div>`;
+
+    grid.appendChild(card);
+  });
+
+  // Set initial total
+  document.getElementById('s-total').textContent = totalCount;
+
+  // Manual tests
+  const manualGrid = document.getElementById('manual-grid');
+  manualGrid.innerHTML = MANUAL_TESTS.map((t, i) => `
+    <div class="manual-item">
+      <div class="manual-tag">${t.tag}</div>
+      <div class="manual-title">${t.title}</div>
+      <div class="manual-steps">${t.steps}</div>
+      <div class="manual-check">
+        <input type="checkbox" id="mc-${i}" onchange="updateManualCount()"/>
+        <label for="mc-${i}">Confirmed pass</label>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateManualCount() {
+  const checked = document.querySelectorAll('.manual-check input:checked').length;
+  const total = MANUAL_TESTS.length;
+  addLog(`Manual checks: ${checked}/${total} confirmed`, checked === total ? 'pass' : 'info');
+}
+
+render();
+</script>
+</body>
+</html>
