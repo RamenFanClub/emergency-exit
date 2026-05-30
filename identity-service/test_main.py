@@ -183,7 +183,7 @@ class TestExtractVaultFields:
         top_level, _, _ = extract_vault_fields(minimal_blob)
         assert top_level["checkInFrequency"] == 2
         assert top_level["checkInUnit"] == "months"
-        assert top_level["gracePeriodDays"] == 3
+        assert top_level["gracePeriodDays"] == 7  # F56: default updated from 3 to 7
         assert top_level["notifyProto"] == "ping_then_notify"
 
     def test_assets_data_is_preserved_exactly(self):

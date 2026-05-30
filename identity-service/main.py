@@ -145,7 +145,7 @@ def extract_vault_fields(vault_blob: dict) -> tuple:
         "lastCheckin": ms_to_dt(last_checkin_ms),
         "checkInFrequency": vault_blob.get("fc", 2),
         "checkInUnit": vault_blob.get("fu", "months"),
-        "gracePeriodDays": vault_blob.get("gp", 3),
+        "gracePeriodDays": vault_blob.get("gp", 7),
         "notifyProto": vault_blob.get("notifyProto", "ping_then_notify"),
     }
 
@@ -1179,12 +1179,15 @@ def force_overdue(current_user: dict = Depends(get_current_user)):
     making them appear overdue to the pulse scanner.
     Only use for testing. Hit /checkin afterwards to reset.
     """
-    # Set lastCheckin to January 1, 2020 — guaranteed to be overdue
-    fake_checkin_ms = int(datetime(2020, 1, 1).timestamp() * 1000)
+    # Set lastCheckin to January 1, 2020 — guaranteed to be overdue.
+    # Must store as datetime (not int) so dt_to_ms() in reconstruct_vault_blob()
+    # can convert it back correctly. Storing as int caused GET /vault to return
+    # lastCheckin: null, which broke overdue detection in the frontend.
+    fake_checkin_dt = datetime(2020, 1, 1, tzinfo=timezone.utc)
     vaults.update_one(
         {"userId": current_user["sub"]},
         {"$set": {
-            "lastCheckin": fake_checkin_ms,
+            "lastCheckin": fake_checkin_dt,
             "overdueNotificationSent": False,  # reset so scanner won't skip it
         }}
     )
