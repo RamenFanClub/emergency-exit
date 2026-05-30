@@ -147,7 +147,7 @@ Expected output: `69 passed` — if any fail, fix before pushing.
 ### 1. Home (Dashboard)
 - Hero headline: "Everything is in order." (normal) / "Action needed." (overdue — F01)
 - Asset + wish count summary with status badge: Active (sage), Due Soon (amber — F05), or Overdue (red — F01)
-- **Privacy note** (F31): Small sage lock icon line below summary — "Your information is stored on this device only — it never leaves your phone." Update when backend cloud storage launches.
+- **Privacy note** (F31): Small sage lock icon line below summary — "Your information is encrypted and stored securely in the cloud."
 - **F44: First-run explainer card** — shown once on first login, above the Vitality Pulse card, below the privacy note. Three numbered steps explaining the core mechanic. Dismissed with a tap; sets `ee_onboarded = true` in localStorage permanently.
 - **F05: Reminder banner** — amber gradient card shown above Vitality Pulse when check-in approaching but NOT yet overdue
 - **F01: Overdue alert banner** — red gradient card shown when grace period has expired and contacts exist
@@ -444,110 +444,89 @@ When building a new feature, add a new `class TestFeatureName` block to `test_ma
 
 ## Feature Backlog — User Stories
 
+> **Last groomed:** Session backlog review — all items re-evaluated for relevance, duplicates removed, priorities re-assessed against current product state (6 testers active, core notification loop live).
+
 Features are prioritised using MoSCoW: **Must**, **Should**, **Could**, **Won't**
 
 Status key: `idea` → `specified` → `in-progress` → `done`
+
+---
 
 ### Must Have — Core Product Loop
 
 | ID | User Story | Priority | Status | Notes |
 |----|-----------|----------|--------|-------|
 | F01 | Automatically notify contacts if check-in missed and grace period expires | Must | done | Client-side simulation done. Real email delivery live (F39-2, F39-3). All-clear email on recovery live (F39-8). PDF attachment live (F39-4). Notification queue modal updated to reflect real delivery. |
-| F02 | Self-contained PDF package for contacts | Must | done | 6-page A4 PDF, generated client-side via jsPDF. |
+| F02 | Self-contained PDF package for contacts | Must | done | 6-page A4 PDF, generated client-side via jsPDF and server-side via ReportLab. Includes personal letter, action checklist, Will details, assets, wishes, and contacts. |
 | F03 | Personal letter for each contact included in notification | Must | done | Letter stored as `k.letter`. Status pill on contact card. |
-| F04 | Data encrypted at rest and in transit | Must | idea | Prototype uses plain localStorage. Production needs AES-256. |
-| F05 | Reminders when check-in is due | Must | done | Amber banner + pulse card amber state. Push/email/SMS requires backend. |
+| F04 | Data encrypted at rest and in transit | Must | specified | Transit: HTTPS on Railway (done). At rest: MongoDB Atlas handles server-side encryption (done). **Remaining gap:** end-to-end encryption of vault content *before* it reaches the server — so Railway/MongoDB cannot read plaintext. This is a significant architectural change; defer to post-MVP. |
+| F05 | Reminders when check-in is due | Must | done | Amber banner + pulse card amber state for client-side reminder. Server-side push/email/SMS reminder delivery is a future item (see F60). |
 | F40 | User authentication for testing | Must | done | Login wall added. Username + password. JWT token in sessionStorage. |
+
+---
 
 ### Should Have
 
 | ID | User Story | Priority | Status | Notes |
 |----|-----------|----------|--------|-------|
-| F07 | Guided onboarding flow | Should | idea | |
-| F08 | Export/backup vault data | Should | idea | |
-| F09 | Auto-generated action checklist in PDF | Should | done | Page 2 of PDF. |
-| F10 | Digital accounts section | Should | idea | |
-| F11 | Clear explanation for contacts receiving notification | Should | idea | |
-| F19 | Passive liveness detection via phone activity | Should | idea | Requires native mobile APIs. |
-| F20 | Minimum information capture design | Should | idea | |
-| F21 | Document location recording (not upload) | Should | idea | Partially done via suppDocs location field. |
+| F07 | Guided onboarding flow | Should | idea | F44 (first-run explainer card, done) covers the immediate gap. A full multi-step onboarding flow is a post-validation investment. Spec before building. |
+| F08 | Export/backup vault data | Should | idea | User-facing JSON or PDF export of their own data. Useful for trust and portability. Spec before building. |
 | F41 | Migrate vault data from localStorage to MongoDB | Should | done | Server-first load implemented. GET /vault returns vault on login. localStorage kept as offline cache. Structured MongoDB schema with indexes. 69 automated tests. |
+| F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 69 tests + frontend sync check. Blocks deploy on failure. |
+| F56 | Change grace period default from 3 to 7 days | Should | backlog | 3 days is too short — a user could be travelling or briefly hospitalised. Default to 7 days. Add helper text in Settings recommending at least 7 days. Small change, meaningful UX improvement for testers. |
+| F57 | Remove tester language from login screen | Should | backlog | "Sign in with your tester credentials" is internal language. Change to "Sign in to your account". Testers should experience realistic product copy. |
+| F58 | Frontend test coverage infrastructure | Should | backlog | pytest only covers the Python backend. Set up Playwright or similar browser automation tool to test client-side logic (ee_onboarded flag, explainer card, completeness score, overdue detection). Hard gate before production launch. |
+| F59 | Cloud storage for file uploads | Should | idea | Actual file upload (not just location recording) requires secure cloud storage (e.g. S3-compatible). This is the dependency that blocks SMS (F39-5) and WhatsApp (F39-9), which need a hosted PDF URL rather than an email attachment. Spec before building. |
+| F60 | Server-side reminder delivery | Should | idea | F05 covers client-side reminders (amber banner). The remaining gap is proactive push notification or email sent by the server when a check-in is approaching — so the user is reminded even if they haven't opened the app. Requires push notification infrastructure or a scheduled Resend email. |
+
+---
 
 ### Could Have
 
 | ID | User Story | Priority | Status | Notes |
 |----|-----------|----------|--------|-------|
-| F06 | Dry run notification test — user-facing "send me a test email" button | Could | specified | Partially addressed by /admin/force-overdue + /admin/trigger-pulse admin endpoints and the existing dry-run PDF button in the notification queue modal. Remaining gap: a vault-owner-facing "Send me a test notification" button for production (users can't access /docs). Respec before building. Defer until pre-launch. |
+| F06 | Vault-owner "send me a test notification" button | Could | specified | Admin endpoints (`/admin/force-overdue` + `/admin/trigger-pulse`) cover the dev/testing need. The remaining gap is a production-facing button so real users can verify their notification setup without accessing `/docs`. Small addition to the notification queue modal. Defer until pre-launch. |
+| F09 | Auto-generated action checklist in PDF | Could | done | Page 2 of PDF. |
 | F12 | Physical Emergency Access Card (QR code) | Could | idea | |
 | F13 | Advance Care Directive | Could | idea | |
-| F14 | Periodic vault review reminders | Could | idea | |
-| F15 | Backup check-in method | Could | idea | |
-| F16 | Video/audio messages for contacts | Could | idea | |
-| F17 | "What my contacts will receive" preview | Could | done | Delivered as part of F02. |
-| F18 | Vault editor delegate access | Could | idea | |
+| F14 | Periodic vault review reminders | Could | idea | Nudge users to review and update their vault annually or after life events. |
+| F15 | Backup check-in method | Could | idea | Secondary way to check in (e.g. SMS reply, email link) if user can't access the app. |
+| F16 | Video/audio messages for contacts | Could | idea | Requires cloud storage (F59 dependency). |
+| F18 | Vault editor delegate access | Could | idea | Allow a trusted person to help maintain the vault. Significant auth complexity. |
+| F19 | Passive liveness detection via phone activity | Could | idea | Requires native mobile APIs. Not viable in current web-only prototype. |
+| F39-5 | Twilio SMS delivery | Could | specified | SMS with PDF link (not attachment). Requires cloud storage (F59) for PDF hosting. Demoted from Should — email delivery covers the core need during testing phase. |
+| F39-6 | RabbitMQ event bus | Could | specified | Adds retry resilience between scanner and delivery. Can skip initially — scanner calls worker directly. Only needed at scale. Demoted from Should. |
+| F39-9 | WhatsApp delivery via Twilio | Could | idea | Requires Meta Business API approval + F59. Defer until core delivery is stable. |
+| F48 | Pulse card first-visit explainer | Could | backlog | On first visit (before first check-in), show subtitle under pulse card: "Check in regularly to confirm you're okay. If you stop, your contacts will be notified." Hide after first check-in. F44 (done) reduces urgency. |
+| F49 | Rewrite Notification Protocol labels in plain English | Could | backlog | Replace "Ping me first, then notify contacts" → "Warn me first (3 reminders, then notify contacts)". "Escalate gradually" → "Notify contacts one at a time, 24 hours apart". Batch with F57 (copy audit). |
+| F50 | Overdue banner — add cancellation reassurance | Could | backlog | Add one calm line: "Checking in now will immediately cancel any notifications." Reduces false-alarm anxiety. |
+| F51 | First check-in milestone confirmation | Could | backlog | On the very first check-in only, show a richer confirmation: "You're all set. Emergency Exit is now active." Uses localStorage flag `ee_first_checkin_done`. |
+| F52 | Promote personal letter feature on contact card | Could | backlog | Move "Write personal letter" button higher on the contact card. Reframe: "Write [Name] a personal message — it'll be the first thing they read." |
+| F53 | Rename "Asset Ledger" to "My Assets" | Could | backlog | "Asset Ledger" is jargon. Update screen title, nav label, and all references. Nav label: "Ledger" → "Assets". |
+| F54 | Rename "New Instruction" CTA to "Add a Wish" | Could | backlog | "New Instruction" is cold and clinical. Change to "Add a Wish". |
+| F55 | Label or hide unbuilt WhatsApp notify option | Could | backlog | WhatsApp delivery (F39-9) is not built. Either hide the option from the contact "Notify via" dropdown or add "(coming soon)" to prevent tester confusion. |
 
-### UX Improvements
+---
 
-| ID | User Story | Priority | Status | Notes |
-|----|-----------|----------|--------|-------|
-| F22 | Consistent primary CTA pattern | Must | done | |
-| F23 | Encouraging empty states | Must | done | |
-| F24 | Calm, grounded language | Must | done | |
-| F25 | Edit assets and contacts | Must | done | |
-| F26 | Consistent add-action button pattern | Should | done | |
-| F27 | Card background visual rule | Should | done | |
-| F28 | Consistent section header layout | Should | done | |
-| F29 | Contact email/phone visible on card | Should | done | |
-| F30 | Pulse de-emphasis before vault is set up | Should | done | |
-| F31 | Privacy note on Home screen | Should | done | |
-| F32 | Statement of Wishes plain-language explanation | Should | done | |
-| F33 | Check-in label "Tap to check in" | Should | done | |
-| F34 | Standardised delete button | Could | done | |
-| F35 | Settings auto-save | Could | done | |
-| F36 | Warm toast messages | Could | done | |
-| F37 | Screen subtitle visual hierarchy | Could | done | |
-| F38 | Remove Access Level dropdown from contact form | Must | done | |
-| F42 | Palette redesign — linen cream + warm sage | Should | done | Navy/teal replaced. See CSS variable reference above. |
-| F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 69 tests + frontend sync check. Blocks deploy on failure. |
-| F44 | First-run explainer card — core mechanic | Must | done | F44-1 (card + HTML), F44-2 (ee_onboarded persistence), F44-3 (copy refinement) all done. Card shows once on first login between privacy note and pulse card. Smooth fade-out on dismiss. ee_onboarded stored as separate localStorage key (not inside ee_v3). F44 frontend test coverage deferred — see F58. |
-| F45 | Fix Home hero text for empty/incomplete state | Must | done | "Everything is in order" is misleading when completeness is 0%. Show "Let's get you set up" below ~30% completeness. Only show "Everything is in order" above 70%. Middle state (30–70%): "You're making progress." |
-| F46 | Contacts screen — explain what contacts receive | Must | done | Add one-line explainer above the contact list: "These people will receive a full package of your information — assets, wishes, and any personal letters — if your check-in is overdue." |
-| F47 | Fix privacy note — no longer device-only | Must | done | Current copy says "stored on this device only" which is false since F41 (data now syncs to Railway/MongoDB). Update to: "Your information is encrypted and stored securely in the cloud." |
-| F48 | Pulse card first-visit explainer | Should | backlog | On first visit (before first check-in), show subtitle under the pulse card: "Check in regularly to confirm you're okay. If you stop, your contacts will be notified." Hide after first check-in. |
-| F49 | Rewrite Notification Protocol labels in plain English | Should | backlog | Replace: "Ping me first, then notify contacts" → "Warn me first (3 reminders, then notify contacts)". "Escalate gradually" → "Notify contacts one at a time, 24 hours apart". Add note clarifying how the user receives the warning. |
-| F50 | Overdue banner — add cancellation reassurance | Should | backlog | Add one calm line to overdue banner: "Don't worry — checking in now will immediately cancel any notifications." Reduces false-alarm anxiety. |
-| F51 | First check-in milestone confirmation | Should | backlog | On the very first check-in only, show richer confirmation: "You're all set. Emergency Exit is now active. We'll remind you to check in again in [X weeks/months]." Use localStorage flag `ee_first_checkin_done` to detect. |
-| F52 | Promote personal letter feature on contact card | Should | backlog | Move "Write personal letter" button higher on contact card — directly below the contact name. Reframe: "Write [Name] a personal message — it'll be the first thing they read." |
-| F53 | Rename "Asset Ledger" to "My Assets" | Could | backlog | "Asset Ledger" is jargon. Update screen title, nav label, and all references. Nav label changes from "Ledger" to "Assets". |
-| F54 | Rename "New Instruction" CTA to "Add a Wish" | Could | backlog | The Wishes screen CTA says "New Instruction" which is cold and clinical. Change to "Add a Wish". |
-| F55 | Label or hide unbuilt WhatsApp notify option | Could | backlog | WhatsApp delivery (F39-9) is not built. Either hide from the dropdown or add "(coming soon)" label so testers don't expect it to work. |
-| F56 | Change grace period default from 3 to 7 days | Could | backlog | 3 days is very short — a user could be in hospital or travelling. Default to 7. Add helper text recommending at least 7 days. |
-| F57 | Remove "tester" language from login screen | Could | backlog | "Sign in with your tester credentials" is internal language. Change to "Sign in to your account" so testers experience realistic copy. |
-| F58 | Frontend test coverage infrastructure | Should | backlog | F44 and other frontend features have no automated test coverage. pytest only covers the Python backend. Set up Playwright or similar browser automation tool to test: ee_onboarded flag behaviour, explainer card show/hide, dismissal persistence, and other client-side logic. Required before production launch. |
-
-### Backend & Infrastructure
-
-| ID | User Story | Priority | Status | Notes |
-|----|-----------|----------|--------|-------|
-| F39 | Server-side notification system | Must | in-progress | See sub-tasks below. |
-| F39-1 | Vault sync endpoint + frontend sync on save() | Must | done | POST /vault/sync and POST /checkin live on Railway. |
-| F39-2 | Pulse service — scheduled overdue scanner | Must | done | APScheduler runs hourly inside FastAPI. Detects overdue vaults, honours all 3 protocols. |
-| F39-3 | Resend email delivery (plain text) | Must | done | Plain-text email sent via Resend to test inbox. From: onboarding@resend.dev. Swap to contact["email"] + verified domain for production. |
-| F39-4 | Server-side PDF generation + email attachment | Must | done | ReportLab (open source, BSD, pure Python). PDF built in-memory via io.BytesIO. Attached as base64 via direct Resend REST API HTTP call. Bug fixed: loop variable `doc` renamed to `supp_doc` to avoid shadowing SimpleDocTemplate object. |
-| F39-5 | Twilio SMS delivery | Should | specified | SMS with PDF link (not attachment). Requires cloud storage for PDF hosting. |
-| F39-6 | RabbitMQ event bus | Should | specified | Introduces retry resilience. Can skip initially — scanner calls worker directly. |
-| F39-7 | Notification protocol logic server-side | Must | done | Delivered as part of F39-2. ping_then_notify / notify_immediately / escalate all implemented. |
-| F39-8 | False alarm recovery — cancellation logic | Must | done | POST /checkin detects if overdueNotificationSent was True before resetting. If so, sends warm all-clear email to all contacts via send_allclear_email(). Returns allclear_sent: true in response. |
-| F39-9 | WhatsApp delivery via Twilio | Could | idea | Requires Meta Business API approval. Defer until core delivery stable. |
-
-### Won't Have
+### Won't Have (this phase)
 
 | ID | Feature | Why not |
 |----|---------|---------|
-| W01 | Legal Will creation | Liability risk. Emergency Exit records where your Will is, not replaces it. |
-| W02 | Account closure automation | GoodTrust's territory. |
-| W03 | AI-generated legacy stories | Evaheld's territory. |
-| W04 | Cryptocurrency wallet/key storage | Extreme security risk. |
+| W01 | Legal Will creation | Liability risk. Emergency Exit records where your Will is — it does not replace it. |
+| W02 | Account closure automation | GoodTrust's territory. Outside our scope. |
+| W03 | AI-generated legacy stories | Evaheld's territory. Outside our scope. |
+| W04 | Cryptocurrency wallet/key storage | Extreme security risk. Not viable without hardware security module (HSM). |
+
+---
+
+### Closed / Removed (with rationale)
+
+| ID | Feature | Why closed |
+|----|---------|-----------|
+| F10 | Digital accounts section | Done — "Digital account" is already a category in the Asset Ledger. |
+| F17 | "What contacts will receive" preview | Duplicate of F02. The PDF preview button on each contact card is the same thing. Removed. |
+| F20 | Minimum information capture design | Redundant with F23 (empty states) and F30 (completeness scoring), both done. Removed. |
+| F21 | Document location recording | Partially done (suppDocs location field exists). Remaining gap (actual file upload) is now tracked as F59 (Cloud storage). Removed as standalone. |
 
 ---
 
