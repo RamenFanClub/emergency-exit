@@ -1,147 +1,62 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pymongo import MongoClient
-from pydantic import BaseModel
-from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
-from dotenv import load_dotenv
-from apscheduler.schedulers.background import BackgroundScheduler
+from pymongo import MongoClient, ASCENDING
 from bson import ObjectId
-import bcrypt
-import resend
-import os
-import base64
-import io
-import requests as http_requests
-
-# ─── F39-4: ReportLab imports ────────────────────────────────────────────────
+from datetime import datetime, timezone
+import os, jwt, bcrypt, io, base64, requests
+from apscheduler.schedulers.background import BackgroundScheduler
 from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.units import mm
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    HRFlowable, PageBreak, KeepTogether
-)
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.lib.units import mm
+from reportlab.lib import colors
 
-load_dotenv()
+app = FastAPI()
 
-app = FastAPI(title="Emergency Exit — Identity Service")
-
-# ─── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_credentials=False,
 )
 
-# ─── MONGODB CONNECTION ───────────────────────────────────────────────────────
-client = MongoClient(os.getenv("MONGO_URI"))
-db = client["emergency_exit"]
-users = db["users"]
-vaults = db["vaults"]
+MONGO_URI = os.environ.get("MONGO_URI", "")
+JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 
-users.create_index("username", unique=True)
-
-JWT_SECRET = os.getenv("JWT_SECRET")
-JWT_EXPIRY_DAYS = 7
-
-# ─── RESEND SETUP ─────────────────────────────────────────────────────────────
-resend.api_key = os.getenv("RESEND_API_KEY")
-
-# ─── TEST INBOX — change this to a real contact email when going live ─────────
-TEST_INBOX = "buat.nonton8282@gmail.com"
-
-security = HTTPBearer()
-
-# ─── DATA MODELS ──────────────────────────────────────────────────────────────
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-class VaultSyncRequest(BaseModel):
-    vault: dict
-
-# ─── HELPERS ──────────────────────────────────────────────────────────────────
-def hash_password(plain: str) -> str:
-    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
-
-def verify_password(plain: str, hashed: str) -> bool:
-    return bcrypt.checkpw(plain.encode(), hashed.encode())
-
-def create_token(user_id: str, username: str) -> str:
-    payload = {
-        "sub": user_id,
-        "username": username,
-        "exp": datetime.utcnow() + timedelta(days=JWT_EXPIRY_DAYS)
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Checks the login token on protected routes."""
-    try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=["HS256"])
-        return payload
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-def clean_user(user: dict) -> dict:
-    """Remove sensitive fields before sending user data to the frontend."""
-    return {
-        "id": str(user["_id"]),
-        "username": user["username"],
-        "name": user["name"],
-        "ageGroup": user.get("ageGroup", ""),
-        "hasWill": user.get("hasWill", False),
-        "isTester": user.get("isTester", True),
-        "createdAt": user.get("createdAt", "").isoformat() if user.get("createdAt") else None,
-        "lastLogin": user.get("lastLogin", "").isoformat() if user.get("lastLogin") else None,
-    }
+client = MongoClient(MONGO_URI) if MONGO_URI else None
+db = client["emergency_exit"] if client else None
+users_col = db["users"] if db else None
+vaults_col = db["vaults"] if db else None
 
 
-# ─── F41: VAULT SCHEMA HELPERS ───────────────────────────────────────────────
-# These helpers translate between two formats:
-#   1. The flat S={...} blob the frontend sends (all fields at top level)
-#   2. The structured MongoDB document (check-in fields at top level, vault
-#      content in a sub-document so the pulse scanner can index and query them)
-#
-# MongoDB best practice: fields you query on must be at the top level of the
-# document so they can be indexed. Embedding them inside a nested blob means
-# MongoDB has to scan every document on every hourly pulse scan — slow and
-# expensive at scale.
+# ─── TIMESTAMP HELPERS ────────────────────────────────────────────────────────
 
 def ms_to_dt(ms):
-    """Converts a JavaScript Date.now() millisecond timestamp to a Python datetime."""
+    """Convert JS millisecond timestamp to Python datetime (UTC)."""
     if ms is None:
         return None
-    try:
-        return datetime.fromtimestamp(ms / 1000, tz=timezone.utc)
-    except Exception:
-        return None
+    return datetime.fromtimestamp(ms / 1000, tz=timezone.utc)
 
 def dt_to_ms(dt):
-    """Converts a Python datetime back to a JavaScript millisecond timestamp."""
+    """Convert Python datetime to JS millisecond timestamp."""
     if dt is None:
         return None
-    try:
-        return int(dt.timestamp() * 1000)
-    except Exception:
-        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return int(dt.timestamp() * 1000)
 
-def extract_vault_fields(vault_blob: dict) -> tuple:
-    """
-    Splits the flat vault blob into three parts for structured MongoDB storage:
-    - top_level: fields the pulse scanner queries (indexed, top-level in the doc)
-    - content: the rest of the vault (assets, wishes, contacts, etc.)
-    - log: activity log (bounded at 20 entries, safe to embed)
-    """
+def now_ms():
+    return int(datetime.now(timezone.utc).timestamp() * 1000)
+
+
+# ─── VAULT SCHEMA HELPERS ─────────────────────────────────────────────────────
+
+def extract_vault_fields(vault_blob: dict) -> dict:
+    """Pull top-level scheduling fields out of the vault blob for MongoDB storage."""
     last_checkin_ms = vault_blob.get("lastCheckin")
-
-    top_level = {
+    return {
         "lastCheckin": ms_to_dt(last_checkin_ms),
         "checkInFrequency": vault_blob.get("fc", 2),
         "checkInUnit": vault_blob.get("fu", "months"),
@@ -149,1066 +64,726 @@ def extract_vault_fields(vault_blob: dict) -> tuple:
         "notifyProto": vault_blob.get("notifyProto", "ping_then_notify"),
     }
 
-    content_keys = {"assets", "wishes", "will", "suppDocs", "kin", "v", "notifySeq", "saveCount"}
-    content = {k: vault_blob.get(k) for k in content_keys if k in vault_blob}
+def reconstruct_vault_blob(doc: dict) -> dict:
+    """Rebuild the frontend vault blob from a MongoDB vault document."""
+    content = doc.get("content", {})
+    # Always use explicit None check — empty list [] is falsy and would silently
+    # fall through to the old schema if we used `or`.
+    kin = content.get("kin")
+    contacts = kin if kin is not None else doc.get("vault", {}).get("kin", [])
 
-    log = vault_blob.get("log", [])
+    assets = content.get("assets")
+    assets = assets if assets is not None else doc.get("vault", {}).get("assets", [])
 
-    return top_level, content, log
+    wishes = content.get("wishes")
+    wishes = wishes if wishes is not None else doc.get("vault", {}).get("wishes", [])
 
-def reconstruct_vault_blob(vault_doc: dict) -> dict:
-    """
-    Rebuilds the flat S={...} blob the frontend expects from the structured
-    MongoDB document. Called by GET /vault when the frontend loads on login.
-    """
-    content = vault_doc.get("content", {})
+    will = content.get("will")
+    if will is None:
+        will = doc.get("vault", {}).get("will", None)
+
+    supp_docs = content.get("suppDocs")
+    supp_docs = supp_docs if supp_docs is not None else doc.get("vault", {}).get("suppDocs", [])
 
     return {
-        "lastCheckin": dt_to_ms(vault_doc.get("lastCheckin")),
-        "fc": vault_doc.get("checkInFrequency", 2),
-        "fu": vault_doc.get("checkInUnit", "months"),
-        "gp": vault_doc.get("gracePeriodDays", 3),
-        "notifyProto": vault_doc.get("notifyProto", "ping_then_notify"),
-        "assets": content.get("assets", []),
-        "wishes": content.get("wishes", []),
-        "will": content.get("will", None),
-        "suppDocs": content.get("suppDocs", []),
-        "kin": content.get("kin", []),
+        "assets": assets,
+        "wishes": wishes,
+        "will": will,
+        "suppDocs": supp_docs,
+        "kin": contacts,
+        "lastCheckin": dt_to_ms(doc.get("lastCheckin")),
+        "fc": doc.get("checkInFrequency", 2),
+        "fu": doc.get("checkInUnit", "months"),
+        "gp": doc.get("gracePeriodDays", 7),
         "v": content.get("v", "face"),
+        "notifyProto": doc.get("notifyProto", "ping_then_notify"),
         "notifySeq": content.get("notifySeq", "in_order"),
+        "log": doc.get("log", []),
         "saveCount": content.get("saveCount", 0),
-        "log": vault_doc.get("log", []),
     }
 
 
-# ─── F39-4: PDF GENERATION ────────────────────────────────────────────────────
-# Colour palette — mirrors the Aeterna Solid design system used in the frontend.
-# ReportLab uses 0–1 float values, not hex, so we divide by 255.
-NAVY    = colors.Color(0.18, 0.169, 0.149)   # #2e2b26 — warm charcoal (primary)
-SAGE    = colors.Color(0.353, 0.478, 0.431)  # #5a7a6e — warm sage (accent)
-OFFWHITE= colors.Color(0.988, 0.976, 0.957)  # #fdf9f4 — warm white
-CREAM   = colors.Color(0.929, 0.898, 0.863)  # #ede5d8 — linen card
-MUTED   = colors.Color(0.42, 0.388, 0.345)   # #6b6358 — secondary text
-LIGHT   = colors.Color(0.867, 0.835, 0.8)    # #ddd5c8 — divider/border
-RED     = colors.Color(0.729, 0.102, 0.102)  # #ba1a1a — error red
+# ─── AUTH HELPERS ─────────────────────────────────────────────────────────────
 
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
-def _make_styles():
-    """
-    Builds a dictionary of named ParagraphStyles.
-    ParagraphStyle = the ReportLab equivalent of a CSS class for text blocks.
-    """
-    base = getSampleStyleSheet()
+def check_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
 
+def create_token(user_id: str) -> str:
+    return jwt.encode({"sub": user_id}, JWT_SECRET, algorithm="HS256")
+
+def clean_user(user: dict) -> dict:
+    """Strip sensitive fields before returning user data to the client."""
     return {
-        "cover_title": ParagraphStyle(
-            "cover_title",
-            fontName="Helvetica-Bold",
-            fontSize=26,
-            textColor=OFFWHITE,
-            leading=32,
-            spaceAfter=6,
-        ),
-        "cover_sub": ParagraphStyle(
-            "cover_sub",
-            fontName="Helvetica",
-            fontSize=11,
-            textColor=colors.Color(0.706, 0.78, 0.753),  # muted sage-blue
-            leading=16,
-        ),
-        "cover_meta": ParagraphStyle(
-            "cover_meta",
-            fontName="Helvetica",
-            fontSize=8.5,
-            textColor=colors.Color(0.55, 0.627, 0.6),
-            leading=12,
-        ),
-        "section_label": ParagraphStyle(
-            "section_label",
-            fontName="Helvetica-Bold",
-            fontSize=7.5,
-            textColor=MUTED,
-            leading=10,
-            spaceAfter=6,
-        ),
-        "heading": ParagraphStyle(
-            "heading",
-            fontName="Helvetica-Bold",
-            fontSize=16,
-            textColor=NAVY,
-            leading=22,
-            spaceAfter=4,
-        ),
-        "subheading": ParagraphStyle(
-            "subheading",
-            fontName="Helvetica-Bold",
-            fontSize=11,
-            textColor=NAVY,
-            leading=15,
-            spaceAfter=2,
-        ),
-        "body": ParagraphStyle(
-            "body",
-            fontName="Helvetica",
-            fontSize=9.5,
-            textColor=NAVY,
-            leading=14,
-            spaceAfter=4,
-        ),
-        "body_muted": ParagraphStyle(
-            "body_muted",
-            fontName="Helvetica",
-            fontSize=9,
-            textColor=MUTED,
-            leading=13,
-            spaceAfter=3,
-        ),
-        "label": ParagraphStyle(
-            "label",
-            fontName="Helvetica-Bold",
-            fontSize=7.5,
-            textColor=MUTED,
-            leading=10,
-            spaceAfter=1,
-        ),
-        "value": ParagraphStyle(
-            "value",
-            fontName="Helvetica",
-            fontSize=9.5,
-            textColor=NAVY,
-            leading=13,
-            spaceAfter=6,
-        ),
-        "letter": ParagraphStyle(
-            "letter",
-            fontName="Helvetica-Oblique",
-            fontSize=10,
-            textColor=NAVY,
-            leading=16,
-            spaceAfter=4,
-        ),
-        "letter_placeholder": ParagraphStyle(
-            "letter_placeholder",
-            fontName="Helvetica-Oblique",
-            fontSize=9,
-            textColor=MUTED,
-            leading=13,
-            spaceAfter=4,
-        ),
-        "step_text": ParagraphStyle(
-            "step_text",
-            fontName="Helvetica",
-            fontSize=9.5,
-            textColor=NAVY,
-            leading=14,
-        ),
-        "footer": ParagraphStyle(
-            "footer",
-            fontName="Helvetica",
-            fontSize=7,
-            textColor=colors.Color(0.55, 0.627, 0.6),
-            leading=10,
-            alignment=TA_CENTER,
-        ),
+        "id": str(user["_id"]),
+        "username": user.get("username", ""),
+        "name": user.get("name", ""),
+        "email": user.get("email", ""),
+        "ageGroup": user.get("ageGroup", ""),
+        "hasWill": user.get("hasWill", False),
+        "isTester": user.get("isTester", False),
     }
 
-
-def _section_header(title: str, styles: dict) -> list:
-    """
-    Renders a shaded section header bar — equivalent to the grey category
-    dividers used in the jsPDF version.
-    Returns a list of flowable elements (ReportLab's word for renderable objects).
-    """
-    return [
-        Spacer(1, 4 * mm),
-        Table(
-            [[Paragraph(title.upper(), styles["section_label"])]],
-            colWidths=[170 * mm],
-            style=TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), CREAM),
-                ("LEFTPADDING", (0, 0), (-1, -1), 8),
-                ("TOPPADDING", (0, 0), (-1, -1), 5),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-                ("ROUNDEDCORNERS", (0, 0), (-1, -1), [4, 4, 4, 4]),
-            ]),
-        ),
-        Spacer(1, 4 * mm),
-    ]
-
-
-def _divider() -> HRFlowable:
-    """Thin horizontal rule between items."""
-    return HRFlowable(width="100%", thickness=0.4, color=LIGHT, spaceAfter=4 * mm, spaceBefore=2 * mm)
-
-
-def _label_value(label: str, value: str, styles: dict) -> list:
-    """Renders a LABEL / value pair — used throughout the document."""
-    if not value:
-        return []
-    return [
-        Paragraph(label.upper(), styles["label"]),
-        Paragraph(value, styles["value"]),
-    ]
-
-
-def generate_pdf_for_contact(contact: dict, vault: dict, owner_name: str) -> bytes:
-    """
-    Generates the full 6-section A4 PDF package for a given contact.
-
-    Returns the PDF as raw bytes, which can then be base64-encoded and
-    attached to an email — or written to disk for debugging.
-
-    The structure mirrors the jsPDF client-side version page-for-page:
-      Page 1 — Cover + personal letter
-      Page 2 — Action checklist
-      Page 3 — Will & legal documents
-      Page 4 — Asset register
-      Page 5 — My wishes
-      Page 6 — Key contacts
-    """
-    styles = _make_styles()
-
-    # io.BytesIO = an in-memory file. We write the PDF here instead of to disk,
-    # so we never need to touch the filesystem on Railway.
-    buffer = io.BytesIO()
-
-    page_w, page_h = A4
-    margin = 20 * mm
-
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        leftMargin=margin,
-        rightMargin=margin,
-        topMargin=margin,
-        bottomMargin=20 * mm,
-        title=f"Emergency Exit — {contact.get('first', '')} {contact.get('last', '')}",
-    )
-
-    contact_name = f"{contact.get('first', '')} {contact.get('last', '')}".strip()
-    gen_date = datetime.utcnow().strftime("%-d %B %Y")
-    will_status_labels = {
-        "signed": "Signed & legally witnessed",
-        "draft": "Draft — not yet signed",
-        "none": "No Will exists yet",
-    }
-
-    story = []  # story = the ordered list of elements ReportLab will lay out
-
-    # ── PAGE 1: COVER ─────────────────────────────────────────────────────────
-    # The cover is a full-page dark background. ReportLab doesn't support
-    # full-bleed page backgrounds natively in flowable mode, so we use a
-    # wide Table spanning the full content width with a dark fill colour.
-    cover_content = [
-        [
-            Paragraph("Emergency Exit", styles["cover_title"]),
-            Paragraph(f"Prepared for {contact_name}", styles["cover_sub"]),
-            Spacer(1, 4 * mm),
-            Paragraph(f"Generated {gen_date}", styles["cover_meta"]),
-        ]
-    ]
-    cover_table = Table(
-        cover_content,
-        colWidths=[170 * mm],
-        style=TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-            ("LEFTPADDING", (0, 0), (-1, -1), 12),
-            ("TOPPADDING", (0, 0), (-1, -1), 12),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-            ("ROUNDEDCORNERS", (0, 0), (-1, -1), [8, 8, 8, 8]),
-        ]),
-        rowHeights=[None],
-    )
-    story.append(cover_table)
-    story.append(Spacer(1, 6 * mm))
-
-    # Intro notice box
-    intro_text = (
-        f"If you are reading this, {owner_name} has not confirmed their check-in within "
-        "the required period. This package contains everything you need to act on their behalf. "
-        "No login or app is required."
-    )
-    intro_table = Table(
-        [[Paragraph(intro_text, styles["body"])]],
-        colWidths=[170 * mm],
-        style=TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.Color(0.929, 0.898, 0.863)),
-            ("LEFTPADDING", (0, 0), (-1, -1), 10),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-            ("TOPPADDING", (0, 0), (-1, -1), 10),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-            ("LINEAFTER", (0, 0), (0, -1), 2, SAGE),  # left accent bar
-        ]),
-    )
-    story.append(intro_table)
-    story.append(Spacer(1, 4 * mm))
-
-    # Personal letter
-    story += _section_header("Personal Letter", styles)
-    letter_text = contact.get("letter", "").strip()
-    if letter_text:
-        letter_table = Table(
-            [[Paragraph(letter_text, styles["letter"])]],
-            colWidths=[170 * mm],
-            style=TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), colors.Color(0.973, 0.965, 0.953)),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                ("TOPPADDING", (0, 0), (-1, -1), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-                ("LINEAFTER", (0, 0), (0, -1), 1.5, SAGE),
-            ]),
-        )
-        story.append(letter_table)
-    else:
-        story.append(Paragraph(
-            "[ A personal letter from the vault holder has not been written for this contact. ]",
-            styles["letter_placeholder"]
-        ))
-    story.append(PageBreak())
-
-    # ── PAGE 2: ACTION CHECKLIST ──────────────────────────────────────────────
-    story.append(Paragraph("What to do first", styles["heading"]))
-    story.append(Paragraph("Work through these steps in order. Take your time.", styles["body_muted"]))
-    story.append(Spacer(1, 4 * mm))
-
-    will = vault.get("will")
-    supp_docs = vault.get("suppDocs") or []
-    sow = next((d for d in supp_docs if d.get("type") == "Statement of Wishes"), None)
-
-    steps = []
-    if will and will.get("solicitor"):
-        steps.append(f"Contact the solicitor: {will['solicitor']}")
-    if will and will.get("loc1"):
-        steps.append(f"Locate the original Will: {will['loc1']}")
-    if sow:
-        steps.append(f"Find the Statement of Wishes: {sow.get('loc') or sow.get('name', 'See document details')}")
-    if vault.get("assets"):
-        steps.append("Review the Asset Register in this document (page 4)")
-    steps.append("Notify relevant financial institutions and government agencies")
-    steps.append("Keep a copy of this document in a safe place")
-
-    for i, step in enumerate(steps, 1):
-        # Number badge + step text as a two-column table row
-        step_row = Table(
-            [[
-                Paragraph(f"<font color='#fdf9f4'><b>{i}</b></font>", ParagraphStyle(
-                    "num", fontName="Helvetica-Bold", fontSize=9,
-                    textColor=OFFWHITE, alignment=TA_CENTER
-                )),
-                Paragraph(step, styles["step_text"]),
-            ]],
-            colWidths=[8 * mm, 162 * mm],
-            style=TableStyle([
-                ("BACKGROUND", (0, 0), (0, 0), SAGE),
-                ("ALIGN", (0, 0), (0, 0), "CENTER"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-                ("LEFTPADDING", (1, 0), (1, 0), 10),
-            ]),
-        )
-        story.append(step_row)
-        story.append(_divider())
-
-    story.append(PageBreak())
-
-    # ── PAGE 3: WILL & LEGAL DOCUMENTS ───────────────────────────────────────
-    story.append(Paragraph("Will & Legal Documents", styles["heading"]))
-    story.append(Spacer(1, 2 * mm))
-
-    if will:
-        story += _section_header("Will Details", styles)
-        story += _label_value("Status", will_status_labels.get(will.get("status", ""), will.get("status", "")), styles)
-        if will.get("date"):
-            story += _label_value("Date Signed", will["date"], styles)
-        if will.get("solicitor"):
-            story += _label_value("Solicitor / Law Firm", will["solicitor"], styles)
-        if will.get("loc1"):
-            story += _label_value("Primary Location", will["loc1"], styles)
-        if will.get("loc2"):
-            story += _label_value("Secondary Location", will["loc2"], styles)
-        if will.get("notes"):
-            story += _label_value("Additional Notes", will["notes"], styles)
-    else:
-        story.append(Paragraph("No Will details have been recorded.", styles["body_muted"]))
-
-    story.append(Spacer(1, 4 * mm))
-
-    if supp_docs:
-        story += _section_header("Supporting Documents", styles)
-        for supp_doc in supp_docs:
-            supp_rows = [
-                [Paragraph(supp_doc.get("name", ""), styles["subheading"])],
-                [Paragraph(supp_doc.get("type", ""), styles["body_muted"])],
-            ]
-            if supp_doc.get("loc"):
-                supp_rows.append([Paragraph(f"Location: {supp_doc['loc']}", ParagraphStyle(
-                    "loc", fontName="Helvetica", fontSize=9, textColor=SAGE, leading=13
-                ))])
-
-            supp_table = Table(
-                supp_rows,
-                colWidths=[170 * mm],
-                style=TableStyle([
-                    ("BACKGROUND", (0, 0), (-1, -1), OFFWHITE),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 12),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (0, 0), 8),
-                    ("BOTTOMPADDING", (0, -1), (-1, -1), 8),
-                    ("BOX", (0, 0), (-1, -1), 0.5, LIGHT),
-                    ("LINEAFTER", (0, 0), (0, -1), 2, SAGE),
-                ]),
-            )
-            story.append(supp_table)
-            story.append(Spacer(1, 3 * mm))
-
-    story.append(PageBreak())
-
-    # ── PAGE 4: ASSET REGISTER ────────────────────────────────────────────────
-    story.append(Paragraph("Asset Register", styles["heading"]))
-    story.append(Paragraph(
-        "All assets recorded by the vault holder at time of package generation.",
-        styles["body_muted"]
-    ))
-    story.append(Spacer(1, 2 * mm))
-
-    assets = vault.get("assets") or []
-    if not assets:
-        story.append(Paragraph("No assets have been recorded.", styles["body_muted"]))
-    else:
-        # Group by category
-        seen_cats = []
-        for asset in assets:
-            cat = asset.get("category", "Other")
-            if cat not in seen_cats:
-                seen_cats.append(cat)
-
-        for cat in seen_cats:
-            cat_assets = [a for a in assets if a.get("category") == cat]
-            story += _section_header(cat, styles)
-            for asset in cat_assets:
-                name_para = Paragraph(asset.get("name", ""), styles["subheading"])
-                value_str = f"${round(asset['value']):,}" if asset.get("value") else ""
-                value_para = Paragraph(value_str, ParagraphStyle(
-                    "asset_val", fontName="Helvetica-Bold", fontSize=9,
-                    textColor=SAGE, leading=13
-                )) if value_str else Paragraph("", styles["body"])
-                detail_para = Paragraph(asset.get("details", ""), styles["body_muted"])
-                beneficiary_str = f"Beneficiary: {asset['beneficiary']}" if asset.get("beneficiary") else ""
-
-                asset_data = [[name_para], [value_para], [detail_para]]
-                if beneficiary_str:
-                    asset_data.append([Paragraph(beneficiary_str, ParagraphStyle(
-                        "ben", fontName="Helvetica-Bold", fontSize=7.5,
-                        textColor=MUTED, leading=10
-                    ))])
-
-                asset_table = Table(
-                    asset_data,
-                    colWidths=[170 * mm],
-                    style=TableStyle([
-                        ("BACKGROUND", (0, 0), (-1, -1), OFFWHITE),
-                        ("LEFTPADDING", (0, 0), (-1, -1), 12),
-                        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                        ("TOPPADDING", (0, 0), (0, 0), 8),
-                        ("BOTTOMPADDING", (0, -1), (-1, -1), 8),
-                        ("BOX", (0, 0), (-1, -1), 0.5, LIGHT),
-                        ("LINEBEFORE", (0, 0), (0, -1), 2, NAVY),
-                    ]),
-                )
-                story.append(KeepTogether(asset_table))
-                story.append(Spacer(1, 3 * mm))
-
-    story.append(PageBreak())
-
-    # ── PAGE 5: MY WISHES ─────────────────────────────────────────────────────
-    story.append(Paragraph("My Wishes", styles["heading"]))
-    story.append(Paragraph(
-        "These are the vault holder's recorded wishes and final instructions.",
-        styles["body_muted"]
-    ))
-    story.append(Spacer(1, 2 * mm))
-
-    wishes = vault.get("wishes") or []
-    priority_colors = {"high": RED, "medium": MUTED, "low": SAGE}
-
-    if not wishes:
-        story.append(Paragraph("No wishes have been recorded.", styles["body_muted"]))
-    else:
-        seen_wcats = []
-        for w in wishes:
-            c = w.get("category", "Other")
-            if c not in seen_wcats:
-                seen_wcats.append(c)
-
-        for cat in seen_wcats:
-            cat_wishes = [w for w in wishes if w.get("category") == cat]
-            story += _section_header(cat, styles)
-            for wish in cat_wishes:
-                pri = wish.get("priority", "medium")
-                pri_color = priority_colors.get(pri, MUTED)
-                badge = Table(
-                    [[Paragraph(pri.upper(), ParagraphStyle(
-                        "badge", fontName="Helvetica-Bold", fontSize=6.5,
-                        textColor=OFFWHITE, alignment=TA_CENTER
-                    ))]],
-                    colWidths=[16 * mm],
-                    style=TableStyle([
-                        ("BACKGROUND", (0, 0), (-1, -1), pri_color),
-                        ("TOPPADDING", (0, 0), (-1, -1), 3),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-                    ]),
-                )
-                wish_title = Paragraph(wish.get("title", ""), styles["subheading"])
-                header_row = Table(
-                    [[badge, wish_title]],
-                    colWidths=[18 * mm, 152 * mm],
-                    style=TableStyle([
-                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                        ("LEFTPADDING", (1, 0), (1, 0), 8),
-                    ]),
-                )
-                story.append(header_row)
-                if wish.get("details"):
-                    story.append(Paragraph(wish["details"], styles["body_muted"]))
-                story.append(_divider())
-
-    story.append(PageBreak())
-
-    # ── PAGE 6: KEY CONTACTS ─────────────────────────────────────────────────
-    story.append(Paragraph("Key People to Contact", styles["heading"]))
-    story.append(Spacer(1, 2 * mm))
-
-    kin = vault.get("kin") or []
-    notify_labels = {
-        "email": "Email",
-        "sms": "SMS",
-        "whatsapp": "WhatsApp",
-        "email_and_sms": "Email + SMS",
-    }
-
-    if not kin:
-        story.append(Paragraph("No contacts have been recorded.", styles["body_muted"]))
-    else:
-        for i, k in enumerate(kin):
-            initials = (
-                (k.get("first", "")[:1] + k.get("last", "")[:1]).upper()
-            )
-            full_name = f"{k.get('first', '')} {k.get('last', '')}".strip()
-            rel = k.get("rel", "Contact")
-            email = k.get("email", "")
-            phone = k.get("phone", "")
-            notify = notify_labels.get(k.get("notifyVia", "email"), "Email")
-
-            bg = OFFWHITE if i % 2 == 0 else CREAM
-
-            rows = [[Paragraph(full_name, styles["subheading"])]]
-            rows.append([Paragraph(rel, styles["body_muted"])])
-            if email:
-                rows.append([Paragraph(email, ParagraphStyle(
-                    "email_link", fontName="Helvetica", fontSize=9,
-                    textColor=SAGE, leading=13
-                ))])
-            if phone:
-                rows.append([Paragraph(phone, styles["body_muted"])])
-            rows.append([Paragraph(f"Notify via: {notify}", styles["label"])])
-
-            contact_table = Table(
-                rows,
-                colWidths=[170 * mm],
-                style=TableStyle([
-                    ("BACKGROUND", (0, 0), (-1, -1), bg),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 12),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (0, 0), 8),
-                    ("BOTTOMPADDING", (0, -1), (-1, -1), 8),
-                    ("BOX", (0, 0), (-1, -1), 0.5, LIGHT),
-                ]),
-            )
-            story.append(contact_table)
-            story.append(Spacer(1, 3 * mm))
-
-    # Build the PDF — this writes all the elements into buffer
-    doc.build(story)
-
-    # Rewind the buffer to the start so we can read the bytes back out
-    buffer.seek(0)
-    return buffer.read()
-
-
-# ─── F39-3 + F39-4: EMAIL SENDER (updated to attach PDF) ─────────────────────
-def send_notification_email(vault_owner_name: str, contact: dict, vault: dict):
-    """
-    Sends a notification email to the contact with the full PDF package attached.
-    The PDF is generated server-side by generate_pdf_for_contact(), then
-    base64-encoded and passed to Resend's attachments API.
-    In production, replace TEST_INBOX with contact["email"].
-    """
-    contact_name = f"{contact.get('first', '')} {contact.get('last', '')}".strip()
-    first_name = contact.get("first", "there")
-    notify_method = contact.get("notifyVia", "email")
-
-    asset_count = len(vault.get("assets", []))
-    wish_count = len(vault.get("wishes", []))
-    has_will = vault.get("will") is not None
-    has_letter = bool(contact.get("letter", "").strip())
-
-    body = f"""Dear {contact_name},
-
-This is an automated message from Emergency Exit.
-
-{vault_owner_name} has not completed their scheduled check-in. Their Emergency Exit vault has nominated you as a contact to be notified if this happens.
-
-— What this means —
-
-This may mean nothing — they may simply have forgotten to check in. If you are able to, please try to reach them directly first.
-
-If you are unable to contact them, their Emergency Exit vault contains the following information to help you:
-
-  • Assets recorded: {asset_count}
-  • Final wishes recorded: {wish_count}
-  • Will details recorded: {"Yes" if has_will else "No"}
-  • Personal letter for you: {"Yes" if has_letter else "No"}
-
-The full document package is attached to this email as a PDF.
-
-— What to do now —
-
-1. Try to contact {vault_owner_name} directly.
-2. Open the attached PDF for a full record of their assets, wishes, and instructions.
-3. If you cannot reach them, check in with other nominated contacts.
-4. If you have genuine concerns for their wellbeing, contact emergency services.
-
-This notification was sent to you because you were nominated by {vault_owner_name} via the Emergency Exit app. If this was sent in error, no action is required.
-
----
-Emergency Exit — Digital Legacy Vault
-This is an automated message. Do not reply to this email.
-"""
-
-    # ── F39-4: Generate the PDF and base64-encode it for the email attachment ─
-    pdf_attached = False
-    attachments = []
+def get_current_user(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    token = authorization.split(" ", 1)[1]
     try:
-        pdf_bytes = generate_pdf_for_contact(contact, vault, vault_owner_name)
-        # Resend's REST API requires content as a base64-encoded string.
-        pdf_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
-        safe_name = f"{contact.get('first', 'Contact')}-{contact.get('last', 'Package')}".replace(" ", "-")
-        attachments = [{
-            "filename": f"Emergency-Exit-{safe_name}.pdf",
-            "content": pdf_b64,
-        }]
-        pdf_attached = True
-        print(f"  📄 PDF generated for {contact_name} ({len(pdf_bytes):,} bytes)")
-    except Exception as pdf_err:
-        # If PDF generation fails, we still send the plain-text email.
-        # A notification without a PDF is better than no notification at all.
-        print(f"  ⚠️  PDF generation failed for {contact_name}: {pdf_err} — sending email without attachment")
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user = users_col.find_one({"_id": ObjectId(payload["sub"])})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
-    try:
-        # Use the Resend REST API directly via requests rather than the SDK.
-        # The SDK's attachment handling varies by version; calling the API
-        # directly gives us exact control over the payload and clearer errors.
-        api_key = os.getenv("RESEND_API_KEY")
-        payload = {
-            "from": "onboarding@resend.dev",
-            "to": [TEST_INBOX],  # must be a list
-            "subject": f"[Emergency Exit] Action may be required — {vault_owner_name} has missed a check-in",
-            "text": body,
-        }
-        if attachments:
-            payload["attachments"] = attachments
 
-        response = http_requests.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-            timeout=30,
-        )
+# ─── OVERDUE CALCULATION ──────────────────────────────────────────────────────
 
-        if response.status_code in (200, 201):
-            status = "with PDF attachment" if pdf_attached else "without PDF (fallback)"
-            print(f"✅ Email sent for contact: {contact_name} {status} (redirected to test inbox)")
-            return True
-        else:
-            print(f"❌ Resend API error {response.status_code}: {response.text}")
-            return False
+def is_overdue(vault_doc: dict) -> tuple[bool, int]:
+    """
+    Returns (is_overdue, days_overdue).
+    Grace period starts after the check-in window expires.
+    """
+    last_checkin = vault_doc.get("lastCheckin")
+    if not last_checkin:
+        return False, 0
 
-    except Exception as e:
-        print(f"❌ Email failed for contact {contact_name}: {e}")
+    freq = vault_doc.get("checkInFrequency", 2)
+    unit = vault_doc.get("checkInUnit", "months")
+    grace_days = vault_doc.get("gracePeriodDays", 7)
+
+    interval_days = freq * 30 if unit == "months" else freq * 7
+    now = datetime.now(timezone.utc)
+
+    if last_checkin.tzinfo is None:
+        last_checkin = last_checkin.replace(tzinfo=timezone.utc)
+
+    due_date = last_checkin + __import__("datetime").timedelta(days=interval_days)
+    grace_end = due_date + __import__("datetime").timedelta(days=grace_days)
+
+    if now > grace_end:
+        days_overdue = (now - grace_end).days
+        return True, days_overdue
+    return False, 0
+
+
+# ─── F60: REMINDER THRESHOLD ─────────────────────────────────────────────────
+
+def is_reminder_due(vault_doc: dict) -> bool:
+    """
+    Returns True when the vault holder should receive a check-in reminder.
+
+    Logic mirrors the frontend F05 amber banner (25% rule):
+    - Calculate the full check-in interval in days
+    - A reminder fires when the time remaining until the due date is ≤ 25% of
+      the interval (e.g. 2-month interval = ~60 days → reminder at ≤15 days left)
+    - Only fires once per cycle — guarded by the `reminderSent` flag on the vault
+    - Does NOT fire if the vault is already overdue (the overdue scanner handles that)
+    """
+    from datetime import timedelta
+
+    last_checkin = vault_doc.get("lastCheckin")
+    if not last_checkin:
         return False
 
-
-# ─── F39-8: ALL CLEAR EMAIL ───────────────────────────────────────────────────
-def send_allclear_email(vault_owner_name: str, contact: dict):
-    """
-    Sends a warm all-clear email to a contact after the vault holder checks in
-    following an overdue notification. Reassures them that everything is okay.
-    """
-    contact_name = f"{contact.get('first', '')} {contact.get('last', '')}".strip()
-
-    body = f"""Dear {contact_name},
-
-This is a follow-up message from Emergency Exit.
-
-Good news — {vault_owner_name} has just checked in and confirmed they are safe and well.
-
-No further action is required on your part. You can disregard the earlier notification.
-
-Thank you for being a trusted contact for {vault_owner_name}.
-
----
-Emergency Exit — Digital Legacy Vault
-This is an automated message. Do not reply to this email.
-"""
-
-    try:
-        resend.Emails.send({
-            "from": "onboarding@resend.dev",
-            "to": TEST_INBOX,  # ← swap to contact["email"] when going live
-            "subject": f"[Emergency Exit] All clear — {vault_owner_name} has checked in and is safe",
-            "text": body,
-        })
-        print(f"✅ All-clear email sent for contact: {contact_name}")
-        return True
-    except Exception as e:
-        print(f"❌ All-clear email failed for contact {contact_name}: {e}")
+    # Already sent this cycle — don't repeat
+    if vault_doc.get("reminderSent", False):
         return False
 
+    freq = vault_doc.get("checkInFrequency", 2)
+    unit = vault_doc.get("checkInUnit", "months")
+    interval_days = freq * 30 if unit == "months" else freq * 7
+    threshold_days = max(7, round(interval_days * 0.25))
 
-# ─── F39-7: NOTIFICATION PROTOCOL LOGIC ──────────────────────────────────────
+    now = datetime.now(timezone.utc)
+    if last_checkin.tzinfo is None:
+        last_checkin = last_checkin.replace(tzinfo=timezone.utc)
+
+    due_date = last_checkin + timedelta(days=interval_days)
+    days_remaining = (due_date - now).days
+
+    # In window: reminder threshold reached but not yet overdue
+    return 0 <= days_remaining <= threshold_days
+
+
+# ─── EMAIL DELIVERY ───────────────────────────────────────────────────────────
+
 def get_contacts_to_notify(vault_doc: dict, days_overdue: int) -> list:
     """
-    Returns which contacts should be notified based on the user's chosen protocol.
-    days_overdue = how many days past the grace period end date.
-
-    Protocols:
-    - ping_then_notify: Wait 3 days of pinging the owner, then notify all contacts.
-    - notify_immediately: Notify all contacts as soon as grace period expires.
-    - escalate: Notify one new contact per day (contact #1 on day 0, #2 on day 1, etc.)
+    Returns the list of contacts to notify based on the notification protocol
+    and how many days overdue the vault is.
     """
-    # F41: contacts now live in content sub-document.
-    # Fall back to the old vault blob for any docs synced before F41 migration.
-    # IMPORTANT: use explicit None check, not `or` — an empty list [] is falsy
-    # in Python so `[] or fallback` would incorrectly use the fallback even when
-    # the content key exists but the user genuinely has no contacts yet.
-    content_kin = vault_doc.get("content", {}).get("kin")
-    if content_kin is not None:
-        contacts = content_kin
-    else:
-        contacts = vault_doc.get("vault", {}).get("kin", [])
+    content = vault_doc.get("content", {})
+    kin = content.get("kin")
+    contacts = kin if kin is not None else []
+
     if not contacts:
         return []
 
     proto = vault_doc.get("notifyProto", "ping_then_notify")
 
-    if proto == "notify_immediately":
-        return contacts  # Notify everyone immediately
+    if proto == "ping_then_notify":
+        if days_overdue < 3:
+            return []  # Still in the "ping the owner" phase
+        return contacts
 
-    elif proto == "ping_then_notify":
-        # Wait 3 days before notifying contacts
-        if days_overdue >= 3:
-            return contacts
-        else:
-            print(f"  ⏳ ping_then_notify: {3 - days_overdue} ping day(s) remaining, holding notifications")
-            return []
+    elif proto == "notify_immediately":
+        return contacts
 
     elif proto == "escalate":
-        # Notify one new contact per day
-        # Day 0 overdue → contact #1, Day 1 → contacts #1 and #2, etc.
-        contacts_to_notify = contacts[:days_overdue + 1]
-        return contacts_to_notify
+        # One new contact per day overdue
+        count = min(days_overdue + 1, len(contacts))
+        return contacts[:count]
 
-    return []
+    return contacts
 
 
-# ─── F39-2: PULSE SCANNER ─────────────────────────────────────────────────────
-def run_pulse_scan():
+def send_reminder_email(user: dict, vault_doc: dict):
     """
-    Runs on a schedule (every hour). Scans all vaults in MongoDB,
-    identifies users who are overdue, and triggers email notifications.
-    Skips users who have already been notified (overdueNotificationSent = True).
+    F60: Send a warm check-in reminder email to the vault holder themselves.
+    Called by the pulse scanner when is_reminder_due() returns True.
     """
-    print(f"\n🔍 Pulse scan started at {datetime.utcnow().isoformat()}")
+    from datetime import timedelta
+
+    freq = vault_doc.get("checkInFrequency", 2)
+    unit = vault_doc.get("checkInUnit", "months")
+    interval_days = freq * 30 if unit == "months" else freq * 7
+
+    last_checkin = vault_doc.get("lastCheckin")
+    if last_checkin and last_checkin.tzinfo is None:
+        last_checkin = last_checkin.replace(tzinfo=timezone.utc)
+
+    due_date = last_checkin + timedelta(days=interval_days) if last_checkin else None
+    days_remaining = (due_date - datetime.now(timezone.utc)).days if due_date else 0
+    days_remaining = max(0, days_remaining)
+
+    recipient_name = user.get("name", "").split()[0] or "there"
+    recipient_email = user.get("email", "buat.nonton8282@gmail.com")
+
+    freq_label = f"{freq} {'month' if unit == 'months' else 'week'}{'s' if freq != 1 else ''}"
+    due_label = due_date.strftime("%-d %B %Y") if due_date else "soon"
+    days_label = f"{days_remaining} day{'s' if days_remaining != 1 else ''}"
+
+    subject = f"Your Emergency Exit check-in is due in {days_label}"
+
+    body = f"""Hi {recipient_name},
+
+Just a gentle reminder that your Emergency Exit check-in is coming up.
+
+Your next check-in is due on {due_label} — that's {days_label} from now.
+
+A quick tap in the app is all it takes to confirm you're okay and reset your timer.
+
+Why this matters: if your check-in is missed and your grace period expires, your nominated contacts will automatically receive your vault — assets, wishes, and personal letters included. This reminder is here so that never happens by accident.
+
+Open Emergency Exit and tap the heart to check in:
+https://ramenfanclub.github.io/emergency-exit/
+
+If everything looks different than expected, or you've already checked in, you can safely ignore this email.
+
+Take care,
+The Emergency Exit team
+
+---
+You're receiving this because you set up a check-in schedule of every {freq_label}.
+To change your frequency, open Settings in the app.
+"""
+
+    payload = {
+        "from": "Emergency Exit <onboarding@resend.dev>",
+        "to": [recipient_email],
+        "subject": subject,
+        "text": body,
+    }
 
     try:
-        all_vaults = list(vaults.find({}))
-        print(f"   Scanning {len(all_vaults)} vault(s)...")
-
-        now_ms = int(datetime.utcnow().timestamp() * 1000)  # current time in milliseconds
-
-        for vault_doc in all_vaults:
-            user_id = vault_doc.get("userId", "unknown")
-            # F41: vault content now lives in 'content' sub-document.
-            # Explicit None check — empty dict/list is falsy so `or` would incorrectly skip it.
-            content = vault_doc.get("content")
-            vault = content if content is not None else vault_doc.get("vault", {})
-
-            # ── Step 1: Get the last check-in timestamp ───────────────────────
-            # F41: lastCheckin may now be a datetime object (new schema) or
-            # an int in milliseconds (old schema) — handle both.
-            last_checkin_raw = vault_doc.get("lastCheckin")
-            if not last_checkin_raw:
-                print(f"  ⏭️  User {user_id}: no check-in recorded yet — skipping")
-                continue
-            if isinstance(last_checkin_raw, datetime):
-                last_checkin_ms = int(last_checkin_raw.timestamp() * 1000)
-            else:
-                last_checkin_ms = int(last_checkin_raw)
-
-            # ── Step 2: Calculate when the check-in was due ───────────────────
-            fc = vault_doc.get("checkInFrequency", 2)
-            fu = vault_doc.get("checkInUnit", "months")
-            gp = vault_doc.get("gracePeriodDays", 3)
-
-            interval_days = fc * 30 if fu == "months" else fc * 7
-            due_date_ms = last_checkin_ms + (interval_days * 86400000)
-            grace_end_ms = due_date_ms + (gp * 86400000)
-
-            # ── Step 3: Check if overdue ──────────────────────────────────────
-            if now_ms <= grace_end_ms:
-                print(f"  ✅ User {user_id}: not overdue yet — skipping")
-                continue
-
-            # ── Step 4: Skip if already notified ─────────────────────────────
-            if vault_doc.get("overdueNotificationSent"):
-                print(f"  📬 User {user_id}: already notified — skipping")
-                continue
-
-            # ── Step 5: Calculate how many days overdue ───────────────────────
-            days_overdue = int((now_ms - grace_end_ms) / 86400000)
-            print(f"  🚨 User {user_id}: OVERDUE by {days_overdue} day(s)")
-
-            # ── Step 6: Look up the vault owner's name ────────────────────────
-            user_record = users.find_one({"_id": ObjectId(user_id)})
-            owner_name = user_record["name"] if user_record else "The vault holder"
-
-            # ── Step 7: Determine which contacts to notify ────────────────────
-            contacts_to_notify = get_contacts_to_notify(vault_doc, days_overdue)
-
-            if not contacts_to_notify:
-                print(f"  ⏳ User {user_id}: protocol says hold — no emails sent yet")
-                continue
-
-            # ── Step 8: Send emails (now with PDF attachment via F39-4) ───────
-            sent_count = 0
-            for contact in contacts_to_notify:
-                success = send_notification_email(owner_name, contact, vault)
-                if success:
-                    sent_count += 1
-
-            print(f"  📧 Sent {sent_count}/{len(contacts_to_notify)} notification(s) for user {user_id}")
-
-            # ── Step 9: Mark as notified so we don't send again next hour ─────
-            # Only mark as done for protocols that send everyone at once.
-            # For escalate, we keep sending as new contacts become due.
-            proto = vault_doc.get("notifyProto", "ping_then_notify")
-            if proto != "escalate":
-                vaults.update_one(
-                    {"userId": user_id},
-                    {"$set": {"overdueNotificationSent": True}}
-                )
-
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=10,
+        )
+        response.raise_for_status()
+        print(f"F60: Reminder email sent to {recipient_email} ({days_remaining} days remaining)")
+        return True
     except Exception as e:
-        print(f"❌ Pulse scan error: {e}")
+        print(f"F60: Reminder email failed for {recipient_email}: {e}")
+        return False
 
-    print(f"🔍 Pulse scan complete\n")
+
+def generate_pdf_for_contact(contact: dict, vault_doc: dict) -> bytes:
+    """Generate a PDF package for a single contact. Returns raw bytes."""
+    content = vault_doc.get("content", {})
+
+    kin = content.get("kin")
+    all_contacts = kin if kin is not None else []
+
+    assets = content.get("assets")
+    assets = assets if assets is not None else []
+
+    wishes = content.get("wishes")
+    wishes = wishes if wishes is not None else []
+
+    will = content.get("will")
+    supp_docs = content.get("suppDocs")
+    supp_docs = supp_docs if supp_docs is not None else []
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            leftMargin=20*mm, rightMargin=20*mm,
+                            topMargin=20*mm, bottomMargin=20*mm)
+
+    styles = getSampleStyleSheet()
+    story = []
+
+    heading_style = ParagraphStyle("Heading", parent=styles["Heading1"],
+                                   fontSize=18, spaceAfter=6, textColor=colors.HexColor("#002147"))
+    sub_style = ParagraphStyle("Sub", parent=styles["Normal"],
+                               fontSize=10, textColor=colors.HexColor("#54657d"), spaceAfter=12)
+    body_style = ParagraphStyle("Body", parent=styles["Normal"],
+                                fontSize=10, leading=15, spaceAfter=8)
+    label_style = ParagraphStyle("Label", parent=styles["Normal"],
+                                 fontSize=8, textColor=colors.HexColor("#54657d"),
+                                 spaceAfter=2, fontName="Helvetica-Bold")
+    section_style = ParagraphStyle("Section", parent=styles["Heading2"],
+                                   fontSize=12, spaceAfter=6,
+                                   textColor=colors.HexColor("#002147"))
+
+    first = contact.get("first", "")
+    last = contact.get("last", "")
+
+    story.append(Paragraph("Emergency Exit", heading_style))
+    story.append(Paragraph(f"Prepared for {first} {last}", sub_style))
+    story.append(Paragraph(
+        f"Generated {datetime.now().strftime('%-d %B %Y')}", sub_style))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e0e0e0")))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph("Personal Letter", section_style))
+    letter = contact.get("letter", "").strip()
+    if letter:
+        for line in letter.split("\n"):
+            story.append(Paragraph(line or "&nbsp;", body_style))
+    else:
+        story.append(Paragraph("[No personal letter recorded for this contact.]", body_style))
+    story.append(Spacer(1, 12))
+
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e0e0e0")))
+    story.append(Spacer(1, 8))
+    story.append(Paragraph("Will & Legal Documents", section_style))
+    if will:
+        status_map = {"signed": "Signed & witnessed", "draft": "Draft — not signed", "none": "No Will yet"}
+        story.append(Paragraph("Status", label_style))
+        story.append(Paragraph(status_map.get(will.get("status", ""), will.get("status", "")), body_style))
+        if will.get("solicitor"):
+            story.append(Paragraph("Solicitor / Law Firm", label_style))
+            story.append(Paragraph(will["solicitor"], body_style))
+        if will.get("loc1"):
+            story.append(Paragraph("Primary Location", label_style))
+            story.append(Paragraph(will["loc1"], body_style))
+        if will.get("loc2"):
+            story.append(Paragraph("Secondary Location", label_style))
+            story.append(Paragraph(will["loc2"], body_style))
+        if will.get("notes"):
+            story.append(Paragraph("Notes", label_style))
+            story.append(Paragraph(will["notes"], body_style))
+    else:
+        story.append(Paragraph("[No Will details recorded.]", body_style))
+
+    if supp_docs:
+        story.append(Spacer(1, 8))
+        story.append(Paragraph("Supporting Documents", section_style))
+        for supp_doc in supp_docs:
+            story.append(Paragraph(supp_doc.get("name", ""), label_style))
+            loc = supp_doc.get("loc", "")
+            if loc:
+                story.append(Paragraph(f"Location: {loc}", body_style))
+
+    if assets:
+        story.append(Spacer(1, 12))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e0e0e0")))
+        story.append(Spacer(1, 8))
+        story.append(Paragraph("Asset Register", section_style))
+        for asset in assets:
+            story.append(Paragraph(asset.get("name", ""), label_style))
+            detail_parts = []
+            if asset.get("category"):
+                detail_parts.append(asset["category"])
+            if asset.get("value"):
+                detail_parts.append(f"${round(asset['value']):,}")
+            if asset.get("details"):
+                detail_parts.append(asset["details"])
+            if asset.get("beneficiary"):
+                detail_parts.append(f"Beneficiary: {asset['beneficiary']}")
+            story.append(Paragraph(" · ".join(detail_parts), body_style))
+
+    if wishes:
+        story.append(Spacer(1, 12))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e0e0e0")))
+        story.append(Spacer(1, 8))
+        story.append(Paragraph("My Wishes", section_style))
+        for wish in wishes:
+            story.append(Paragraph(wish.get("title", ""), label_style))
+            if wish.get("details"):
+                story.append(Paragraph(wish["details"], body_style))
+
+    if all_contacts:
+        story.append(Spacer(1, 12))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e0e0e0")))
+        story.append(Spacer(1, 8))
+        story.append(Paragraph("Key Contacts", section_style))
+        for c in all_contacts:
+            name = f"{c.get('first', '')} {c.get('last', '')}".strip()
+            rel = c.get("rel", "")
+            email = c.get("email", "")
+            phone = c.get("phone", "")
+            parts = [x for x in [name, rel, email, phone] if x]
+            story.append(Paragraph(" · ".join(parts), body_style))
+
+    doc.build(story)
+    return buf.getvalue()
 
 
-# ─── SCHEDULER SETUP ─────────────────────────────────────────────────────────
+def send_notification_email(contact: dict, vault_doc: dict):
+    """Send overdue notification email with PDF attachment to a contact."""
+    first = contact.get("first", "")
+    last = contact.get("last", "")
+    recipient_email = contact.get("email", "buat.nonton8282@gmail.com")
+
+    pdf_bytes = generate_pdf_for_contact(contact, vault_doc)
+    pdf_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+
+    subject = f"Important: Emergency Exit package for {first} {last}"
+    body = f"""Dear {first},
+
+You are receiving this because you have been nominated as a trusted contact in Emergency Exit.
+
+The vault holder has not confirmed their check-in within the required period. Attached is their emergency package — please review it carefully.
+
+This package includes their recorded assets, wishes, Will details, and any personal letters they have written for you.
+
+If you believe this has been sent in error, please disregard this message.
+
+The Emergency Exit team
+"""
+
+    payload = {
+        "from": "Emergency Exit <onboarding@resend.dev>",
+        "to": [recipient_email],
+        "subject": subject,
+        "text": body,
+        "attachments": [
+            {
+                "filename": f"Emergency-Exit-{first}-{last}.pdf",
+                "content": pdf_b64,
+            }
+        ],
+    }
+
+    try:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=30,
+        )
+        response.raise_for_status()
+        print(f"Notification email sent to {recipient_email}")
+        return True
+    except Exception as e:
+        print(f"Notification email failed for {recipient_email}: {e}")
+        return False
+
+
+def send_allclear_email(contact: dict):
+    """Send a warm recovery email to a contact when vault holder checks in after being overdue."""
+    first = contact.get("first", "")
+    recipient_email = contact.get("email", "buat.nonton8282@gmail.com")
+
+    subject = "All clear — Emergency Exit update"
+    body = f"""Dear {first},
+
+Good news — the vault holder has checked in and confirmed they are okay.
+
+Any previous notifications about their Emergency Exit vault can be disregarded. No action is required from you at this time.
+
+Thank you for being a trusted contact.
+
+The Emergency Exit team
+"""
+
+    payload = {
+        "from": "Emergency Exit <onboarding@resend.dev>",
+        "to": [recipient_email],
+        "subject": subject,
+        "text": body,
+    }
+
+    try:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=10,
+        )
+        response.raise_for_status()
+        print(f"All-clear email sent to {first} at {recipient_email}")
+        return True
+    except Exception as e:
+        print(f"All-clear email failed for {first} at {recipient_email}: {e}")
+        return False
+
+
+# ─── PULSE SCANNER ────────────────────────────────────────────────────────────
+
+def run_pulse_scan():
+    """
+    Hourly scanner. Two responsibilities:
+    1. Overdue detection — notifies contacts when grace period has expired
+    2. F60: Reminder detection — emails vault holder when check-in is approaching
+    """
+    print("Pulse scan running...")
+    now = datetime.now(timezone.utc)
+
+    for vault_doc in vaults_col.find({}):
+        user_id = vault_doc.get("userId")
+        if not user_id:
+            continue
+
+        user = users_col.find_one({"_id": user_id})
+        if not user:
+            continue
+
+        overdue, days_overdue = is_overdue(vault_doc)
+
+        # ── Overdue path ─────────────────────────────────────────────────────
+        if overdue:
+            already_notified = vault_doc.get("overdueNotificationSent", False)
+            proto = vault_doc.get("notifyProto", "ping_then_notify")
+
+            if not already_notified or proto == "escalate":
+                contacts = get_contacts_to_notify(vault_doc, days_overdue)
+                if contacts:
+                    for contact in contacts:
+                        send_notification_email(contact, vault_doc)
+                    if proto != "escalate":
+                        vaults_col.update_one(
+                            {"_id": vault_doc["_id"]},
+                            {"$set": {"overdueNotificationSent": True,
+                                      "updatedAt": now}}
+                        )
+            continue  # Skip reminder check if already overdue
+
+        # ── F60: Reminder path ────────────────────────────────────────────────
+        # Only runs when vault is NOT overdue
+        if is_reminder_due(vault_doc):
+            sent = send_reminder_email(user, vault_doc)
+            if sent:
+                vaults_col.update_one(
+                    {"_id": vault_doc["_id"]},
+                    {"$set": {"reminderSent": True, "updatedAt": now}}
+                )
+                print(f"F60: reminderSent flag set for user {user.get('username', user_id)}")
+
+    print("Pulse scan complete.")
+
+
 scheduler = BackgroundScheduler()
-# Runs every hour on the hour. Change to minutes=1 for quick testing.
 scheduler.add_job(run_pulse_scan, "interval", hours=1)
+scheduler.start()
 
 
-# ─── ROUTES ───────────────────────────────────────────────────────────────────
+# ─── API ROUTES ───────────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+async def startup():
+    """Create MongoDB indexes on boot. Safe to run every time — skipped if already exists."""
+    vaults_col.create_index([("userId", ASCENDING)], unique=True)
+    vaults_col.create_index([("lastCheckin", ASCENDING)])
+    vaults_col.create_index([("overdueNotificationSent", ASCENDING),
+                             ("lastCheckin", ASCENDING)])
+    # F60: index reminderSent so the scanner can efficiently skip already-reminded vaults
+    vaults_col.create_index([("reminderSent", ASCENDING), ("lastCheckin", ASCENDING)])
+    print("Startup complete — indexes ensured.")
+
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "identity-service"}
+    return {"ok": True}
+
 
 @app.post("/auth/login")
-def login(body: LoginRequest):
-    username = body.username.lower().strip()
-    user = users.find_one({"username": username})
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-    if not verify_password(body.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-    users.update_one(
-        {"_id": user["_id"]},
-        {"$set": {"lastLogin": datetime.utcnow()}}
-    )
-    token = create_token(str(user["_id"]), username)
-    return {"token": token, "user": clean_user(user)}
+def login(body: dict):
+    username = body.get("username", "").strip().lower()
+    password = body.get("password", "")
+
+    user = users_col.find_one({"username": username})
+    if not user or not check_password(password, user.get("password", "")):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    users_col.update_one({"_id": user["_id"]},
+                         {"$set": {"lastLogin": datetime.now(timezone.utc)}})
+
+    token = create_token(str(user["_id"]))
+    return {"ok": True, "token": token, "user": clean_user(user)}
+
 
 @app.get("/auth/me")
-def get_me(current_user: dict = Depends(get_current_user)):
-    user = users.find_one({"username": current_user["username"]})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return clean_user(user)
+def me(current_user: dict = Depends(get_current_user)):
+    return {"ok": True, "user": clean_user(current_user)}
+
 
 @app.get("/admin/testers")
 def list_testers(current_user: dict = Depends(get_current_user)):
-    all_testers = list(users.find({"isTester": True}))
-    return [clean_user(t) for t in all_testers]
+    testers = list(users_col.find({"isTester": True}))
+    return {"ok": True, "testers": [clean_user(t) for t in testers]}
+
 
 @app.post("/vault/sync")
-def sync_vault(body: VaultSyncRequest, current_user: dict = Depends(get_current_user)):
-    """
-    F41: Stores the vault using a structured MongoDB schema instead of a raw blob.
-    Check-in fields are promoted to the top level so the pulse scanner can
-    index and query them efficiently. Everything else goes into a content sub-document.
-    Called silently on every save() in the frontend.
-    """
-    now = datetime.now(timezone.utc)
-    top_level, content, log = extract_vault_fields(body.vault)
+def vault_sync(body: dict, current_user: dict = Depends(get_current_user)):
+    vault_blob = body.get("vault", {})
+    fields = extract_vault_fields(vault_blob)
 
-    vaults.update_one(
-        {"userId": current_user["sub"]},
-        {
-            "$set": {
-                "userId": current_user["sub"],
-                **top_level,
-                "content": content,
-                "log": log,
-                "syncedAt": now,
-                "updatedAt": now,
-            },
-            "$setOnInsert": {
-                "createdAt": now,
-                "overdueNotificationSent": False,
-            }
+    content = {
+        "assets": vault_blob.get("assets", []),
+        "wishes": vault_blob.get("wishes", []),
+        "will": vault_blob.get("will"),
+        "suppDocs": vault_blob.get("suppDocs", []),
+        "kin": vault_blob.get("kin", []),
+        "v": vault_blob.get("v", "face"),
+        "notifySeq": vault_blob.get("notifySeq", "in_order"),
+        "saveCount": vault_blob.get("saveCount", 0),
+    }
+
+    now = datetime.now(timezone.utc)
+    vaults_col.update_one(
+        {"userId": current_user["_id"]},
+        {"$set": {
+            **fields,
+            "content": content,
+            "log": vault_blob.get("log", [])[-20:],
+            "syncedAt": now,
+            "updatedAt": now,
         },
-        upsert=True
+         "$setOnInsert": {"createdAt": now, "overdueNotificationSent": False,
+                          "reminderSent": False}},
+        upsert=True,
     )
-    return {"ok": True, "syncedAt": now.isoformat()}
+    return {"ok": True}
 
 
 @app.get("/vault")
-def get_vault(current_user: dict = Depends(get_current_user)):
-    """
-    F41: Returns the user's vault to the frontend on login.
-    The frontend calls this immediately after authentication so it can load
-    the server's version of the vault — making the server the source of truth
-    instead of localStorage. Falls back gracefully if no vault exists yet.
-    """
-    vault_doc = vaults.find_one({"userId": current_user["sub"]})
+def vault_get(current_user: dict = Depends(get_current_user)):
+    doc = vaults_col.find_one({"userId": current_user["_id"]})
+    if not doc:
+        return {"ok": True, "vault": None}
+    return {"ok": True, "vault": reconstruct_vault_blob(doc)}
 
-    if not vault_doc:
-        return {"ok": False, "vault": None}
 
-    vault_blob = reconstruct_vault_blob(vault_doc)
-    synced_at = vault_doc.get("syncedAt")
+@app.post("/checkin")
+def checkin(current_user: dict = Depends(get_current_user)):
+    """
+    Record a check-in. Resets both overdueNotificationSent and reminderSent
+    so the next cycle starts fresh.
+    """
+    now = datetime.now(timezone.utc)
+
+    existing = vaults_col.find_one({"userId": current_user["_id"]})
+    was_overdue = existing.get("overdueNotificationSent", False) if existing else False
+
+    vaults_col.update_one(
+        {"userId": current_user["_id"]},
+        {"$set": {
+            "lastCheckin": now,
+            "overdueNotificationSent": False,
+            "reminderSent": False,   # F60: reset so reminder fires again next cycle
+            "updatedAt": now,
+        }},
+        upsert=True,
+    )
+
+    allclear_sent = False
+    allclear_count = 0
+
+    if was_overdue and existing:
+        content = existing.get("content", {})
+        kin = content.get("kin")
+        contacts = kin if kin is not None else []
+        for contact in contacts:
+            if send_allclear_email(contact):
+                allclear_count += 1
+        allclear_sent = allclear_count > 0
 
     return {
         "ok": True,
-        "vault": vault_blob,
-        "syncedAt": synced_at.isoformat() if synced_at else None,
+        "checkedIn": True,
+        "allclear_sent": allclear_sent,
+        "allclear_count": allclear_count,
     }
 
-@app.post("/checkin")
-def record_checkin(current_user: dict = Depends(get_current_user)):
-    """
-    Records a check-in server-side and clears the overdue flag.
-    F39-8: If contacts were already notified, sends an all-clear email to each one.
-    """
-    now = datetime.utcnow()
-    user_id = current_user["sub"]
 
-    # ── F39-8: Check if contacts were already notified before resetting ───────
-    vault_doc = vaults.find_one({"userId": user_id})
-    was_overdue_and_notified = vault_doc and vault_doc.get("overdueNotificationSent", False)
-
-    # ── Reset the vault back to normal ────────────────────────────────────────
-    vaults.update_one(
-        {"userId": user_id},
-        {"$set": {
-            "lastCheckin": now,                          # F41: store as datetime (top-level, indexed)
-            "syncedAt": now,
-            "overdueNotificationSent": False,
-            "updatedAt": now,
-        }}
-    )
-
-    # ── F39-8: Send all-clear emails if contacts were previously notified ─────
-    if was_overdue_and_notified:
-        print(f"🟢 User {user_id} checked in after overdue — sending all-clear emails")
-        user_record = users.find_one({"_id": ObjectId(user_id)})
-        owner_name = user_record["name"] if user_record else "The vault holder"
-        # F41: contacts now in content sub-document; fall back to old vault blob.
-        # Explicit None check — empty list [] is falsy so `or` would incorrectly skip it.
-        content_kin = vault_doc.get("content", {}).get("kin")
-        contacts = content_kin if content_kin is not None else vault_doc.get("vault", {}).get("kin", [])
-        sent_count = 0
-        for contact in contacts:
-            success = send_allclear_email(owner_name, contact)
-            if success:
-                sent_count += 1
-        print(f"🟢 All-clear sent to {sent_count}/{len(contacts)} contact(s)")
-        return {
-            "status": "checked_in",
-            "timestamp": int(now.timestamp() * 1000),
-            "allclear_sent": True,
-            "allclear_count": sent_count
-        }
-
-    return {"status": "checked_in", "timestamp": int(now.timestamp() * 1000), "allclear_sent": False}
-
-# ─── F39: MANUAL TRIGGER — for testing the pulse scan without waiting an hour ─
 @app.post("/admin/trigger-pulse")
 def trigger_pulse(current_user: dict = Depends(get_current_user)):
-    """
-    Manually triggers the pulse scan immediately.
-    Use this to test without waiting for the hourly schedule.
-    Hit this endpoint from a browser or Postman after setting a vault as overdue.
-    """
+    """Manually trigger the pulse scan immediately. For testing."""
     run_pulse_scan()
-    return {"status": "pulse scan triggered", "timestamp": datetime.utcnow().isoformat()}
+    return {"ok": True, "message": "Pulse scan triggered"}
 
-# ─── F39: FORCE OVERDUE — sets your vault into overdue state for testing ──────
+
 @app.post("/admin/force-overdue")
 def force_overdue(current_user: dict = Depends(get_current_user)):
-    """
-    Sets the current user's lastCheckin to a date far in the past,
-    making them appear overdue to the pulse scanner.
-    Only use for testing. Hit /checkin afterwards to reset.
-    """
-    # Set lastCheckin to January 1, 2020 — guaranteed to be overdue.
-    # Must store as datetime (not int) so dt_to_ms() in reconstruct_vault_blob()
-    # can convert it back correctly. Storing as int caused GET /vault to return
-    # lastCheckin: null, which broke overdue detection in the frontend.
-    fake_checkin_dt = datetime(2020, 1, 1, tzinfo=timezone.utc)
-    vaults.update_one(
-        {"userId": current_user["sub"]},
+    """Set vault lastCheckin to 2020 to simulate an overdue state. For testing."""
+    vaults_col.update_one(
+        {"userId": current_user["_id"]},
         {"$set": {
-            "lastCheckin": fake_checkin_dt,
-            "overdueNotificationSent": False,  # reset so scanner won't skip it
-        }}
+            "lastCheckin": datetime(2020, 1, 1, tzinfo=timezone.utc),
+            "overdueNotificationSent": False,
+            "reminderSent": False,
+            "updatedAt": datetime.now(timezone.utc),
+        }},
+        upsert=True,
     )
-    return {
-        "status": "vault set to overdue",
-        "lastCheckin": "2020-01-01 (fake)",
-        "next_step": "POST /admin/trigger-pulse to run the scanner now"
-    }
+    return {"ok": True, "message": "Vault set to overdue state"}
 
-@app.on_event("startup")
-def startup():
-    print("✅ Connected to MongoDB")
-    print("🚀 Identity service running")
-    scheduler.start()
-    print("⏰ Pulse scanner scheduled — runs every hour")
 
-    # F41: Create indexes for vault queries.
-    # These make the hourly pulse scan fast — without them MongoDB does a full
-    # collection scan of every vault every hour. Safe to call every startup;
-    # MongoDB silently skips index creation if the index already exists.
-    vaults.create_index("userId", unique=True)
-    vaults.create_index("lastCheckin")
-    vaults.create_index([("overdueNotificationSent", 1), ("lastCheckin", 1)])
-    print("🗂️  Vault indexes verified")
+@app.post("/admin/force-reminder")
+def force_reminder(current_user: dict = Depends(get_current_user)):
+    """
+    F60: Set vault lastCheckin so the reminder threshold is triggered next scan.
+    Sets lastCheckin to (interval - threshold + 1) days ago, putting the vault
+    just inside the reminder window without being overdue.
+    For testing only.
+    """
+    from datetime import timedelta
+
+    vault_doc = vaults_col.find_one({"userId": current_user["_id"]})
+    freq = vault_doc.get("checkInFrequency", 2) if vault_doc else 2
+    unit = vault_doc.get("checkInUnit", "months") if vault_doc else "months"
+    interval_days = freq * 30 if unit == "months" else freq * 7
+    threshold_days = max(7, round(interval_days * 0.25))
+
+    # Put lastCheckin so that exactly (threshold_days - 1) days remain until due
+    fake_checkin = datetime.now(timezone.utc) - timedelta(days=interval_days - threshold_days + 1)
+
+    vaults_col.update_one(
+        {"userId": current_user["_id"]},
+        {"$set": {
+            "lastCheckin": fake_checkin,
+            "reminderSent": False,
+            "overdueNotificationSent": False,
+            "updatedAt": datetime.now(timezone.utc),
+        }},
+        upsert=True,
+    )
+    return {"ok": True, "message": f"Vault set to reminder-due state ({threshold_days - 1} days remaining)"}

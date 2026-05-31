@@ -106,7 +106,8 @@ The `index.html` includes a login wall:
 - **Database:** MongoDB Atlas on Google Cloud
 - **Email provider:** Resend (`resend.com`) — free tier, 100 emails/day
 - **CI:** GitHub Actions — `.github/workflows/ci.yml` runs pytest + frontend sync check on every push to `main`
-- **Test suite:** `identity-service/test_main.py` — 69 pytest tests covering all backend features
+- **Test suite:** `identity-service/test_main.py` — 80 pytest tests covering all backend features
+- **JWT library:** `PyJWT` (replaces `python-jose` — update `requirements.txt` accordingly)
 
 ### Planned (production)
 - **Frontend:** React Native (iOS + Android) + React (web)
@@ -138,7 +139,7 @@ The `index.html` includes a login wall:
 cd identity-service
 python3 -m pytest test_main.py -v
 ```
-Expected output: `69 passed` — if any fail, fix before pushing.
+Expected output: `80 passed` — if any fail, fix before pushing.
 
 ---
 
@@ -253,6 +254,8 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 - run_pulse_scan() — hourly scanner, detects overdue vaults, triggers emails with PDF
 - All API routes
 - startup() — creates MongoDB indexes on boot
+- F60: is_reminder_due() — checks 25% threshold, guards with reminderSent flag
+- F60: send_reminder_email() — warm email to vault holder when check-in approaching
 ```
 
 ### Key implementation notes
@@ -268,7 +271,10 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 - **Critical variable naming:** In `generate_pdf_for_contact()`, never use `doc` as a loop variable — it shadows the `SimpleDocTemplate` object. Use `supp_doc` for supplementary document loops.
 - `requests` library used for direct Resend API calls — confirm it is in `requirements.txt`.
 - **F41 or-fallback bug:** Never use `content.get("kin") or fallback` — empty list `[]` is falsy in Python and would incorrectly fall through to the old schema. Always use explicit `None` check: `kin = content.get("kin"); contacts = kin if kin is not None else fallback`.
-- **MongoDB indexes** created on startup: `userId` (unique), `lastCheckin`, compound `(overdueNotificationSent, lastCheckin)`. Safe to call `create_index` on every startup — MongoDB skips silently if index already exists.
+- **MongoDB indexes** created on startup: `userId` (unique), `lastCheckin`, compound `(overdueNotificationSent, lastCheckin)`, compound `(reminderSent, lastCheckin)`. Safe to call `create_index` on every startup — MongoDB skips silently if index already exists.
+- **F60 reminder guard:** `reminderSent` flag on vault document prevents sending the reminder email more than once per check-in cycle. Reset to `False` on every `POST /checkin` alongside `overdueNotificationSent`. New vaults get `reminderSent: False` via `$setOnInsert` in vault sync.
+- **F60 threshold logic:** `is_reminder_due()` mirrors the frontend F05 25% rule — `threshold_days = max(7, round(interval_days * 0.25))`. Reminder fires when `0 <= days_remaining <= threshold_days`. Negative days_remaining (overdue) is excluded so the overdue scanner handles that path.
+- **JWT library:** Project uses `PyJWT` (imported as `import jwt`). `python-jose` was removed — do not re-add it to `requirements.txt`.
 
 ### API Endpoints
 | Method | Endpoint | Auth required | Purpose |
@@ -282,6 +288,7 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 | POST | `/checkin` | Yes | Record check-in server-side, clear overdue flag |
 | POST | `/admin/trigger-pulse` | Yes | Manually trigger the pulse scan immediately (testing) |
 | POST | `/admin/force-overdue` | Yes | Set vault lastCheckin to 2020 to simulate overdue state (testing) |
+| POST | `/admin/force-reminder` | Yes | Set vault lastCheckin to just inside reminder threshold for F60 testing |
 
 ### Environment Variables (set in Railway dashboard, never committed)
 ```
@@ -337,6 +344,7 @@ ee_onboarded: 'true'   ← set on first dismissal of F44 explainer card. Persist
   gracePeriodDays: Number,       ← maps to S.gp — default 7 (F56)
   notifyProto: String,
   overdueNotificationSent: Boolean,  ← indexed (compound with lastCheckin)
+  reminderSent: Boolean,             ← F60: prevents duplicate reminder emails per cycle; reset on check-in
   content: {                     ← vault data — always read/written together → embedded
     assets, wishes, will, suppDocs, kin, v, notifySeq, saveCount
   },
@@ -348,7 +356,7 @@ ee_onboarded: 'true'   ← set on first dismissal of F44 explainer card. Persist
 ```
 
 #### Schema design decisions (MongoDB best practices)
-- **Check-in fields at top level** — `lastCheckin`, `gracePeriodDays`, `overdueNotificationSent` are queried by the pulse scanner every hour. Top-level = indexable = fast.
+- **Check-in fields at top level** — `lastCheckin`, `gracePeriodDays`, `overdueNotificationSent`, `reminderSent` are queried by the pulse scanner every hour. Top-level = indexable = fast.
 - **Vault content embedded** — assets, wishes, contacts always read and written together → embed, don't reference.
 - **Log embedded** — bounded at 20 entries in frontend JS, always read with vault → safe to embed.
 - **Revisit log schema when:** building an audit trail, admin dashboard, or unlimited history feature. At that point, move logs to a separate `logs` collection with `userId`, `event`, `detail`, `timestamp` fields.
@@ -367,7 +375,7 @@ notes, isTester, createdAt, lastLogin
 
 **File:** `identity-service/test_main.py`
 **Run:** `python3 -m pytest test_main.py -v`
-**Expected:** 69 passed
+**Expected:** 80 passed
 
 ### Coverage by feature
 
@@ -384,6 +392,7 @@ notes, isTester, createdAt, lastLogin
 | `TestBackwardCompatibility` | F41 migration safety | 3 |
 | `TestAllClearLogic` | F39-8 recovery emails | 4 |
 | `TestCompletenessLogic` | Completeness score (7 checks) | 6 |
+| `TestReminderLogic` | F60 reminder threshold + email | 11 |
 
 ### Frontend test coverage
 F44, F45, and other frontend features are not covered by the pytest suite — pytest only covers the Python backend. Frontend test coverage requires a browser automation tool (e.g. Playwright). This is tracked as a future infrastructure task. See F58 in the backlog.
@@ -450,7 +459,7 @@ When building a new feature, add a new `class TestFeatureName` block to `test_ma
 
 ## Feature Backlog — User Stories
 
-> **Last groomed:** F45 implemented and marked done.
+> **Last groomed:** F60 implemented and marked done.
 
 Features are prioritised using MoSCoW: **Must**, **Should**, **Could**, **Won't**
 
@@ -466,7 +475,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F02 | Self-contained PDF package for contacts | Must | done | 6-page A4 PDF, generated client-side via jsPDF and server-side via ReportLab. Includes personal letter, action checklist, Will details, assets, wishes, and contacts. |
 | F03 | Personal letter for each contact included in notification | Must | done | Letter stored as `k.letter`. Status pill on contact card. |
 | F04 | Data encrypted at rest and in transit | Must | specified | Transit: HTTPS on Railway (done). At rest: MongoDB Atlas handles server-side encryption (done). **Remaining gap:** end-to-end encryption of vault content *before* it reaches the server — so Railway/MongoDB cannot read plaintext. This is a significant architectural change; defer to post-MVP. |
-| F05 | Reminders when check-in is due | Must | done | Amber banner + pulse card amber state for client-side reminder. Server-side push/email/SMS reminder delivery is a future item (see F60). |
+| F05 | Reminders when check-in is due | Must | done | Amber banner + pulse card amber state for client-side reminder. Server-side email reminder now live via F60. |
 | F40 | User authentication for testing | Must | done | Login wall added. Username + password. JWT token in sessionStorage. |
 
 ---
@@ -477,13 +486,13 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 |----|-----------|----------|--------|-------|
 | F07 | Guided onboarding flow | Should | idea | F44 (first-run explainer card, done) covers the immediate gap. A full multi-step onboarding flow is a post-validation investment. Spec before building. |
 | F08 | Export/backup vault data | Should | idea | User-facing JSON or PDF export of their own data. Useful for trust and portability. Spec before building. |
-| F41 | Migrate vault data from localStorage to MongoDB | Should | done | Server-first load implemented. GET /vault returns vault on login. localStorage kept as offline cache. Structured MongoDB schema with indexes. 69 automated tests. |
-| F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 69 tests + frontend sync check. Blocks deploy on failure. |
+| F41 | Migrate vault data from localStorage to MongoDB | Should | done | Server-first load implemented. GET /vault returns vault on login. localStorage kept as offline cache. Structured MongoDB schema with indexes. 80 automated tests. |
+| F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 80 tests + frontend sync check. Blocks deploy on failure. |
 | F56 | Change grace period default from 3 to 7 days | Should | done | Default `gp` changed from 3 to 7 in all state initialisations. Helper text added in Settings recommending at least 7 days. Settings summary text also updated. |
 | F57 | Remove tester language from login screen | Should | done | Login subtitle changed from "Sign in with your tester credentials to access your vault." to "Sign in to your account." |
 | F58 | Frontend test coverage infrastructure | Should | backlog | pytest only covers the Python backend. Set up Playwright or similar browser automation tool to test client-side logic (ee_onboarded flag, explainer card, completeness score, overdue detection). Hard gate before production launch. |
 | F59 | Cloud storage for file uploads | Should | idea | Actual file upload (not just location recording) requires secure cloud storage (e.g. S3-compatible). This is the dependency that blocks SMS (F39-5) and WhatsApp (F39-9), which need a hosted PDF URL rather than an email attachment. Spec before building. |
-| F60 | Server-side reminder delivery | Should | idea | F05 covers client-side reminders (amber banner). The remaining gap is proactive push notification or email sent by the server when a check-in is approaching — so the user is reminded even if they haven't opened the app. Requires push notification infrastructure or a scheduled Resend email. |
+| F60 | Server-side reminder delivery | Should | done | Proactive email sent to vault holder when check-in is within 25% of interval (mirrors F05 frontend threshold). Guarded by `reminderSent` flag on vault document — resets on each check-in so reminder fires once per cycle. New admin endpoint `POST /admin/force-reminder` for testing. 11 new pytest tests added (80 total). |
 
 ---
 
@@ -545,11 +554,11 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 - [ ] Did anything structural change? Update `CLAUDE.md`
 - [ ] Replace `identity-service/main.py` in VS Code
 - [ ] Replace `identity-service/test_main.py` in VS Code
-- [ ] Add `reportlab` and `requests` to `identity-service/requirements.txt` if not already present
-- [ ] Run `python3 -m pytest test_main.py -v` — confirm 69 passed before pushing
+- [ ] Update `identity-service/requirements.txt` — replace `python-jose[cryptography]` with `PyJWT`
+- [ ] Run `python3 -m pytest test_main.py -v` — confirm 80 passed before pushing
 - [ ] `cp index.html frontend/index.html`
 - [ ] `git add -A`
-- [ ] `git commit -m "feat: F45 — 5-state hero headline, amber nudge for vault-ready users"`
+- [ ] `git commit -m "feat: F60 — server-side check-in reminder email to vault holder"`
 - [ ] `git push`
 - [ ] GitHub Actions runs pytest + sync check ✅
 - [ ] Railway redeploys backend automatically ✅
