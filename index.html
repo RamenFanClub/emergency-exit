@@ -1005,15 +1005,15 @@ function render(){
     let detailText = '';
     if(S.notifyProto === 'ping_then_notify'){
       if(daysOverdue < 3){
-        detailText = 'You would receive ' + (3 - daysOverdue) + ' more daily reminder' + ((3-daysOverdue)!==1?'s':'') + ' before your contacts are alerted. Check in now to cancel.';
+        detailText = 'You would receive ' + (3 - daysOverdue) + ' more daily reminder' + ((3-daysOverdue)!==1?'s':'') + ' before your contacts are alerted. Checking in now will immediately cancel any notifications.';
       } else {
-        detailText = 'Reminder period has passed. Your ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would now be notified. Check in now to cancel.';
+        detailText = 'Reminder period has passed. Your ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would now be notified. Checking in now will immediately cancel any notifications.';
       }
     } else if(S.notifyProto === 'notify_immediately'){
-      detailText = 'All ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would be notified immediately. Check in now to cancel.';
+      detailText = 'All ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would be notified immediately. Checking in now will immediately cancel any notifications.';
     } else if(S.notifyProto === 'escalate'){
       const notifiedCount = Math.min(S.kin.length, daysOverdue + 1);
-      detailText = notifiedCount + ' of ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would have been notified so far. Next contact in ' + (24 - (daysOverdue % 1) * 24).toFixed(0) + ' hours. Check in now to cancel.';
+      detailText = notifiedCount + ' of ' + S.kin.length + ' contact' + (S.kin.length!==1?'s':'') + ' would have been notified so far. Next contact in ' + (24 - (daysOverdue % 1) * 24).toFixed(0) + ' hours. Checking in now will immediately cancel any notifications.';
     }
     document.getElementById('overdue-detail').textContent = detailText;
 
