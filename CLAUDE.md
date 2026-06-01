@@ -461,6 +461,8 @@ When building a new feature, add a new `class TestFeatureName` block to `test_ma
 - Do not store one-time UI flags (like `ee_onboarded`) inside the `ee_v3` blob — keep them as separate localStorage keys so they survive vault resets
 - Do not use `if db` or `if client` for PyMongo objects — always compare with `is not None`
 - Do not rewrite the `<head>` section without verifying `</script>` appears before `<style>` — missing this breaks the login screen with no visible error
+- Do not declare `const API` inside the main script block — it is already declared in the `<head>` script. A duplicate `const` declaration causes a SyntaxError that silently prevents all JS from loading, breaking the login screen
+- Do not delete the `save()` function — it is the core persistence function called by every CRUD operation. Its body must be: `try{localStorage.setItem('ee_v3',JSON.stringify(S));}catch(e){} syncVault(); render();`
 
 ---
 
