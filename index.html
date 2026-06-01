@@ -567,6 +567,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">verified_user</span>Verification</div><div class="ri" onclick="setV('face')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">face</span><span style="font-weight:600;font-size:15px;color:var(--p);">FaceID / Biometrics</span></div><div class="rd on" id="rf"></div></div><div class="ri" onclick="setV('pin')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">password</span><span style="font-weight:600;font-size:15px;color:var(--p);">Secure Passcode</span></div><div class="rd" id="rp2"></div></div></div>
+      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m" style="font-size:17px;color:var(--sec);">download</span>Your Data</div>
+        <div style="font-size:12px;color:var(--ov);margin-bottom:12px;line-height:1.5;">Download a copy of everything in your vault as a JSON file. Contact emails and phone numbers are removed to protect their privacy.</div>
+        <button class="ob" style="width:100%;justify-content:center;padding:12px;" onclick="exportVault()"><span class="m" style="font-size:18px;">download</span>Download my data</button>
+      </div>
       <div class="ib2"><span class="m" style="font-size:17px;color:var(--sec);flex-shrink:0;margin-top:1px;">info</span><p>Missed check-ins after <strong id="ig">7 days</strong> will grant access to <strong id="ik">0 contacts</strong>.</p></div>
     </div>
   </div>
@@ -829,6 +833,39 @@ function adj(d){fCount=Math.max(1,Math.min(24,fCount+d));$('fc').textContent=fCo
 function adjGP(d){S.gp=Math.max(1,Math.min(30,(S.gp||7)+d));$('gp-val').textContent=S.gp;save();toast('Grace period updated ✓');}
 function setV(v){S.v=v;$('rf').className='rd'+(v==='face'?' on':'');$('rp2').className='rd'+(v==='pin'?' on':'');save();toast('Verification updated ✓');}
 function setProto(p){S.notifyProto=p;save();toast('Protocol updated ✓');}
+
+// ─── F08: VAULT EXPORT ───────────────────────────────────────────────────────
+function exportVault(){
+  const data={
+    exportedAt:new Date().toISOString(),
+    appVersion:'Emergency Exit v3',
+    settings:{
+      checkInFrequency:S.fc||2,
+      frequencyUnit:S.fu||'months',
+      gracePeriodDays:S.gp||7,
+      notificationProtocol:S.notifyProto||'ping_then_notify',
+      verification:S.v||'face'
+    },
+    assets:(S.assets||[]).map(a=>({name:a.name,category:a.category,value:a.value,details:a.details,beneficiary:a.beneficiary,notes:a.notes})),
+    wishes:(S.wishes||[]).map(w=>({title:w.title,category:w.category,priority:w.priority,details:w.details})),
+    will:S.will?{status:S.will.status,solicitor:S.will.solicitor,loc1:S.will.loc1,loc2:S.will.loc2,notes:S.will.notes}:null,
+    supportingDocuments:(S.suppDocs||[]).map(d=>({name:d.name,type:d.type,loc:d.loc})),
+    contacts:(S.kin||[]).map(k=>({name:k.first+' '+(k.last||''),relationship:k.rel||''})),
+    lastCheckIn:S.lastCheckin||null
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='emergency-exit-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  log('Vault data exported');
+  save();
+  toast('Data exported ✓');
+}
 
 // ─── COMPLETENESS ─────────────────────────────────────────────────────────────
 function comp(){

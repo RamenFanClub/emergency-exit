@@ -494,7 +494,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | ID | User Story | Priority | Status | Notes |
 |----|-----------|----------|--------|-------|
 | F07 | Guided onboarding flow | Should | idea | F44 (first-run explainer card, done) covers the immediate gap. A full multi-step onboarding flow is a post-validation investment. Spec before building. |
-| F08 | Export/backup vault data | Should | idea | User-facing JSON or PDF export of their own data. Useful for trust and portability. Spec before building. |
+| F08 | Export/backup vault data | Should | done | User-facing JSON or PDF export of their own data. Useful for trust and portability. Spec before building. |
 | F41 | Migrate vault data from localStorage to MongoDB | Should | done | Server-first load implemented. GET /vault returns vault on login. localStorage kept as offline cache. Structured MongoDB schema with indexes. 80 automated tests. |
 | F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 80 tests + frontend sync check. Blocks deploy on failure. |
 | F56 | Change grace period default from 3 to 7 days | Should | done | Default `gp` changed from 3 to 7 in all state initialisations. Helper text added in Settings recommending at least 7 days. Settings summary text also updated. |
