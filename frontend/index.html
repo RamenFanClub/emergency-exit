@@ -266,6 +266,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .ex-dismiss{width:100%;padding:11px;border-radius:10px;border:none;background:var(--al);font-family:var(--fb);font-size:13px;font-weight:700;color:var(--ac);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;}
 .ex-dismiss:active{background:var(--ab);}
 
+/* ─── FIRST CHECK-IN MILESTONE (F51) ────────────────────────────────────── */
+.milestone-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:250;display:flex;align-items:center;justify-content:center;animation:mileFadeIn .3s ease;}
+@keyframes mileFadeIn{from{opacity:0}to{opacity:1}}
+.milestone-card{background:var(--w);border-radius:24px;padding:28px 24px 24px;width:calc(100% - 48px);max-width:380px;text-align:center;box-shadow:0 16px 48px rgba(46,43,38,.25);animation:mileSlideUp .4s ease;}
+@keyframes mileSlideUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+.milestone-icon{width:72px;height:72px;border-radius:50%;background:var(--al);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 0 8px rgba(90,122,110,.06);}
+.milestone-icon .m{font-size:36px;color:var(--ac);}
+.milestone-title{font-family:var(--fh);font-size:22px;font-weight:800;color:var(--p);margin-bottom:6px;letter-spacing:-.3px;}
+.milestone-sub{font-size:14px;color:var(--ov);line-height:1.5;margin-bottom:20px;}
+.milestone-btn{width:100%;padding:16px;border-radius:var(--rb);border:none;background:var(--g);font-family:var(--fh);font-size:16px;font-weight:800;color:var(--s);cursor:pointer;border-bottom:3px solid rgba(0,0,0,.2);transition:transform .1s;}
+.milestone-btn:active{transform:scale(.97);}
+
 /* ─── TOAST ──────────────────────────────────────────────────────────────── */
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--p);color:var(--s);border-radius:var(--rp);padding:11px 22px;font-size:13px;font-weight:700;z-index:300;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -618,6 +630,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   </div>
 </div>
 
+<!-- F51: First check-in milestone modal -->
+<div id="milestone-modal" style="display:none;" class="milestone-overlay" onclick="dismissMilestone()">
+  <div class="milestone-card" onclick="event.stopPropagation();">
+    <div class="milestone-icon"><span class="m mf">verified</span></div>
+    <div class="milestone-title">You're all set.</div>
+    <div class="milestone-sub">Emergency Exit is now active. If you stop checking in and your grace period expires, your contacts will receive everything you've recorded here.</div>
+    <button class="milestone-btn" onclick="dismissMilestone()"><span class="m mf" style="font-size:16px;vertical-align:-3px;">favorite</span> Got it</button>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -920,7 +942,19 @@ function saveLetter(){
 
 // ─── CHECK-IN ─────────────────────────────────────────────────────────────────
 function checkin(){
-  S.lastCheckin=Date.now();log('Check-in confirmed — alive');save();serverCheckin();toast('You\'re confirmed alive ✓');
+  const isFirst=!localStorage.getItem('ee_first_checkin_done');
+  S.lastCheckin=Date.now();log('Check-in confirmed — alive');save();serverCheckin();
+  if(isFirst){
+    localStorage.setItem('ee_first_checkin_done','true');
+    $('milestone-modal').style.display='flex';
+  }else{
+    toast('You\'re confirmed alive ✓');
+  }
+}
+function dismissMilestone(){
+  const el=$('milestone-modal');
+  el.style.opacity='0';el.style.transition='opacity .25s ease';
+  setTimeout(()=>{el.style.display='none';el.style.opacity='';el.style.transition='';},250);
 }
 async function serverCheckin(){
   if(!sessionStorage.getItem('ee_token'))return;
@@ -1247,7 +1281,7 @@ function render(){
         </div>
         <button class="letter-btn ${hasLetter?'written':''}" onclick="openLetter(${k.id})">
           <span class="m" style="font-size:16px;">${hasLetter?'edit':'edit_note'}</span>
-          ${hasLetter?'Edit personal letter':'Write personal letter'}
+          ${hasLetter?'Edit personal letter':`Write ${k.first} a personal message — it\u2019ll be the first thing they read`}
         </button>
         <button class="preview-btn" onclick="generatePDF(${k.id})">
           <span class="m" style="font-size:16px;color:var(--ac);">draft</span>
