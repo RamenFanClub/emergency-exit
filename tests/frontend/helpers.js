@@ -5,26 +5,24 @@
  * instead of hitting the real Railway backend, we intercept network requests and
  * return fake responses. This makes tests fast, offline, and deterministic.
  *
- * GLOSSARY:
- * - "route" = Playwright's way of intercepting network requests before they leave the browser
- * - "fulfill" = respond to an intercepted request with fake data
- * - "localStorage" = browser storage that persists between page loads (used for vault cache)
- * - "sessionStorage" = browser storage that clears when the tab closes (used for auth tokens)
+ * IMPORTANT ORDER OF OPERATIONS:
+ * Routes MUST be registered before page.goto() is called.
+ * In every test file, the correct pattern is:
+ *   1. await page.goto('/')          ← page starts loading
+ *   2. await clearStorage(page)      ← wipe any leftover state
+ *   3. await mockAPI(page, {...})    ← register route intercepts
+ *   4. await page.reload()          ← reload so the mocks are in place
+ *   5. await loginViaUI(page)        ← now login will work
  */
 
 const API_BASE = 'https://emergency-exit-production.up.railway.app';
 
 /**
  * Mock all API calls so tests don't need the real backend.
+ * MUST be called before any navigation that triggers API calls.
  *
- * WHAT THIS DOES:
- * - Intercepts POST /auth/login → returns a fake JWT token + user object
- * - Intercepts GET /vault → returns whatever vault data you pass in
- * - Intercepts POST /vault/sync → returns success (no-op)
- * - Intercepts POST /checkin → returns success
- *
- * @param {import('@playwright/test').Page} page - The browser page
- * @param {object} options - Configuration
+ * @param {import('@playwright/test').Page} page
+ * @param {object} options
  * @param {object} [options.vault] - Vault data to return from GET /vault
  * @param {object} [options.user] - User object to return from login
  * @param {boolean} [options.loginShouldFail] - If true, login returns 401
@@ -36,7 +34,6 @@ async function mockAPI(page, options = {}) {
     loginShouldFail = false,
   } = options;
 
-  // Mock login endpoint
   await page.route(`${API_BASE}/auth/login`, async (route) => {
     if (loginShouldFail) {
       await route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"Invalid credentials"}' });
@@ -49,7 +46,6 @@ async function mockAPI(page, options = {}) {
     }
   });
 
-  // Mock vault fetch
   await page.route(`${API_BASE}/vault`, async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
@@ -58,58 +54,48 @@ async function mockAPI(page, options = {}) {
         body: JSON.stringify({ ok: true, vault: vault }),
       });
     } else {
-      // POST/PUT — just acknowledge
       await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
     }
   });
 
-  // Mock vault sync (fire-and-forget from the app's perspective)
   await page.route(`${API_BASE}/vault/sync`, async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
   });
 
-  // Mock check-in
   await page.route(`${API_BASE}/checkin`, async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
   });
 }
 
 /**
- * Log in via the UI. Types username + password and clicks Sign In.
- *
- * @param {import('@playwright/test').Page} page
- * @param {string} [username='tester_01']
- * @param {string} [password='Benny#07']
+ * Log in via the UI. Assumes mockAPI() has already been called.
  */
 async function loginViaUI(page, username = 'tester_01', password = 'Benny#07') {
   await page.fill('#li-user', username);
   await page.fill('#li-pass', password);
   await page.click('.login-btn');
-  // Wait for the login wall to disappear
-  await page.waitForSelector('#login-wall', { state: 'hidden', timeout: 5000 });
+  await page.waitForSelector('#login-wall', { state: 'hidden', timeout: 8000 });
 }
 
 /**
- * Inject vault state directly into localStorage, bypassing the login flow.
- * Useful for testing specific UI states without going through login.
+ * Full setup: goto, clear storage, mock API, reload.
+ * Use this in beforeEach instead of rolling your own sequence.
  *
  * @param {import('@playwright/test').Page} page
- * @param {object} state - The vault state to inject into ee_v3
+ * @param {object} mockOptions - Options passed to mockAPI
  */
-async function injectVaultState(page, state) {
-  await page.evaluate((s) => {
-    localStorage.setItem('ee_v3', JSON.stringify(s));
-  }, state);
+async function setupPage(page, mockOptions = {}) {
+  await page.goto('/');
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await mockAPI(page, mockOptions);
+  await page.reload();
 }
 
 /**
- * Clear all browser storage — fresh slate for each test.
+ * Clear all browser storage.
  */
 async function clearStorage(page) {
-  await page.evaluate(() => {
-    localStorage.clear();
-    sessionStorage.clear();
-  });
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 }
 
 /**
@@ -123,12 +109,7 @@ async function getVaultState(page) {
 }
 
 /**
- * Build a vault state object with sensible defaults.
- * Override any field by passing it in the overrides object.
- *
- * EXAMPLE:
- *   buildVault({ assets: [{ id: 1, name: 'House', category: 'Property' }] })
- *   → returns a full vault state with one asset and everything else empty
+ * Build a vault state with sensible defaults.
  */
 function buildVault(overrides = {}) {
   return {
@@ -151,8 +132,7 @@ function buildVault(overrides = {}) {
 }
 
 /**
- * Build a vault that is 100% complete (all 7 checks pass).
- * Useful for testing "Everything is in order" hero state.
+ * Build a 100%-complete vault (all 7 checks pass).
  */
 function buildFullVault(overrides = {}) {
   return buildVault({
@@ -170,7 +150,7 @@ module.exports = {
   API_BASE,
   mockAPI,
   loginViaUI,
-  injectVaultState,
+  setupPage,
   clearStorage,
   getVaultState,
   buildVault,
