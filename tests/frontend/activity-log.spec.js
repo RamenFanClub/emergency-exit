@@ -59,7 +59,7 @@ test.describe('Home Summary & Activity Log', () => {
     await setupPage(page, { vault: buildVault() });
     await loginViaUI(page);
     await page.click('#n-ledger');
-    await page.click('.gbtn');
+    await page.locator('#s-ledger .gbtn').click();
     await page.fill('#an', 'Test Asset');
     await page.locator('#am').getByText('Save Asset').click();
     await page.click('#n-home');

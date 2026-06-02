@@ -1,6 +1,5 @@
 /**
  * F58 — Settings Tests
- * Check-in frequency stepper, grace period, notification protocol.
  */
 const { test, expect } = require('@playwright/test');
 const { loginViaUI, setupPage, buildVault } = require('./helpers');
@@ -19,12 +18,13 @@ test.describe('Settings', () => {
   });
 
   test('can increase check-in frequency', async ({ page }) => {
-    await page.locator('.cb').last().click(); // + button
+    // adj(1) is the + button — use onclick attribute to target the right button
+    await page.locator('[onclick="adj(1)"]').click();
     await expect(page.locator('#fc')).toHaveText('3');
   });
 
   test('can decrease check-in frequency', async ({ page }) => {
-    await page.locator('.cb').first().click(); // − button
+    await page.locator('[onclick="adj(-1)"]').click();
     await expect(page.locator('#fc')).toHaveText('1');
   });
 
@@ -39,13 +39,13 @@ test.describe('Settings', () => {
   });
 
   test('can increase grace period', async ({ page }) => {
-    // Grace period + button is the one inside the grace period card
-    await page.locator('#gp-plus').click();
+    // Grace period buttons call adjGP(1) / adjGP(-1)
+    await page.locator('[onclick="adjGP(1)"]').click();
     await expect(page.locator('#gp-val')).toHaveText('8');
   });
 
   test('can decrease grace period', async ({ page }) => {
-    await page.locator('#gp-minus').click();
+    await page.locator('[onclick="adjGP(-1)"]').click();
     await expect(page.locator('#gp-val')).toHaveText('6');
   });
 
@@ -56,8 +56,9 @@ test.describe('Settings', () => {
     expect(text).toContain('one at a time');
   });
 
-  test('settings changes persist to localStorage', async ({ page }) => {
-    await page.locator('.cb').last().click(); // increase frequency to 3
+  test('frequency changes persist to localStorage', async ({ page }) => {
+    await page.locator('[onclick="adj(1)"]').click(); // increase to 3
+    await page.waitForTimeout(300); // allow save() to run
     const state = await page.evaluate(() => JSON.parse(localStorage.getItem('ee_v3') || '{}'));
     expect(state.fc).toBe(3);
   });
