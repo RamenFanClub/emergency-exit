@@ -77,17 +77,19 @@ test.describe('Check-in State & UI (F01, F51, F30)', () => {
   });
 
   test('overdue banner disappears after check-in (state: lastCheckin reset to now)', async ({ page }) => {
-    // Simulate what happens after a successful check-in by injecting fresh lastCheckin
     const overdueVault = buildFullVault({ lastCheckin: Date.now() - (90 * 24 * 60 * 60 * 1000) });
     await setupPage(page, { vault: overdueVault });
     await loginViaUI(page);
-    // Confirm starting in overdue state
     await expect(page.locator('#overdue-banner')).toBeVisible();
-    // Simulate check-in by directly updating S.lastCheckin and calling render()
-    await page.evaluate(() => {
-      window.S.lastCheckin = Date.now();
-      window.render();
-    });
+
+    // Update localStorage with fresh lastCheckin, then reload so the app re-reads it
+    const freshVault = buildFullVault({ lastCheckin: Date.now() });
+    await page.evaluate((v) => localStorage.setItem('ee_v3', JSON.stringify(v)), freshVault);
+    const { mockAPI } = require('./helpers');
+    await mockAPI(page, { vault: freshVault });
+    await page.reload();
+    await page.waitForSelector('#home-hero', { timeout: 8000 });
+
     await expect(page.locator('#overdue-banner')).toBeHidden();
     await expect(page.locator('#home-hero')).toContainText('in order');
   });
