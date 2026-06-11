@@ -953,10 +953,33 @@ function saveK(){
   if(!emailValid){toast('Please enter a valid email address');return;}
   const editId=$('km-edit-id').value;
   const data={first:f,last:$('kl').value.trim(),rel:$('kr').value,email:e,phone:$('kp').value,notifyVia:$('k-notify').value};
-  if(editId){const idx=S.kin.findIndex(k=>k.id===parseInt(editId));if(idx>=0){Object.assign(S.kin[idx],data);log('Contact updated: '+f);}}
-  else{S.kin.push({id:Date.now(),...data,order:S.kin.length+1,letter:''});log('Contact added: '+f);}
+  let shouldNominate=false;
+  if(editId){
+    const idx=S.kin.findIndex(k=>k.id===parseInt(editId));
+    if(idx>=0){
+      const oldEmail=S.kin[idx].email||'';
+      Object.assign(S.kin[idx],data);
+      log('Contact updated: '+f);
+      if(oldEmail.toLowerCase()!==e.toLowerCase())shouldNominate=true;
+    }
+  }else{
+    S.kin.push({id:Date.now(),...data,order:S.kin.length+1,letter:''});
+    log('Contact added: '+f);
+    shouldNominate=true;
+  }
   closeM();['kf','kl','kr','ke','kp'].forEach(i=>$(i).value='');$('km-edit-id').value='';
   save();toast(warmToast(editId?'Contact updated':'Contact added'));
+  if(shouldNominate)nominateContact(e,f);
+}
+
+async function nominateContact(email,first){
+  try{
+    await fetch(API+'/contact/nominate',{
+      method:'POST',
+      headers:{...authHeader(),'Content-Type':'application/json'},
+      body:JSON.stringify({contact_email:email,contact_first:first})
+    });
+  }catch(err){console.warn('Nomination email failed (non-blocking):',err);}
 }
 
 function editK(id){

@@ -353,6 +353,35 @@ The Emergency Exit team
     return sent
 
 
+def send_nomination_email(contact_email: str, contact_first: str, holder_name: str) -> bool:
+    """F63: Send a nomination email to a newly-added (or re-emailed) contact."""
+    first = contact_first or "there"
+    body = f"""Hi {first},
+
+{holder_name} has added you as a trusted contact in Emergency Exit — no action is needed from you right now.
+
+Emergency Exit is a personal digital legacy vault. If {holder_name} ever stops checking in, you'll automatically receive a secure package with their important information, final wishes, and any personal messages they've written for you.
+
+This email is just to let you know you've been nominated. You don't need to create an account or do anything at this stage.
+
+If you have any questions, you can reach out to {holder_name} directly.
+
+Take care,
+The Emergency Exit team
+
+---
+You received this because {holder_name} listed you as a trusted contact.
+"""
+    sent = _send_email(
+        contact_email,
+        f"{holder_name} has added you as a trusted contact",
+        body,
+    )
+    if sent:
+        print(f"F63: Nomination email sent to {contact_first} at {contact_email}")
+    return sent
+
+
 # ─── PDF GENERATION ───────────────────────────────────────────────────────────
 
 def generate_pdf_for_contact(contact: dict, vault_doc: dict, holder_name: str = "the vault holder") -> bytes:
@@ -598,6 +627,20 @@ def vault_get(current_user: dict = Depends(get_current_user)):
     if not doc:
         return {"ok": True, "vault": None}
     return {"ok": True, "vault": reconstruct_vault_blob(doc)}
+
+
+@app.post("/contact/nominate")
+def contact_nominate(body: dict, current_user: dict = Depends(get_current_user)):
+    """F63: Send a nomination email to a contact. Called on new contact add or email change."""
+    contact_email = body.get("contact_email", "").strip()
+    contact_first = body.get("contact_first", "").strip()
+    holder_name = current_user.get("name", "the vault holder")
+
+    if not contact_email:
+        return {"ok": False, "error": "contact_email required"}
+
+    sent = send_nomination_email(contact_email, contact_first, holder_name)
+    return {"ok": sent}
 
 
 @app.post("/checkin")

@@ -106,7 +106,7 @@ The `index.html` includes a login wall:
 - **Database:** MongoDB Atlas on Google Cloud
 - **Email provider:** Resend (`resend.com`) — free tier, 100 emails/day
 - **CI:** GitHub Actions — `.github/workflows/ci.yml` runs pytest + frontend sync check on every push to `main`
-- **Test suite:** `identity-service/test_main.py` — 80 pytest tests covering all backend features
+- **Test suite:** `identity-service/test_main.py` — 85 pytest tests covering all backend features
 - **JWT library:** `PyJWT` (replaces `python-jose` — update `requirements.txt` accordingly)
 
 ### Planned (production)
@@ -250,6 +250,7 @@ The backend is on Railway (`emergency-exit-production.up.railway.app`), NOT the 
 - ReportLab PDF generation — generate_pdf_for_contact()
 - send_notification_email() — generates PDF, attaches via Resend REST API direct HTTP call
 - send_allclear_email() — sends warm recovery email via Resend SDK
+- send_nomination_email() — F63: sends nomination email to newly-added contact
 - get_contacts_to_notify() — protocol logic (ping_then_notify / notify_immediately / escalate)
 - run_pulse_scan() — hourly scanner, detects overdue vaults, triggers emails with PDF
 - All API routes
@@ -393,6 +394,7 @@ notes, isTester, createdAt, lastLogin
 | `TestAllClearLogic` | F39-8 recovery emails | 4 |
 | `TestCompletenessLogic` | Completeness score (7 checks) | 6 |
 | `TestReminderLogic` | F60 reminder threshold + email | 11 |
+| `TestNominationEmail` | F63 nomination email | 5 |
 
 ### Frontend test coverage
 F44, F45, and other frontend features are not covered by the pytest suite — pytest only covers the Python backend. Frontend test coverage requires a browser automation tool (e.g. Playwright). This is tracked as a future infrastructure task. See F58 in the backlog.
@@ -468,7 +470,7 @@ When building a new feature, add a new `class TestFeatureName` block to `test_ma
 
 ## Feature Backlog — User Stories
 
-> **Last groomed:** June 2026 — end-to-end UX review (see `ux-review-emergency-exit.md`). Added F61–F71. F55 elevated from Could to Must (moved to Must table). Three themes drove the new items: (1) false confidence — app can imply protection that doesn't exist (F61, F65); (2) broken promises — UI offers things that aren't built (F55, F64, F70); (3) recipient journey — delivery email is anonymous and untrusted (F62, F63, F68). Priority order for next sprint: F55 (3-line fix, do first) → ~~F61 + F62 as one batch~~ **done** → F63 → F64 (decide rename vs build first) → F65. Pre-expansion gates: F66, F67, F68. Deferred unchanged: F07, F59, F39-5, F39-6, F04.
+> **Last groomed:** June 2026 — end-to-end UX review (see `ux-review-emergency-exit.md`). Added F61–F71. F55 elevated from Could to Must (moved to Must table). Three themes drove the new items: (1) false confidence — app can imply protection that doesn't exist (F61, F65); (2) broken promises — UI offers things that aren't built (F55, F64, F70); (3) recipient journey — delivery email is anonymous and untrusted (F62, F63, F68). Priority order for next sprint: F55 (3-line fix, do first) → ~~F61 + F62 as one batch~~ **done** → ~~F63~~ **done** → F64 (decide rename vs build first) → F65. Pre-expansion gates: F66, F67, F68. Deferred unchanged: F07, F59, F39-5, F39-6, F04.
 
 Features are prioritised using MoSCoW: **Must**, **Should**, **Could**, **Won't**
 
@@ -489,7 +491,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F55 | Hide unbuilt SMS/WhatsApp/Email+SMS notify options | Must | backlog | **Elevated from Could (UX review Jun 2026).** Remove the three unbuilt options from the contact "Notify via" dropdown (delete `<option>` tags + prune `NOTIFY_LABELS`/`NOTIFY_ICONS` if unused). A visible option that silently does nothing is a trust failure. Smallest item on the list — do first. |
 | F61 | Require a valid email address per contact | Must | done | `saveK()` now blocks save if email is blank or fails regex format check. Existing contact cards with missing/invalid email show a red "No valid email — can't be reached on delivery day" pill with an inline Fix → link. Playwright tests added in `email-validation-and-holder-name.spec.js`. Existing completeness test updated to include email. |
 | F62 | Vault holder's name in all delivery emails + PDF | Must | done | `send_notification_email`, `send_allclear_email`, and `generate_pdf_for_contact` now accept a `holder_name` parameter (default: "the vault holder" for backward safety). `run_pulse_scan` and the `POST /checkin` endpoint both pass `user["name"]`. jsPDF cover page reads `holderName` from `sessionStorage.getItem('ee_user')`. All-clear email subject now personalised: "All clear — {name} is okay". |
-| F63 | Nomination email when a contact is added | Must | idea | UX review 4.3 — **highest-value fix.** "[Name] has added you as a trusted contact in Emergency Exit — no action needed." Verifies the address while the holder is alive (typos surface immediately, not on delivery day), pre-warms recipient trust so the eventual delivery email isn't from a stranger, and surfaces consent. New backend endpoint triggered on contact save; debounce so edits don't re-send. |
+| F63 | Nomination email when a contact is added | Must | done | `send_nomination_email()` + `POST /contact/nominate` endpoint. Frontend `saveK()` calls `nominateContact()` (fire-and-forget, non-blocking) on new contact add and on email change during edit. Email is warm/reassuring: "no action needed." Holder name personalised via `current_user["name"]`. No PDF attachment. 5 new pytest tests (85 total). |
 | F64 | Fix "Warn me first" protocol promise mismatch | Must | idea | UX review 2.2: backend `ping_then_notify` just waits 3 extra days after grace expiry — no warning email is ever sent to the holder once overdue (F60 reminder only fires pre-due; scanner skips reminders when overdue). **Decision needed:** (A) build escalating warning emails during the overdue window, or (B) rename the label to match behaviour ("Wait 3 extra days before notifying contacts"). B is a copy change and acceptable short-term; A is the right long-term answer. |
 
 ---
@@ -500,8 +502,8 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 |----|-----------|----------|--------|-------|
 | F07 | Guided onboarding flow | Should | idea | F44 (first-run explainer card, done) covers the immediate gap. A full multi-step onboarding flow is a post-validation investment. Spec before building. UX review Jun 2026: F63 + F65 substantially reduce the case for full onboarding — a minimal "protection checklist" (add a contact ✓ → check in once ✓) gets most of the value for a fraction of the build. Keep deferred. |
 | F08 | Export/backup vault data | Should | done | User-facing JSON or PDF export of their own data. Useful for trust and portability. Spec before building. |
-| F41 | Migrate vault data from localStorage to MongoDB | Should | done | Server-first load implemented. GET /vault returns vault on login. localStorage kept as offline cache. Structured MongoDB schema with indexes. 80 automated tests. |
-| F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 80 tests + frontend sync check. Blocks deploy on failure. |
+| F41 | Migrate vault data from localStorage to MongoDB | Should | done | Server-first load implemented. GET /vault returns vault on login. localStorage kept as offline cache. Structured MongoDB schema with indexes. 85 automated tests. |
+| F43 | CI/CD — automated pytest on every push | Should | done | GitHub Actions runs 85 tests + frontend sync check. Blocks deploy on failure. |
 | F56 | Change grace period default from 3 to 7 days | Should | done | Default `gp` changed from 3 to 7 in all state initialisations. Helper text added in Settings recommending at least 7 days. Settings summary text also updated. |
 | F57 | Remove tester language from login screen | Should | done | Login subtitle changed from "Sign in with your tester credentials to access your vault." to "Sign in to your account." |
 | F58 | Frontend test coverage infrastructure | Should | done | pytest only covers the Python backend. Set up Playwright or similar browser automation tool to test client-side logic (ee_onboarded flag, explainer card, completeness score, overdue detection). Hard gate before production launch. |

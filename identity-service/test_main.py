@@ -19,6 +19,7 @@ from main import (
     is_overdue,
     is_reminder_due,
     send_reminder_email,
+    send_nomination_email,
 )
 
 
@@ -581,3 +582,66 @@ class TestReminderLogic:
             result = send_reminder_email(user, vault_doc)
 
         assert result is False
+
+
+# ─── F63: NOMINATION EMAIL ────────────────────────────────────────────────────
+
+class TestNominationEmail:
+    """Tests for send_nomination_email (F63)."""
+
+    def test_sends_to_correct_address(self):
+        """Nomination email should be sent to the contact's email address."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+
+        with patch("main.requests.post", return_value=mock_response) as mock_post:
+            result = send_nomination_email("jane@example.com", "Jane", "Alex Smith")
+
+        assert result is True
+        call_kwargs = mock_post.call_args
+        payload = call_kwargs[1]["json"]
+        assert payload["to"] == ["jane@example.com"]
+
+    def test_email_body_contains_holder_name(self):
+        """Nomination email body should include the vault holder's name."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+
+        with patch("main.requests.post", return_value=mock_response) as mock_post:
+            send_nomination_email("jane@example.com", "Jane", "Alex Smith")
+
+        call_kwargs = mock_post.call_args
+        payload = call_kwargs[1]["json"]
+        assert "Alex Smith" in payload["text"]
+        assert "Alex Smith" in payload["subject"]
+
+    def test_email_body_no_action_required(self):
+        """Nomination email must reassure the recipient no action is needed."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+
+        with patch("main.requests.post", return_value=mock_response) as mock_post:
+            send_nomination_email("jane@example.com", "Jane", "Alex Smith")
+
+        call_kwargs = mock_post.call_args
+        payload = call_kwargs[1]["json"]
+        assert "no action" in payload["text"].lower()
+
+    def test_returns_false_on_network_failure(self):
+        """send_nomination_email should return False if Resend call fails."""
+        with patch("main.requests.post", side_effect=Exception("Network error")):
+            result = send_nomination_email("jane@example.com", "Jane", "Alex Smith")
+
+        assert result is False
+
+    def test_no_pdf_attachment(self):
+        """Nomination email should not include a PDF attachment."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+
+        with patch("main.requests.post", return_value=mock_response) as mock_post:
+            send_nomination_email("jane@example.com", "Jane", "Alex Smith")
+
+        call_kwargs = mock_post.call_args
+        payload = call_kwargs[1]["json"]
+        assert "attachments" not in payload
