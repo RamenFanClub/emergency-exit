@@ -1159,7 +1159,7 @@ function render(){
   } else if(pct < 30){
     heroEl.style.color = 'var(--p)';
     heroEl.innerHTML = 'Let\'s get you <span style="color:var(--ac);">set up.</span>';
-  } else if(pct < 70){
+  } else if(pct < 70 && !(hasContacts && !S.lastCheckin)){
     heroEl.style.color = 'var(--p)';
     heroEl.innerHTML = 'You\'re making <span style="color:var(--ac);">progress.</span>';
   } else if(!S.lastCheckin){
@@ -1176,6 +1176,8 @@ function render(){
     badge.innerHTML = '<div class="tag" style="background:rgba(186,26,26,.08);color:var(--er);border:1px solid rgba(186,26,26,.2);"><span class="m mf" style="font-size:10px;vertical-align:-1px;">warning</span> Overdue</div>';
   } else if(showReminder){
     badge.innerHTML = '<div class="tag" style="background:var(--am-bg);color:var(--am);border:1px solid var(--am-border);"><span class="m mf" style="font-size:10px;vertical-align:-1px;">schedule</span> Due Soon</div>';
+  } else if(!S.lastCheckin){
+    badge.innerHTML = '<div class="tag" style="background:var(--am-bg);color:var(--am);border:1px solid var(--am-border);"><span class="m mf" style="font-size:10px;vertical-align:-1px;">lock_open</span> Not active — check in to start</div>';
   } else {
     badge.innerHTML = '<div class="tag ta"><span class="m mf" style="font-size:10px;vertical-align:-1px;">verified_user</span> Active</div>';
   }
