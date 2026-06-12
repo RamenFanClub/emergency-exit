@@ -1,7 +1,7 @@
 """
 Emergency Exit — Backend Test Suite
 Run: python3 -m pytest test_main.py -v
-Expected: 80 passed
+Expected: 99 passed
 """
 
 import pytest
@@ -20,6 +20,10 @@ from main import (
     is_reminder_due,
     send_reminder_email,
     send_nomination_email,
+    hash_reset_token,
+    is_reset_valid,
+    is_password_acceptable,
+    send_reset_email,
 )
 
 
@@ -645,3 +649,88 @@ class TestNominationEmail:
         call_kwargs = mock_post.call_args
         payload = call_kwargs[1]["json"]
         assert "attachments" not in payload
+
+
+# ─── F66: PASSWORD RESET ──────────────────────────────────────────────────────
+
+class TestPasswordReset:
+    """
+    Tests for F66: password reset / account recovery.
+    Token hashing, validity rules (single-use, expiry), password rules,
+    and the reset email content.
+    """
+
+    def _reset_doc(self, used=False, minutes_until_expiry=30):
+        return {
+            "tokenHash": hash_reset_token("some-token"),
+            "used": used,
+            "expiresAt": datetime.now(timezone.utc) + timedelta(minutes=minutes_until_expiry),
+        }
+
+    # ── Token hashing ──
+    def test_hash_is_deterministic(self):
+        assert hash_reset_token("abc123") == hash_reset_token("abc123")
+
+    def test_different_tokens_different_hashes(self):
+        assert hash_reset_token("token-a") != hash_reset_token("token-b")
+
+    def test_hash_never_contains_raw_token(self):
+        token = "super-secret-token"
+        assert token not in hash_reset_token(token)
+
+    # ── Validity rules ──
+    def test_valid_reset_doc(self):
+        assert is_reset_valid(self._reset_doc()) is True
+
+    def test_none_doc_invalid(self):
+        assert is_reset_valid(None) is False
+
+    def test_used_doc_invalid(self):
+        assert is_reset_valid(self._reset_doc(used=True)) is False
+
+    def test_expired_doc_invalid(self):
+        assert is_reset_valid(self._reset_doc(minutes_until_expiry=-5)) is False
+
+    def test_missing_expiry_invalid(self):
+        doc = self._reset_doc()
+        del doc["expiresAt"]
+        assert is_reset_valid(doc) is False
+
+    # ── Password rules ──
+    def test_short_password_rejected(self):
+        assert is_password_acceptable("short") is False
+
+    def test_eight_char_password_accepted(self):
+        assert is_password_acceptable("abcdefgh") is True
+
+    def test_non_string_password_rejected(self):
+        assert is_password_acceptable(None) is False
+
+    # ── Reset email ──
+    def test_reset_email_contains_token_link(self):
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        user = {"name": "Sandra Williams", "username": "tester_05", "email": "sandra@example.com"}
+
+        with patch("main.requests.post", return_value=mock_response) as mock_post:
+            send_reset_email(user, "tok123")
+
+        payload = mock_post.call_args[1]["json"]
+        assert "?reset=tok123" in payload["text"]
+        assert payload["to"] == ["sandra@example.com"]
+
+    def test_reset_email_mentions_ignore_if_not_requested(self):
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        user = {"name": "Sandra", "username": "tester_05", "email": "sandra@example.com"}
+
+        with patch("main.requests.post", return_value=mock_response) as mock_post:
+            send_reset_email(user, "tok123")
+
+        payload = mock_post.call_args[1]["json"]
+        assert "ignore" in payload["text"].lower()
+
+    def test_returns_false_on_network_failure(self):
+        user = {"name": "Sandra", "username": "tester_05", "email": "sandra@example.com"}
+        with patch("main.requests.post", side_effect=Exception("Network error")):
+            assert send_reset_email(user, "tok123") is False

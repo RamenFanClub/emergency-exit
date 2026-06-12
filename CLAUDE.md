@@ -139,7 +139,7 @@ The `index.html` includes a login wall:
 cd identity-service
 python3 -m pytest test_main.py -v
 ```
-Expected output: `80 passed` — if any fail, fix before pushing.
+Expected output: `99 passed` — if any fail, fix before pushing.
 
 ---
 
@@ -376,7 +376,7 @@ notes, isTester, createdAt, lastLogin
 
 **File:** `identity-service/test_main.py`
 **Run:** `python3 -m pytest test_main.py -v`
-**Expected:** 80 passed
+**Expected:** 99 passed
 
 ### Coverage by feature
 
@@ -395,6 +395,7 @@ notes, isTester, createdAt, lastLogin
 | `TestCompletenessLogic` | Completeness score (7 checks) | 6 |
 | `TestReminderLogic` | F60 reminder threshold + email | 11 |
 | `TestNominationEmail` | F63 nomination email | 5 |
+| `TestPasswordReset` | F66 password reset — token hashing, expiry, single-use, email | 14 |
 
 ### Frontend test coverage
 F44, F45, and other frontend features are not covered by the pytest suite — pytest only covers the Python backend. Frontend test coverage requires a browser automation tool (e.g. Playwright). This is tracked as a future infrastructure task. See F58 in the backlog.
@@ -511,7 +512,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F59 | Cloud storage for file uploads | Should | idea | Actual file upload (not just location recording) requires secure cloud storage (e.g. S3-compatible). This is the dependency that blocks SMS (F39-5) and WhatsApp (F39-9), which need a hosted PDF URL rather than an email attachment. Spec before building. |
 | F60 | Server-side reminder delivery | Should | done | Proactive email sent to vault holder when check-in is within 25% of interval (mirrors F05 frontend threshold). Guarded by `reminderSent` flag on vault document — resets on each check-in so reminder fires once per cycle. New admin endpoint `POST /admin/force-reminder` for testing. 11 new pytest tests added (80 total). |
 | F65 | "Not active yet" state before first check-in | Should | done | UX review 1.3: status badge shows "Active" and hero can read "You're making progress" when `lastCheckin` is null — but the switch isn't armed; nothing will ever be delivered. Badge should read "Not active — check in to start" before first check-in, and hero state 4 ("Almost there — now check in") should fire whenever contacts exist regardless of completeness %. |
-| F66 | Password reset / account recovery | Should | idea | UX review 1.4: a locked-out user cannot check in → contacts receive a false death notification. This is false-alarm prevention, not an auth nicety. **Pre-expansion gate** — must exist before growing the tester group. Email-based reset link via Resend. |
+| F66 | Password reset / account recovery | Should | done | UX review 1.4: false-alarm prevention — a locked-out user cannot check in. Email-based reset via Resend. `POST /auth/request-reset` (anti-enumeration: identical response whether account exists or not) + `POST /auth/reset-password`. Tokens: `secrets.token_urlsafe(32)`, stored SHA-256 hashed in `password_resets` collection, 60-min expiry, single-use, TTL index auto-cleans expired records. Frontend: "Forgot your password?" link on login, reset form triggered by `?reset=` query param (token scrubbed from URL via `history.replaceState`). 14 new pytest tests (99 total). **Note: reset only works for accounts with an `email` field in MongoDB — testers need emails added in Atlas.** |
 | F67 | One-tap check-in link in reminder email | Should | idea | UX review 2.1: sessionStorage token means every check-in requires a fresh login — exactly where check-ins die for the target audience. Preferred: signed, expiring token URL in the F60 reminder email that checks in without login. Cheaper alternative: persistent login token in localStorage with expiry. Biggest single reducer of false alarms. |
 | F68 | Custom verified sending domain on Resend | Should | idea | UX review 4.2: emails currently send from `onboarding@resend.dev` (sandbox) — delivery email reads as phishing at the worst possible moment. Already noted in learnings as pre-live; formalised here and **elevated to pre-expansion gate.** Pairs with F63. |
 
@@ -579,7 +580,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 - [ ] Replace `identity-service/main.py` in VS Code
 - [ ] Replace `identity-service/test_main.py` in VS Code
 - [ ] `cp index.html frontend/index.html`
-- [ ] Run `python3 -m pytest test_main.py -v` — confirm 80 passed before pushing
+- [ ] Run `python3 -m pytest test_main.py -v` — confirm 99 passed before pushing
 - [ ] `git add -A`
 - [ ] `git commit -m "..."`
 - [ ] `git push`

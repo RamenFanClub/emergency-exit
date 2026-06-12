@@ -299,6 +299,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .login-btn:active{transform:scale(.97);}
 .login-err{background:rgba(186,26,26,.08);border:1px solid rgba(186,26,26,.2);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--er);text-align:center;margin-top:12px;display:none;}
 .login-err.on{display:block;}
+.login-link{display:block;text-align:center;margin-top:14px;font-size:13px;color:var(--ac);font-weight:700;cursor:pointer;text-decoration:underline;}
+.login-msg{background:rgba(90,122,110,.10);border:1px solid rgba(90,122,110,.25);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--ac);text-align:center;margin-top:12px;display:none;}
+.login-msg.on{display:block;}
 #logout-btn{background:none;border:1.5px solid rgba(46,43,38,.2);border-radius:var(--rp);padding:5px 12px;font-size:12px;font-weight:700;color:var(--p);cursor:pointer;display:none;font-family:var(--fb);}
 #logout-btn.on{display:block;}
 #user-greeting{font-size:12px;font-weight:700;color:var(--ac);display:none;}
@@ -312,11 +315,31 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <div class="login-logo-icon"><span class="m mf" style="font-size:24px;color:#fff;">emergency_home</span></div>
       <span style="font-family:var(--fh);font-weight:800;font-size:20px;color:var(--p);margin-left:4px;">Emergency Exit</span>
     </div>
-    <p class="login-sub">Sign in to your account.</p>
-    <div class="login-fi"><label>Username</label><input id="li-user" type="text" placeholder="tester_01" autocomplete="username" autocapitalize="none"/></div>
-    <div class="login-fi"><label>Password</label><input id="li-pass" type="password" placeholder="password" autocomplete="current-password"/></div>
-    <button class="login-btn" onclick="doLogin()">Sign in</button>
-    <div class="login-err" id="login-err">Incorrect username or password. Please try again.</div>
+    <div id="lv-login">
+      <p class="login-sub">Sign in to your account.</p>
+      <div class="login-fi"><label>Username</label><input id="li-user" type="text" placeholder="tester_01" autocomplete="username" autocapitalize="none"/></div>
+      <div class="login-fi"><label>Password</label><input id="li-pass" type="password" placeholder="password" autocomplete="current-password"/></div>
+      <button class="login-btn" onclick="doLogin()">Sign in</button>
+      <a class="login-link" onclick="showLoginView('forgot')">Forgot your password?</a>
+      <div class="login-msg" id="login-msg"></div>
+      <div class="login-err" id="login-err">Incorrect username or password. Please try again.</div>
+    </div>
+    <div id="lv-forgot" style="display:none;">
+      <p class="login-sub">Enter your username and we'll email you a link to reset your password.</p>
+      <div class="login-fi"><label>Username</label><input id="fp-user" type="text" placeholder="tester_01" autocomplete="username" autocapitalize="none"/></div>
+      <button class="login-btn" onclick="doForgot()">Email me a reset link</button>
+      <a class="login-link" onclick="showLoginView('login')">Back to sign in</a>
+      <div class="login-msg" id="fp-msg"></div>
+      <div class="login-err" id="fp-err"></div>
+    </div>
+    <div id="lv-reset" style="display:none;">
+      <p class="login-sub">Choose a new password for your account.</p>
+      <div class="login-fi"><label>New password</label><input id="rp-pass" type="password" placeholder="At least 8 characters" autocomplete="new-password"/></div>
+      <div class="login-fi"><label>Confirm new password</label><input id="rp-pass2" type="password" placeholder="Type it again" autocomplete="new-password"/></div>
+      <button class="login-btn" onclick="doReset()">Set new password</button>
+      <a class="login-link" onclick="showLoginView('login')">Back to sign in</a>
+      <div class="login-err" id="rp-err"></div>
+    </div>
   </div>
 </div>
 <div id="app">
@@ -734,10 +757,59 @@ function doLogout(){
   render();
 }
 
+// ─── F66: PASSWORD RESET ──────────────────────────────────────────────────────
+let resetToken=null;
+
+function showLoginView(view){
+  ['login','forgot','reset'].forEach(v=>{$('lv-'+v).style.display=(v===view)?'':'none';});
+  ['login-err','login-msg','fp-err','fp-msg','rp-err'].forEach(id=>$(id).classList.remove('on'));
+}
+
+async function doForgot(){
+  const username=$('fp-user').value.trim();
+  const errEl=$('fp-err'),msgEl=$('fp-msg');
+  errEl.classList.remove('on');msgEl.classList.remove('on');
+  if(!username){errEl.textContent='Please enter your username.';errEl.classList.add('on');return;}
+  try{
+    await fetch(API+'/auth/request-reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})});
+    msgEl.textContent='If that account exists and has an email on file, a reset link is on its way. The link expires in 60 minutes.';
+    msgEl.classList.add('on');
+  }catch(e){errEl.textContent='Connection error — please try again.';errEl.classList.add('on');}
+}
+
+async function doReset(){
+  const p1=$('rp-pass').value,p2=$('rp-pass2').value;
+  const errEl=$('rp-err');
+  errEl.classList.remove('on');
+  if(p1.length<8){errEl.textContent='Password must be at least 8 characters.';errEl.classList.add('on');return;}
+  if(p1!==p2){errEl.textContent='Passwords don\u2019t match. Please type them again.';errEl.classList.add('on');return;}
+  try{
+    const res=await fetch(API+'/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:resetToken,password:p1})});
+    if(!res.ok){
+      const data=await res.json().catch(()=>({}));
+      errEl.textContent=data.detail||'This reset link is invalid or has expired. Please request a new one.';
+      errEl.classList.add('on');return;
+    }
+    resetToken=null;
+    showLoginView('login');
+    const msgEl=$('login-msg');
+    msgEl.textContent='Password updated \u2014 you can now sign in.';
+    msgEl.classList.add('on');
+  }catch(e){errEl.textContent='Connection error — please try again.';errEl.classList.add('on');}
+}
+
 document.addEventListener('DOMContentLoaded',async ()=>{
   ['li-user','li-pass'].forEach(id=>{
     $(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
   });
+  // F66: arriving via a reset link — capture token, scrub it from the URL, show reset form
+  const qsToken=new URLSearchParams(location.search).get('reset');
+  if(qsToken){
+    resetToken=qsToken;
+    history.replaceState(null,'',location.pathname);
+    showLoginView('reset');
+    return;
+  }
   const token=sessionStorage.getItem('ee_token');
   const user=sessionStorage.getItem('ee_user');
   if(token&&user){await showApp(JSON.parse(user));}

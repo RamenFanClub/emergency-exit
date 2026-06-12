@@ -6,8 +6,10 @@ Handles: auth, vault sync, check-in, pulse scan (overdue + reminder emails).
 
 from datetime import datetime, timedelta, timezone
 import base64
+import hashlib
 import io
 import os
+import secrets
 
 import bcrypt
 import jwt
@@ -46,6 +48,11 @@ client = MongoClient(MONGO_URI) if MONGO_URI else None
 db = client["emergency_exit"] if client is not None else None
 users_col = db["users"] if db is not None else None
 vaults_col = db["vaults"] if db is not None else None
+resets_col = db["password_resets"] if db is not None else None
+
+# Password reset configuration (F66)
+RESET_TOKEN_TTL_MINUTES = 60
+MIN_PASSWORD_LENGTH = 8
 
 
 # ─── TIMESTAMP HELPERS ────────────────────────────────────────────────────────
@@ -133,6 +140,31 @@ def check_password(password: str, hashed: str) -> bool:
 
 def create_token(user_id: str) -> str:
     return jwt.encode({"sub": user_id}, JWT_SECRET, algorithm="HS256")
+
+
+# ─── F66: PASSWORD RESET HELPERS ─────────────────────────────────────────────
+
+def hash_reset_token(token: str) -> str:
+    """SHA-256 hash of a reset token. Only the hash is stored in MongoDB,
+    so a database leak never exposes a usable reset link."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def is_reset_valid(reset_doc: dict | None) -> bool:
+    """A reset record is valid only if it exists, is unused, and unexpired."""
+    if reset_doc is None:
+        return False
+    if reset_doc.get("used", False):
+        return False
+    expires = reset_doc.get("expiresAt")
+    if expires is None:
+        return False
+    return ensure_utc(expires) > now_utc()
+
+
+def is_password_acceptable(password: str) -> bool:
+    """Minimum bar for a new password."""
+    return isinstance(password, str) and len(password) >= MIN_PASSWORD_LENGTH
 
 
 def clean_user(user: dict) -> dict:
@@ -382,6 +414,25 @@ You received this because {holder_name} listed you as a trusted contact.
     return sent
 
 
+def send_reset_email(user: dict, token: str) -> bool:
+    """F66: email a single-use password reset link to the account holder."""
+    first = (user.get("name") or "there").split(" ")[0]
+    link = f"{APP_URL}?reset={token}"
+    body = (
+        f"Hi {first},\n\n"
+        f"We received a request to reset your Emergency Exit password.\n\n"
+        f"Reset your password here (link expires in {RESET_TOKEN_TTL_MINUTES} minutes "
+        f"and can only be used once):\n\n{link}\n\n"
+        f"If you didn't request this, you can safely ignore this email — "
+        f"your password will not change.\n\n"
+        f"— Emergency Exit"
+    )
+    sent = _send_email(user.get("email", ""), "Reset your Emergency Exit password", body)
+    if sent:
+        print(f"F66: Reset email sent to {user.get('username')}")
+    return sent
+
+
 # ─── PDF GENERATION ───────────────────────────────────────────────────────────
 
 def generate_pdf_for_contact(contact: dict, vault_doc: dict, holder_name: str = "the vault holder") -> bytes:
@@ -552,6 +603,9 @@ async def startup():
     vaults_col.create_index([("lastCheckin", ASCENDING)])
     vaults_col.create_index([("overdueNotificationSent", ASCENDING), ("lastCheckin", ASCENDING)])
     vaults_col.create_index([("reminderSent", ASCENDING), ("lastCheckin", ASCENDING)])
+    # F66: fast token lookup + MongoDB auto-deletes expired reset records
+    resets_col.create_index([("tokenHash", ASCENDING)])
+    resets_col.create_index([("expiresAt", ASCENDING)], expireAfterSeconds=0)
     print("Startup complete — indexes ensured.")
 
 
@@ -576,6 +630,62 @@ def login(body: dict):
 @app.get("/auth/me")
 def me(current_user: dict = Depends(get_current_user)):
     return {"ok": True, "user": clean_user(current_user)}
+
+
+@app.post("/auth/request-reset")
+def request_reset(body: dict):
+    """
+    F66: Start a password reset. ALWAYS returns the same generic response,
+    whether or not the username exists or has an email — so this endpoint
+    can't be used to probe which accounts exist.
+    """
+    username = body.get("username", "").strip().lower()
+    generic = {"ok": True, "message": "If that account exists and has an email on file, a reset link has been sent."}
+
+    if not username:
+        return generic
+
+    user = users_col.find_one({"username": username})
+    if user is None or not user.get("email"):
+        return generic
+
+    # Invalidate any earlier outstanding reset links for this user.
+    resets_col.update_many(
+        {"userId": user["_id"], "used": False},
+        {"$set": {"used": True}},
+    )
+
+    token = secrets.token_urlsafe(32)
+    resets_col.insert_one({
+        "userId":    user["_id"],
+        "tokenHash": hash_reset_token(token),   # never store the raw token
+        "used":      False,
+        "createdAt": now_utc(),
+        "expiresAt": now_utc() + timedelta(minutes=RESET_TOKEN_TTL_MINUTES),
+    })
+    send_reset_email(user, token)
+    return generic
+
+
+@app.post("/auth/reset-password")
+def reset_password(body: dict):
+    """F66: Complete a password reset with a valid single-use token."""
+    token = body.get("token", "")
+    new_password = body.get("password", "")
+
+    if not is_password_acceptable(new_password):
+        raise HTTPException(status_code=400, detail=f"Password must be at least {MIN_PASSWORD_LENGTH} characters.")
+
+    reset_doc = resets_col.find_one({"tokenHash": hash_reset_token(token)}) if token else None
+    if not is_reset_valid(reset_doc):
+        raise HTTPException(status_code=400, detail="This reset link is invalid or has expired. Please request a new one.")
+
+    users_col.update_one(
+        {"_id": reset_doc["userId"]},
+        {"$set": {"password": hash_password(new_password)}},
+    )
+    resets_col.update_one({"_id": reset_doc["_id"]}, {"$set": {"used": True}})
+    return {"ok": True, "message": "Password updated. You can now sign in."}
 
 
 @app.get("/admin/testers")
