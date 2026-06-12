@@ -9,7 +9,19 @@ test.describe('Hero Headline States (F45)', () => {
     await expect(page.locator('#home-hero')).toContainText('set up');
   });
 
-  test('partial vault (30-69%) shows "You\'re making progress."', async ({ page }) => {
+  test('partial vault (30-69%) with no contacts shows "You\'re making progress."', async ({ page }) => {
+    // No contacts — F65 does not apply, so progress state fires normally
+    const vault = buildVault({
+      assets: [{ id: 1, name: 'House', category: 'Property', value: 500000, details: '', beneficiary: 'Jane', notes: '' }],
+      wishes: [{ id: 2, category: 'Funeral & Service', title: 'Cremation', details: '', priority: 'high' }],
+    });
+    await setupPage(page, { vault });
+    await loginViaUI(page);
+    await expect(page.locator('#home-hero')).toContainText('progress');
+  });
+
+  test('partial vault (30-69%) with a contact but no check-in shows amber "Almost there" (F65)', async ({ page }) => {
+    // F65: once a contact exists, badge/hero escalates to amber "check in" nudge regardless of completeness %
     const vault = buildVault({
       assets: [{ id: 1, name: 'House', category: 'Property', value: 500000, details: '', beneficiary: 'Jane', notes: '' }],
       wishes: [{ id: 2, category: 'Funeral & Service', title: 'Cremation', details: '', priority: 'high' }],
@@ -17,7 +29,7 @@ test.describe('Hero Headline States (F45)', () => {
     });
     await setupPage(page, { vault });
     await loginViaUI(page);
-    await expect(page.locator('#home-hero')).toContainText('progress');
+    await expect(page.locator('#home-hero')).toContainText('Almost there');
   });
 
   test('complete vault without check-in shows amber "Almost there"', async ({ page }) => {
