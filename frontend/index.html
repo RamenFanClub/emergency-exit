@@ -583,7 +583,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div id="s-config" class="scr">
       <div class="ph">Settings</div>
       <div class="ps">Set how often you check in and what happens if you don't.</div>
-      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">pulse_alert</span>Check-in Frequency</div><div style="background:var(--w);border-radius:12px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);">Custom Interval</span><div class="tg"><button class="to" id="tw" onclick="setU('weeks')">Weeks</button><button class="to on" id="tm" onclick="setU('months')">Months</button></div></div><div class="cc"><button class="cb" onclick="adj(-1)">−</button><div><div class="cv" id="fc">2</div><div class="cu" id="fu">Months</div></div><button class="cb" onclick="adj(1)">+</button></div></div></div>
+      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">pulse_alert</span>Check in every</div><div style="background:var(--w);border-radius:12px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);">Interval</span><div class="tg"><button class="to" id="tw" onclick="setU('weeks')">Weeks</button><button class="to on" id="tm" onclick="setU('months')">Months</button></div></div><div class="cc"><button class="cb" onclick="adj(-1)">−</button><div><div class="cv" id="fc">2</div><div class="cu" id="fu">Months</div></div><button class="cb" onclick="adj(1)">+</button></div><div id="next-due-line" style="margin-top:12px;font-size:12px;color:var(--ov);text-align:center;"></div><div id="freq-grace-warn" style="display:none;margin-top:8px;font-size:12px;color:var(--am);text-align:center;padding:6px 10px;background:var(--am-bg);border-radius:8px;border:1px solid var(--am-border);"></div></div></div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m" style="font-size:17px;color:var(--sec);">hourglass_bottom</span>Grace Period</div>
         <div style="background:var(--w);border-radius:12px;padding:14px;">
           <div style="font-size:12px;color:var(--ov);margin-bottom:10px;">How many days after a missed check-in before contacts are alerted?</div>
@@ -606,7 +606,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
           <div class="rd" id="rp-3"></div>
         </div>
       </div>
-      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">verified_user</span>Verification</div><div class="ri" onclick="setV('face')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">face</span><span style="font-weight:600;font-size:15px;color:var(--p);">FaceID / Biometrics</span></div><div class="rd on" id="rf"></div></div><div class="ri" onclick="setV('pin')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">password</span><span style="font-weight:600;font-size:15px;color:var(--p);">Secure Passcode</span></div><div class="rd" id="rp2"></div></div></div>
+      <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m mf" style="font-size:17px;color:var(--sec);">verified_user</span>Verification</div><div class="ri" style="opacity:0.45;cursor:default;pointer-events:none;"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">face</span><div><span style="font-weight:600;font-size:15px;color:var(--p);">FaceID / Biometrics</span><span style="display:block;font-size:11px;color:var(--ov);margin-top:2px;">Coming soon</span></div></div><div class="rd" id="rf"></div></div><div class="ri" onclick="setV('pin')"><div class="rl"><span class="m" style="font-size:19px;color:var(--sec);">password</span><span style="font-weight:600;font-size:15px;color:var(--p);">Secure Passcode</span></div><div class="rd on" id="rp2"></div></div></div>
       <div class="card"><div class="st" style="margin-bottom:14px;"><span class="m" style="font-size:17px;color:var(--sec);">download</span>Your Data</div>
         <div style="font-size:12px;color:var(--ov);margin-bottom:12px;line-height:1.5;">Download a copy of everything in your vault as a JSON file. Contact emails and phone numbers are removed to protect their privacy.</div>
         <button class="ob" style="width:100%;justify-content:center;padding:12px;" onclick="exportVault()"><span class="m" style="font-size:18px;">download</span>Download my data</button>
@@ -669,7 +669,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <div style="font-family:var(--fh);font-size:15px;font-weight:700;color:var(--p);" id="nq-proto-label">Wait 3 extra days, then notify contacts</div>
     </div>
     <div id="nq-full-list"></div>
-    <button class="nq-generate" onclick="generateAllPDFs()" style="margin-bottom:12px;"><span class="m" style="font-size:16px;">picture_as_pdf</span>Generate all packages (dry run)</button>
+    <button class="nq-generate" onclick="generateAllPDFs()" style="margin-bottom:12px;"><span class="m" style="font-size:16px;">picture_as_pdf</span>Preview all packages (nothing is sent)</button>
     <div class="mr">
       <button class="cxb" onclick="closeM()" style="flex:1;">Close</button>
       <button class="cfb" onclick="checkin();closeM();" style="flex:2;">I'm okay — check in now</button>
@@ -929,10 +929,21 @@ function log(msg){S.log.unshift({msg,time:new Date().toLocaleString()});if(S.log
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────────────
 let fUnit='months',fCount=2;
-function setU(u){fUnit=u;S.fu=u;$('tw').classList.toggle('on',u==='weeks');$('tm').classList.toggle('on',u==='months');$('fu').textContent=u.charAt(0).toUpperCase()+u.slice(1);save();toast('Frequency updated ✓');}
-function adj(d){fCount=Math.max(1,Math.min(24,fCount+d));$('fc').textContent=fCount;S.fc=fCount;save();toast('Frequency updated ✓');}
-function adjGP(d){S.gp=Math.max(1,Math.min(30,(S.gp||7)+d));$('gp-val').textContent=S.gp;save();toast('Grace period updated ✓');}
-function setV(v){S.v=v;$('rf').className='rd'+(v==='face'?' on':'');$('rp2').className='rd'+(v==='pin'?' on':'');save();toast('Verification updated ✓');}
+function renderNextDueLine(){
+  const el=$('next-due-line');const warn=$('freq-grace-warn');
+  if(!el)return;
+  if(!S.lastCheckin){el.textContent='Check in once to activate your timer.';warn.style.display='none';return;}
+  const intervalDays=getIntervalDays();
+  const due=new Date(S.lastCheckin+intervalDays*86400000);
+  const opts={day:'numeric',month:'short',year:'numeric'};
+  el.textContent='Next check-in due: '+due.toLocaleDateString('en-AU',opts);
+  const totalWindow=intervalDays+(S.gp||7);
+  if(warn){if(totalWindow<14){warn.textContent='⚠ Your combined interval + grace period is '+totalWindow+' days — consider increasing to reduce false alarms.';warn.style.display='block';}else{warn.style.display='none';}}
+}
+function setU(u){fUnit=u;S.fu=u;$('tw').classList.toggle('on',u==='weeks');$('tm').classList.toggle('on',u==='months');$('fu').textContent=u.charAt(0).toUpperCase()+u.slice(1);save();renderNextDueLine();toast('Frequency updated ✓');}
+function adj(d){fCount=Math.max(1,Math.min(24,fCount+d));$('fc').textContent=fCount;S.fc=fCount;save();renderNextDueLine();toast('Frequency updated ✓');}
+function adjGP(d){S.gp=Math.max(1,Math.min(30,(S.gp||7)+d));$('gp-val').textContent=S.gp;save();renderNextDueLine();toast('Grace period updated ✓');}
+function setV(v){S.v=v;$('rp2').className='rd on';save();toast('Verification updated ✓');}
 function setProto(p){S.notifyProto=p;save();toast('Protocol updated ✓');}
 
 // ─── F08: VAULT EXPORT ───────────────────────────────────────────────────────
@@ -1316,7 +1327,7 @@ function render(){
         return`<div class="nq-item"><div class="nq-avatar">${initials(k)}</div><div style="flex:1;"><div class="nq-name">#${i+1} ${k.first} ${k.last||''}</div><div class="nq-method">via ${NOTIFY_LABELS[k.notifyVia]||'Email'}</div></div><span class="nq-status ${sc}">${sl}</span></div>`;
       }).join('')}
       ${queue.length>3?`<div style="text-align:center;font-size:11px;color:var(--ov);padding:4px 0;">+ ${queue.length-3} more contact${queue.length-3!==1?'s':''}</div>`:''}
-      <button class="nq-generate" onclick="generateAllPDFs()"><span class="m" style="font-size:16px;">picture_as_pdf</span>Generate all packages (dry run)</button>
+      <button class="nq-generate" onclick="generateAllPDFs()"><span class="m" style="font-size:16px;">picture_as_pdf</span>Preview all packages (nothing is sent)</button>
     </div>`;
   } else {
     $('home-nq').style.display = 'none';
@@ -1479,7 +1490,8 @@ function render(){
   $('gp-val').textContent=S.gp||7;
   $('ig').textContent=pl(S.gp||7,'day');
   $('ik').textContent=pl(S.kin.length,'contact');
-  setV(S.v||'face');
+  renderNextDueLine();
+  $('rp2').className='rd on';
   $('rp-1').className='rd'+(S.notifyProto==='ping_then_notify'?' on':'');
   $('rp-2').className='rd'+(S.notifyProto==='notify_immediately'?' on':'');
   $('rp-3').className='rd'+(S.notifyProto==='escalate'?' on':'');
