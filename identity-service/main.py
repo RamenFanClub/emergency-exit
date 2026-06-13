@@ -317,7 +317,7 @@ A quick tap in the app is all it takes to confirm you're okay and reset your tim
 Why this matters: if your check-in is missed and your grace period expires, your nominated contacts will automatically receive your vault. This reminder is here so that never happens by accident.
 
 Open Emergency Exit and tap the heart to check in:
-{APP_URL}
+{APP_URL}?action=checkin
 
 If you've already checked in, you can safely ignore this email.
 

@@ -587,6 +587,24 @@ class TestReminderLogic:
 
         assert result is False
 
+    def test_reminder_email_contains_checkin_action_link(self):
+        """F67: reminder email body must include ?action=checkin so the link opens the app ready to check in."""
+        user = {"name": "Test User", "email": "test@example.com"}
+        vault_doc = {
+            "lastCheckin": datetime.now(timezone.utc) - timedelta(days=46),
+            "checkInFrequency": 2,
+            "checkInUnit": "months",
+            "gracePeriodDays": 7,
+        }
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+
+        with patch("main.requests.post", return_value=mock_response) as mock_post:
+            send_reminder_email(user, vault_doc)
+
+        payload = mock_post.call_args[1]["json"]
+        assert "?action=checkin" in payload["text"]
+
 
 # ─── F63: NOMINATION EMAIL ────────────────────────────────────────────────────
 
