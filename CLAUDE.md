@@ -543,8 +543,8 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F53 | Rename "Asset Ledger" to "My Assets" | Could | done | "Asset Ledger" is jargon. Update screen title, nav label, and all references. Nav label: "Ledger" → "Assets". |
 | F54 | Rename "New Instruction" CTA to "Add a Wish" | Could | done | "New Instruction" is cold and clinical. Change to "Add a Wish". |
 | F55 | *(moved to Must Have — see above)* | — | — | Elevated by UX review Jun 2026. |
-| F69 | Settings clarity — "Check in every" + next-due date | Could | idea | UX review 2.3/2.4: rename "Check-in Frequency / Custom Interval" to "Check in every"; show "Next check-in due: [date]" below the stepper so the consequence is visible. Optional: gentle inline warning when frequency + grace combine to < 14 days (false-alarm risk). |
-| F70 | Hide/label Verification setting; rename "dry run" button | Could | idea | UX review 3.1/3.2: FaceID/Biometrics setting is decorative (no web implementation) — hide or mark "(coming soon)". Rename "Generate all packages (dry run)" → "Preview all packages (nothing is sent)". Copy-only changes; batch together. |
+| F69 | Settings clarity — "Check in every" + next-due date | Could | done | Section renamed to "Check in every"; sub-label "Custom Interval" → "Interval". Next check-in due date shown below stepper (en-AU locale). Amber warning if frequency + grace < 14 days. `renderNextDueLine()` called on adj, setU, adjGP, and Settings render. |
+| F70 | Hide/label Verification setting; rename "dry run" button | Could | done | FaceID/Biometrics row greyed out (opacity 0.45, pointer-events none) with "Coming soon" sub-label; Secure Passcode is now always-selected default. Both "Generate all packages (dry run)" buttons renamed to "Preview all packages (nothing is sent)". |
 | F71 | Login screen one-line value prop | Could | idea | UX review 1.5: login screen gives a new visitor no idea what the app is. One line under the logo. Defer until self-signup exists. |
 
 ---
