@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinlight — Brand Guide v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --linen:#faf6f0;        /* Linen — daylight ground */
+    --ink:#2e2b26;          /* Warm charcoal — ink */
+    --sage:#5a7a6e;         /* Warm sage — the harbour */
+    --amber:#c47a20;        /* Lamplight amber — the light itself */
+    --night:#22302b;        /* Night water — derived from sage, hero only */
+    --mist:#efe9df;         /* Card edge / dividers */
+    --sec:#6f6a61;          /* Secondary text */
+    --er:#ba1a1a;           /* Existing error red — unchanged */
+    --fh:'Manrope',sans-serif;
+    --fb:'Public Sans',sans-serif;
+    --maxw:760px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--linen);color:var(--ink);font-family:var(--fb);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  /* ───────── Night hero — the one dark moment ───────── */
+  .hero{background:var(--night);color:#f3efe7;padding:84px 0 72px;position:relative;overflow:hidden}
+  .hero .wrap{position:relative;z-index:2}
+  .lamp{display:flex;align-items:flex-end;gap:18px;margin-bottom:34px}
+  .lamp svg{display:block}
+  .glow{animation:keep 4.5s ease-in-out infinite}
+  @keyframes keep{0%,100%{opacity:.55}50%{opacity:1}}
+  @media (prefers-reduced-motion: reduce){.glow{animation:none;opacity:1}}
+  .wordmark{font-family:var(--fh);font-weight:800;font-size:54px;letter-spacing:-1.5px;line-height:1;color:#f3efe7}
+  .wordmark span{color:var(--amber)}
+  .hero .tagline{font-family:var(--fh);font-weight:600;font-size:21px;letter-spacing:-.2px;color:#cfd9d4;max-width:30ch}
+  .hero .meta{margin-top:30px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#8da39a;font-weight:600}
+  .horizon{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,transparent, rgba(196,122,32,.45) 38%, rgba(196,122,32,.45) 62%, transparent)}
+
+  /* ───────── Sections ───────── */
+  section{padding:58px 0;border-bottom:1px solid var(--mist)}
+  section:last-of-type{border-bottom:none}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage);font-weight:700;margin-bottom:10px}
+  h2{font-family:var(--fh);font-weight:800;font-size:30px;letter-spacing:-.6px;margin-bottom:18px}
+  h3{font-family:var(--fh);font-weight:700;font-size:18px;letter-spacing:-.2px;margin:26px 0 8px}
+  p{max-width:62ch;margin-bottom:14px}
+  p.lead{font-size:18px;color:var(--ink)}
+  .sec{color:var(--sec)}
+  em{font-style:italic}
+  strong{font-weight:700}
+
+  /* ───────── Cards & swatches ───────── */
+  .card{background:#fff;border:1px solid var(--mist);border-radius:14px;padding:22px;margin:18px 0}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+  .swatch{border-radius:12px;overflow:hidden;border:1px solid var(--mist);background:#fff}
+  .swatch .chip{height:84px}
+  .swatch .label{padding:10px 12px}
+  .swatch .name{font-family:var(--fh);font-weight:700;font-size:13px}
+  .swatch .hex{font-size:12px;color:var(--sec);font-variant-numeric:tabular-nums}
+  .swatch .role{font-size:12px;color:var(--sec);margin-top:2px}
+
+  /* ───────── Voice table ───────── */
+  .voice{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+  @media(max-width:560px){.voice{grid-template-columns:1fr}}
+  .voice .col{background:#fff;border:1px solid var(--mist);border-radius:14px;padding:18px}
+  .voice .col h4{font-family:var(--fh);font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+  .voice .yes h4{color:var(--sage)}
+  .voice .no h4{color:var(--er)}
+  .voice li{list-style:none;padding:7px 0;border-top:1px solid var(--mist);font-size:14.5px}
+  .voice li:first-of-type{border-top:none}
+
+  /* ───────── Copy spec rows ───────── */
+  .copyrow{display:grid;grid-template-columns:160px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--mist);align-items:baseline}
+  .copyrow:first-of-type{border-top:none}
+  @media(max-width:560px){.copyrow{grid-template-columns:1fr;gap:4px}}
+  .copyrow .k{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--sec)}
+  .copyrow .v{font-family:var(--fh);font-weight:700;font-size:16px;letter-spacing:-.2px}
+  .copyrow .note{font-size:13px;color:var(--sec);font-weight:400;font-family:var(--fb);margin-top:2px}
+  .c-sage{color:var(--sage)} .c-amber{color:var(--amber)} .c-er{color:var(--er)}
+
+  /* ───────── Email mock ───────── */
+  .email{background:#fff;border:1px solid var(--mist);border-radius:14px;overflow:hidden;margin:18px 0;box-shadow:0 2px 14px rgba(46,43,38,.05)}
+  .email .head{padding:16px 22px;border-bottom:1px solid var(--mist);font-size:13.5px}
+  .email .head div{padding:2px 0}
+  .email .head b{font-weight:700}
+  .email .from-chip{display:inline-flex;align-items:center;gap:8px}
+  .email .dot{width:22px;height:22px;border-radius:50%;background:var(--night);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .email .body{padding:24px 22px;font-size:15px}
+  .email .body p{margin-bottom:12px;max-width:none}
+  .email .attach{margin:16px 0 4px;display:inline-flex;align-items:center;gap:10px;border:1px solid var(--mist);border-radius:10px;padding:10px 14px;font-size:13.5px;background:var(--linen)}
+  .email .sig{color:var(--sec);font-size:13.5px;margin-top:16px}
+
+  /* ───────── Type specimens ───────── */
+  .spec{background:#fff;border:1px solid var(--mist);border-radius:14px;padding:22px;margin:14px 0}
+  .spec .big{font-family:var(--fh);font-weight:800;font-size:32px;letter-spacing:-.8px;line-height:1.15}
+  .spec .label{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--sec);font-weight:600;margin-bottom:8px}
+
+  footer{padding:44px 0 70px;color:var(--sec);font-size:13.5px}
+  footer .wrap{border-top:1px solid var(--mist);padding-top:24px}
+  a{color:var(--sage)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HERO: night, with the kept light ═══════════ -->
+<header class="hero">
+  <div class="wrap">
+    <div class="lamp" aria-hidden="true">
+      <svg width="84" height="84" viewBox="0 0 64 64" fill="none">
+        <!-- handle -->
+        <path d="M26 16 Q32 9 38 16" fill="none" stroke="#5a7a6e" stroke-width="2.6" stroke-linecap="round"/>
+        <!-- top cap -->
+        <path d="M24 18 H40" stroke="#5a7a6e" stroke-width="2.6" stroke-linecap="round"/>
+        <!-- body / glass -->
+        <path d="M23 20 Q23 18 25 18 H39 Q41 18 41 20 L43 46 Q43 50 39 50 H25 Q21 50 21 46 Z" fill="none" stroke="#5a7a6e" stroke-width="2.6" stroke-linejoin="round"/>
+        <!-- flame glow inside (breathes) -->
+        <ellipse class="glow" cx="32" cy="36" rx="6.5" ry="9" fill="#e8a04b"/>
+        <ellipse cx="32" cy="38" rx="3" ry="4.5" fill="#fff" opacity=".5"/>
+      </svg>
+      <div class="wordmark">kin<span>light</span></div>
+    </div>
+    <div class="tagline">A light left on for the people you love.</div>
+    <div class="meta">Brand guide · v1.0 · June 2026</div>
+  </div>
+  <div class="horizon" aria-hidden="true"></div>
+</header>
+
+<main class="wrap">
+
+<!-- ═══════════ 1. THE NAME ═══════════ -->
+<section>
+  <div class="eyebrow">01 · The name</div>
+  <h2>Kin + light</h2>
+  <p class="lead"><strong>Kin</strong> is who shows up — family by blood or by choice, the people on your list. <strong>Light</strong> is the promise — something kept burning so they're never left in the dark.</p>
+  <p>A kinlight is the lamp a keeper tends for the people out on the water. While you check in, the light stays on. If one day you can't, the light does its job: it guides your people safely to everything you prepared for them.</p>
+  <p class="sec">Always written as one word. In running text: <strong>Kinlight</strong>. In the wordmark only: lowercase <strong>kinlight</strong>, with "light" in lamplight amber.</p>
+</section>
+
+<!-- ═══════════ 2. THE THEME ═══════════ -->
+<section>
+  <div class="eyebrow">02 · Brand world</div>
+  <h2>The lighthouse, the harbour, the anchor</h2>
+  <p>Three images, three jobs. They live in the logo, the copy, and the moments of reassurance — never as the name, never as decoration for its own sake.</p>
+  <div class="card">
+    <h3 style="margin-top:0">The lighthouse — for you</h3>
+    <p style="margin-bottom:0">You are the keeper. Checking in is tending the light. This frames the product's only recurring chore as an act of care, not a deadline.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">The safe harbour — for your things</h3>
+    <p style="margin-bottom:0">The vault is the harbour: assets, wishes, and letters moored somewhere calm and protected until they're needed.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">The anchor — for your people</h3>
+    <p style="margin-bottom:0">What recipients get is steadiness in the worst week of their lives: one email, everything in order, nothing to chase. The anchor language belongs on the recipient side of the product.</p>
+  </div>
+</section>
+
+<!-- ═══════════ 3. VOICE ═══════════ -->
+<section>
+  <div class="eyebrow">03 · Voice</div>
+  <h2>Calm, plain, certain</h2>
+  <p>Kinlight speaks like a capable friend who has done this before: short sentences, plain verbs, no drama. It never makes death feel closer, and it never makes the product feel cleverer than the person using it.</p>
+  <div class="voice">
+    <div class="col yes">
+      <h4>Always</h4>
+      <ul>
+        <li>"Your light is on." — state, plainly</li>
+        <li>"Checked in ✓ — see you next time."</li>
+        <li>"Everything is in order."</li>
+        <li>"If you ever stop checking in…" — conditional, gentle</li>
+        <li>Active voice, sentence case, one job per sentence</li>
+      </ul>
+    </div>
+    <div class="col no">
+      <h4>Never</h4>
+      <ul>
+        <li>"When you die…" / "after your death" — in-app</li>
+        <li>"Don't worry!" — reassurance that names the worry</li>
+        <li>Exclamation marks in any timer or notification</li>
+        <li>Nautical puns ("anchors aweigh", "smooth sailing")</li>
+        <li>Promising features that don't exist yet</li>
+      </ul>
+    </div>
+  </div>
+  <p class="sec">That last "never" is your UX review's false-confidence theme, made law: the brand voice may only describe protection that is actually built.</p>
+</section>
+
+<!-- ═══════════ 4. COLOUR ═══════════ -->
+<section>
+  <div class="eyebrow">04 · Colour</div>
+  <h2>Daylight palette, one night moment</h2>
+  <p>The palette is Aeterna Solid, unchanged — renamed so every colour knows its job in the lighthouse story. The app lives in daylight. The dark <em>night water</em> tone is reserved for brand moments only (this guide's cover, the email avatar, the app icon) — it's what the light shines against, so it must stay rare.</p>
+  <div class="swatches">
+    <div class="swatch"><div class="chip" style="background:#faf6f0;border-bottom:1px solid var(--mist)"></div><div class="label"><div class="name">Linen</div><div class="hex">#FAF6F0</div><div class="role">Ground · app background</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#5a7a6e"></div><div class="label"><div class="name">Harbour sage</div><div class="hex">#5A7A6E</div><div class="role">Calm states · primary accent</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#c47a20"></div><div class="label"><div class="name">Lamplight amber</div><div class="hex">#C47A20</div><div class="role">The light · attention, warmth</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#2e2b26"></div><div class="label"><div class="name">Warm charcoal</div><div class="hex">#2E2B26</div><div class="role">Ink · headlines, body</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#22302b"></div><div class="label"><div class="name">Night water</div><div class="hex">#22302B</div><div class="role">Brand moments only</div></div></div>
+  </div>
+  <p class="sec">Rule of thumb: <strong>sage says "all is well", amber says "tend the light", red (#BA1A1A) says "act now"</strong> — and red appears only in genuinely overdue states, exactly as the app does today.</p>
+</section>
+
+<!-- ═══════════ 5. TYPE ═══════════ -->
+<section>
+  <div class="eyebrow">05 · Typography</div>
+  <h2>Manrope speaks, Public Sans explains</h2>
+  <div class="spec">
+    <div class="label">Display · Manrope 800, tight tracking</div>
+    <div class="big">Everything is in order.</div>
+  </div>
+  <div class="spec">
+    <div class="label">Body · Public Sans 400/600</div>
+    <p style="margin:0;max-width:none">Your next check-in is due in 30 days. A quick tap keeps your light on and your timer reset — that's all there is to it.</p>
+  </div>
+  <p class="sec">Both faces are already shipped in the app; the rename costs nothing here. Display lines are short, declarative, and end with a full stop — the full stop is part of the calm.</p>
+</section>
+
+<!-- ═══════════ 6. COPY SYSTEM ═══════════ -->
+<section>
+  <div class="eyebrow">06 · Copy system</div>
+  <h2>The words, mapped to the app</h2>
+  <p>The F45 hero states are already in the right voice — they survive the rebrand almost untouched. The lighthouse layer is applied with a light hand: status moments earn the metaphor, functional moments stay literal.</p>
+
+  <h3>Hero headline — five states (F45)</h3>
+  <div class="card">
+    <div class="copyrow"><div class="k">Empty vault</div><div class="v">Let's get you <span class="c-sage">set up.</span><div class="note">Unchanged.</div></div></div>
+    <div class="copyrow"><div class="k">30–69%</div><div class="v">You're making <span class="c-sage">progress.</span><div class="note">Unchanged.</div></div></div>
+    <div class="copyrow"><div class="k">Ready, no check-in</div><div class="v c-amber">Almost there — light it up.<div class="note">Was "now check in." The one themed change: the first check-in becomes lighting the lamp.</div></div></div>
+    <div class="copyrow"><div class="k">Active</div><div class="v">Everything is <span class="c-sage">in order.</span><div class="note">Unchanged — already the calmest sentence in the app.</div></div></div>
+    <div class="copyrow"><div class="k">Overdue</div><div class="v c-er">Action needed.<div class="note">Unchanged. Urgent states never use the metaphor — clarity outranks brand.</div></div></div>
+  </div>
+
+  <h3>Status &amp; check-in moments</h3>
+  <div class="card">
+    <div class="copyrow"><div class="k">Status badge · active</div><div class="v c-sage">● Light on<div class="note">Replaces "Active". Three characters longer, twice as human.</div></div></div>
+    <div class="copyrow"><div class="k">Status badge · not started</div><div class="v c-amber">Not lit yet — check in to start</div></div>
+    <div class="copyrow"><div class="k">Check-in toast</div><div class="v">Checked in ✓ — see you next time.<div class="note">Confirms the action by name (never just "Done").</div></div></div>
+    <div class="copyrow"><div class="k">All-clear recovery</div><div class="v c-sage">Welcome back. Your light is on again.<div class="note">The metaphor's best moment — relief, stated plainly.</div></div></div>
+  </div>
+
+  <h3>Taglines</h3>
+  <div class="card">
+    <div class="copyrow"><div class="k">Primary</div><div class="v">A light left on for the people you love.</div></div>
+    <div class="copyrow"><div class="k">Short / app store</div><div class="v">The light stays on.</div></div>
+    <div class="copyrow"><div class="k">Functional</div><div class="v">Your wishes, assets and letters — delivered to your people if you ever can't.</div></div>
+  </div>
+</section>
+
+<!-- ═══════════ 7. THE EMAIL ═══════════ -->
+<section>
+  <div class="eyebrow">07 · The recipient moment</div>
+  <h2>Where the brand earns its keep</h2>
+  <p>A recipient meets Kinlight twice: once when they're nominated (F61 — calm, consent, recognition) and once when it matters most (F64 — never anonymous about who arranged it). The sender identity is the same in both: <strong>Kinlight &lt;hello@kinlight.app&gt;</strong>, with SPF/DKIM configured in Resend before the first real send.</p>
+
+  <h3>Delivery email (F64)</h3>
+  <div class="email">
+    <div class="head">
+      <div class="from-chip"><span class="dot"><svg width="13" height="13" viewBox="0 0 64 64"><path d="M25 17 Q32 9 39 17" fill="none" stroke="#5a7a6e" stroke-width="3.5" stroke-linecap="round"/><path d="M23 20 Q23 18 25 18 H39 Q41 18 41 20 L43 47 Q43 51 39 51 H25 Q21 51 21 47 Z" fill="none" stroke="#5a7a6e" stroke-width="3.5" stroke-linejoin="round"/><ellipse cx="32" cy="37" rx="6.5" ry="9" fill="#e8a04b"/></svg></span><b>Kinlight</b>&nbsp;&lt;hello@kinlight.app&gt;</div>
+      <div><b>To:</b> Jane Doe</div>
+      <div><b>Subject:</b> Sarah arranged for this to reach you</div>
+    </div>
+    <div class="body">
+      <p>Hello Jane,</p>
+      <p>Sarah Chen used Kinlight to prepare something for you. She asked that it be delivered if she ever stopped checking in — and that time has come. We're so sorry.</p>
+      <p>Attached is everything she put in order for you: her wishes, important details about her assets and documents, and a personal letter she wrote for you.</p>
+      <div class="attach">📎 &nbsp;Sarah-Chen-for-Jane-Doe.pdf</div>
+      <p class="sig">There's nothing you need to do right away. This package was prepared in advance by Sarah herself, and it will be here whenever you're ready.<br><br>— Kinlight, a light left on for the people you love</p>
+    </div>
+  </div>
+  <p class="sec">Three rules visible above, now standing policy: the vault holder is <strong>always named</strong> (subject line and first sentence), the email <strong>never instructs urgency</strong>, and condolence is <strong>one sentence, plain</strong> — "We're so sorry," nothing more ornate.</p>
+
+  <h3>Nomination email (F61) — opening lines</h3>
+  <div class="card">
+    <p style="margin-bottom:8px"><strong>Subject:</strong> Sarah added you as a trusted contact on Kinlight</p>
+    <p style="margin-bottom:0">"Hello Jane — Sarah Chen has named you as someone she trusts. Kinlight is a service that keeps her important wishes and information safe, and delivers them to her chosen people if she's ever unable to. You don't need to do anything now. This email is just so you recognise us if we ever need to reach you on Sarah's behalf."</p>
+  </div>
+</section>
+
+<!-- ═══════════ 8. THE MARK ═══════════ -->
+<section>
+  <div class="eyebrow">08 · The mark</div>
+  <h2>The lantern</h2>
+  <p>The logo is a harbour lantern — the vessel built to <em>keep</em> a flame burning through wind and weather. A sage frame holds an amber glow; the white inner highlight is the flame itself. No lighthouse tower, because the building was never the point — the kept light is. It says exactly what the product does: it protects the light so it doesn't go out.</p>
+  <div class="card" style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">
+    <svg width="96" height="96" viewBox="0 0 64 64" fill="none" style="background:var(--night);border-radius:20px;flex:none">
+      <path d="M26 16 Q32 9 38 16" fill="none" stroke="#5a7a6e" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M24 18 H40" stroke="#5a7a6e" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M23 20 Q23 18 25 18 H39 Q41 18 41 20 L43 46 Q43 50 39 50 H25 Q21 50 21 46 Z" fill="none" stroke="#5a7a6e" stroke-width="2.6" stroke-linejoin="round"/>
+      <ellipse cx="32" cy="36" rx="6.5" ry="9" fill="#e8a04b" opacity=".95"/>
+      <ellipse cx="32" cy="38" rx="3" ry="4.5" fill="#fff" opacity=".5"/>
+    </svg>
+    <svg width="96" height="96" viewBox="0 0 64 64" fill="none" style="background:#fff;border:1px solid var(--mist);border-radius:20px;flex:none">
+      <path d="M26 16 Q32 9 38 16" fill="none" stroke="#5a7a6e" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M24 18 H40" stroke="#5a7a6e" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M23 20 Q23 18 25 18 H39 Q41 18 41 20 L43 46 Q43 50 39 50 H25 Q21 50 21 46 Z" fill="none" stroke="#5a7a6e" stroke-width="2.6" stroke-linejoin="round"/>
+      <ellipse cx="32" cy="36" rx="6.5" ry="9" fill="#c47a20"/>
+      <ellipse cx="32" cy="38" rx="3" ry="4.5" fill="#fff" opacity=".55"/>
+    </svg>
+    <div style="flex:1;min-width:220px">
+      <p style="margin-bottom:8px"><strong>Night tile</strong> for the app icon and email avatar; <strong>daylight tile</strong> for in-app and documents.</p>
+      <p class="sec" style="margin-bottom:0">In the live app, the flame may carry the same gentle 4.5s pulse as the check-in card — the light breathing, never blinking. At favicon size (≤16px) the handle drops and the glowing body carries the mark. Respect <code>prefers-reduced-motion</code>.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    Kinlight brand guide v1.0 · Prepared June 2026 · Supersedes the Emergency Exit working name.<br>
+    Implementation tracked as F72 in CLAUDE.md — sequenced before F61 so the first email a contact ever receives comes from Kinlight. localStorage keys (<code>ee_v3</code>) intentionally unchanged.
+  </div>
+</footer>
+
+</body>
+</html>

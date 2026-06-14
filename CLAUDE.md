@@ -43,9 +43,18 @@ The `index.html` includes a login wall:
 
 ## App Name & Branding
 
-- **App name:** Emergency Exit
-- **Design system:** "Aeterna Solid" — Linen Cream + Warm Sage + Warm Charcoal
-- **Tone:** Calm, trustworthy, premium — a "Digital Sanctuary"
+- **App name:** **Kinlight** (brand decision made June 2026 — supersedes the "Emergency Exit" working name)
+  - **Code still says "Emergency Exit"** until the rename ships. Implementation tracked as **F72** (see backlog). Sequence F72 *before* F63's nomination email reaches new contacts, so the first email a contact ever receives comes from Kinlight, not Emergency Exit.
+  - **✅ `kinlight.app` purchased** (Cloudflare Registrar, June 2026) — primary domain confirmed.
+  - **Remaining verification (Anggi's action):** IP Australia TM Checker (ipaustralia.gov.au, free, 5 min) + ASIC business-name search (abr.business.gov.au, free). `kinlight.com.au` available once ABN is issued — register via VentraIP.
+  - **Social handles to claim:** @kinlight on Instagram + X (tracked as F73).
+  - **Intended sender address:** `hello@kinlight.app` — not active until Resend verified domain configured in F72.
+  - **Meaning:** *kin* (who you protect) + *light* (a light kept on for them). A kinlight is the lamp a keeper tends so their people can find their way home safely.
+  - **Tagline (primary):** "A light left on for the people you love." Short form: "The light stays on."
+- **Logo:** **The Lantern** — a harbour lantern (the vessel built to *keep* a flame burning through wind), sage frame + amber glow. Night-water tile (`#22302b`) for app icon / email avatar; daylight tile (white) for in-app + documents. Source SVG lives in the brand guide (`kinlight-brand-guide.html`). At ≤16px the handle drops and the favicon leans on the glowing body.
+- **Brand world (theme):** lighthouse = *you* (checking in tends the light); safe harbour = *the vault* (things moored somewhere calm); anchor = *your people* (steadiness in the worst week). Theme lives in logo + copy only, never as decoration.
+- **Design system:** "Aeterna Solid" — Linen Cream + Warm Sage + Warm Charcoal (unchanged; colours renamed to brand roles: amber = "lamplight," sage = "harbour")
+- **Tone:** Calm, plain, certain — "a light left on." Status moments may use the lighthouse metaphor ("Light on", "Your light is on again"); **urgent/overdue states stay literal** ("Action needed.") — clarity outranks brand. The voice may only describe protection that is actually built (false-confidence guard).
 - **Primary colour:** `#2e2b26` (warm charcoal — replaced navy `#002147`)
 - **Primary dark variant:** `#3d3a34`
 - **Accent colour:** `#5a7a6e` (warm sage — replaced teal `#2d8a7a`)
@@ -472,6 +481,8 @@ When building a new feature, add a new `class TestFeatureName` block to `test_ma
 ## Feature Backlog — User Stories
 
 > **Last groomed:** June 2026 — end-to-end UX review (see `ux-review-emergency-exit.md`). Added F61–F71. F55 elevated from Could to Must (moved to Must table). Three themes drove the new items: (1) false confidence — app can imply protection that doesn't exist (F61, F65); (2) broken promises — UI offers things that aren't built (F55, F64, F70); (3) recipient journey — delivery email is anonymous and untrusted (F62, F63, F68). Priority order for next sprint: F55 (3-line fix, do first) → ~~F61 + F62 as one batch~~ **done** → ~~F63~~ **done** → ~~F64~~ **done** → F65. Pre-expansion gates: F66, F67, F68. Deferred unchanged: F07, F59, F39-5, F39-6, F04.
+>
+> **Branding update June 2026:** App renamed **Emergency Exit → Kinlight** (name + Lantern logo + lighthouse/harbour/anchor theme; see `kinlight-brand-guide.html` and `kinlight-logo-options-r2.html`). Code-level rename tracked as **F72** (Must, idea). **`kinlight.app` purchased ✅ (Cloudflare, June 2026).** Remaining pre-launch admin: TM check (F75), ASIC name (F76), social handles (F73), .com.au (F74). **F68 is absorbed into F72** (the verified Resend domain becomes `kinlight.app`). Sequence F72 before F63's nomination email reaches new contacts so their first contact comes from Kinlight.
 
 Features are prioritised using MoSCoW: **Must**, **Should**, **Could**, **Won't**
 
@@ -495,8 +506,14 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F63 | Nomination email when a contact is added | Must | done | `send_nomination_email()` + `POST /contact/nominate` endpoint. Frontend `saveK()` calls `nominateContact()` (fire-and-forget, non-blocking) on new contact add and on email change during edit. Email is warm/reassuring: "no action needed." Holder name personalised via `current_user["name"]`. No PDF attachment. 5 new pytest tests (85 total). |
 | F64 | Fix "Warn me first" protocol promise mismatch | Must | done | Option B implemented: label renamed from "Warn me first (3 reminders, then notify contacts)" to "Wait 3 extra days, then notify contacts" across `PROTO_LABELS`, the Settings radio button, and the NQ modal fallback. Playwright test assertion updated to match. Option A (real warning emails) tracked as F64-2. |
 | F64-2 | Escalating warning emails during overdue window | Must | idea | The right long-term fix for F64. When a vault becomes overdue and `ping_then_notify` is active, send the holder a warning email at day 1 (and optionally day 2) before contacts are notified on day 3. Requires: new `warningSent` flag on vault doc (or array of sent days), new `send_warning_email()` function, scheduler logic to fire during the overdue window (currently skipped), new pytest tests. Playwright test for NQ modal should verify the "days remaining" counter reflects actual warning state. Spec before building. |
+| F72 | Rebrand "Emergency Exit" → "Kinlight" | Must | idea | Brand decision made (name + Lantern logo + lighthouse/harbour/anchor theme + voice; see `kinlight-brand-guide.html`). Rename surface: app title + visible copy in **both** `index.html` files; F45 hero state 4 copy ("Almost there — light it up"); status badge ("Light on" / "Not lit yet"); check-in toast; all-clear copy; jsPDF cover + footer (`generate_pdf_for_contact`); ReportLab server-side PDF; Resend sender name + **verified domain `kinlight.app`** (this *is* F68 — merge); email subjects/bodies (`send_notification_email`, `send_allclear_email`, `send_nomination_email`, `send_reminder_email`). **Do NOT rename** localStorage keys (`ee_v3`, `ee_onboarded`, `ee_first_checkin_done`) or sessionStorage `ee_user` — renaming breaks the 6 testers' data for zero user-visible benefit. GitHub Pages URL can stay until launch (testers have it bookmarked). **Gated on:** domain/TM/ASIC verification (see Branding). Sequence before F63's email reaches new contacts. Swap favicon to Lantern night-tile. |
 
 ---
+
+| F73 | Claim @kinlight social handles | Should | idea | Claim @kinlight on Instagram and X (Twitter) before public launch to prevent squatting. Free, takes 10 min. Do at same time as or immediately after F72 ships. |
+| F74 | Register kinlight.com.au | Should | idea | Australian ccTLD builds local trust. Requires ABN (apply at abr.gov.au if not yet issued). Register via VentraIP once ABN confirmed. Redirects to kinlight.app. |
+| F75 | IP Australia trademark search + optional filing | Should | idea | Run "Kinlight" through TM Checker at ipaustralia.gov.au (free, 5 min) to confirm no class-9/42/45 conflicts. Filing (~$330/class) not urgent pre-launch but worth scheduling post-revenue. |
+| F76 | ASIC business name registration | Should | idea | Register "Kinlight" as a business name with ASIC (requires ABN). Confirms no Australian trading-name conflict and protects the name locally. Fee ~$39/yr. |
 
 ### Should Have
 
