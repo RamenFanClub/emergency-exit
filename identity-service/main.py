@@ -1,5 +1,5 @@
 """
-Emergency Exit — Identity & Vault Service
+Kinlight — Identity & Vault Service
 FastAPI backend deployed on Railway.
 Handles: auth, vault sync, check-in, pulse scan (overdue + reminder emails).
 """
@@ -42,6 +42,11 @@ MONGO_URI = os.environ.get("MONGO_URI", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 APP_URL = "https://ramenfanclub.github.io/emergency-exit/"
+# F72b — SENDER ADDRESS: do NOT change until kinlight.app is verified in Resend.
+# Switching to an unverified domain causes SILENT email delivery failure for all users.
+# Once kinlight.app shows "Verified" in the Resend dashboard, change this line to:
+#     FROM_EMAIL = "Kinlight <hello@kinlight.app>"
+# This is the ONLY remaining F72b step; it absorbs F68 (verified domain) and unblocks F63.
 FROM_EMAIL = "Emergency Exit <onboarding@resend.dev>"
 
 client = MongoClient(MONGO_URI) if MONGO_URI else None
@@ -308,7 +313,7 @@ def send_reminder_email(user: dict, vault_doc: dict) -> bool:
 
     body = f"""Hi {name},
 
-Just a gentle reminder that your Emergency Exit check-in is coming up.
+Just a gentle reminder that your Kinlight check-in is coming up.
 
 Your next check-in is due on {due_label} — that's {days_label} from now.
 
@@ -316,19 +321,19 @@ A quick tap in the app is all it takes to confirm you're okay and reset your tim
 
 Why this matters: if your check-in is missed and your grace period expires, your nominated contacts will automatically receive your vault. This reminder is here so that never happens by accident.
 
-Open Emergency Exit and tap the heart to check in:
+Open Kinlight and tap the heart to check in:
 {APP_URL}?action=checkin
 
 If you've already checked in, you can safely ignore this email.
 
 Take care,
-The Emergency Exit team
+The Kinlight team
 
 ---
 You're receiving this because you set up a check-in schedule of every {freq_label}.
 To change your frequency, open Settings in the app.
 """
-    sent = _send_email(email, f"Your Emergency Exit check-in is due in {days_label}", body)
+    sent = _send_email(email, f"Your Kinlight check-in is due in {days_label}", body)
     if sent:
         print(f"F60: Reminder sent to {email} ({days_remaining} days remaining)")
     return sent
@@ -342,13 +347,13 @@ def send_notification_email(contact: dict, vault_doc: dict, holder_name: str = "
 
     pdf_bytes = generate_pdf_for_contact(contact, vault_doc, holder_name)
     attachment = {
-        "filename": f"Emergency-Exit-{first}-{last}.pdf",
+        "filename": f"Kinlight-{first}-{last}.pdf",
         "content": base64.b64encode(pdf_bytes).decode("utf-8"),
     }
 
     body = f"""Dear {first},
 
-You are receiving this because you have been nominated as a trusted contact by {holder_name} in Emergency Exit.
+You are receiving this because you have been nominated as a trusted contact by {holder_name} in Kinlight.
 
 {holder_name} has not confirmed their check-in within the required period. Attached is their emergency package — please review it carefully.
 
@@ -356,9 +361,9 @@ This package includes their recorded assets, wishes, Will details, and any perso
 
 If you believe this has been sent in error, please disregard this message.
 
-The Emergency Exit team
+The Kinlight team
 """
-    sent = _send_email(email, f"Important: Emergency Exit package from {holder_name}", body, attachment)
+    sent = _send_email(email, f"Important: Kinlight package from {holder_name}", body, attachment)
     if sent:
         print(f"Notification sent to {first} at {email}")
     return sent
@@ -373,11 +378,11 @@ def send_allclear_email(contact: dict, holder_name: str = "the vault holder") ->
 
 Good news — {holder_name} has checked in and confirmed they are okay.
 
-Any previous notifications about their Emergency Exit vault can be disregarded. No action is required from you at this time.
+Any previous notifications about their Kinlight vault can be disregarded. No action is required from you at this time.
 
 Thank you for being a trusted contact.
 
-The Emergency Exit team
+The Kinlight team
 """
     sent = _send_email(email, f"All clear — {holder_name} is okay", body)
     if sent:
@@ -390,16 +395,16 @@ def send_nomination_email(contact_email: str, contact_first: str, holder_name: s
     first = contact_first or "there"
     body = f"""Hi {first},
 
-{holder_name} has added you as a trusted contact in Emergency Exit — no action is needed from you right now.
+{holder_name} has added you as a trusted contact in Kinlight — no action is needed from you right now.
 
-Emergency Exit is a personal digital legacy vault. If {holder_name} ever stops checking in, you'll automatically receive a secure package with their important information, final wishes, and any personal messages they've written for you.
+Kinlight is a personal digital legacy vault. If {holder_name} ever stops checking in, you'll automatically receive a secure package with their important information, final wishes, and any personal messages they've written for you.
 
 This email is just to let you know you've been nominated. You don't need to create an account or do anything at this stage.
 
 If you have any questions, you can reach out to {holder_name} directly.
 
 Take care,
-The Emergency Exit team
+The Kinlight team
 
 ---
 You received this because {holder_name} listed you as a trusted contact.
@@ -420,14 +425,14 @@ def send_reset_email(user: dict, token: str) -> bool:
     link = f"{APP_URL}?reset={token}"
     body = (
         f"Hi {first},\n\n"
-        f"We received a request to reset your Emergency Exit password.\n\n"
+        f"We received a request to reset your Kinlight password.\n\n"
         f"Reset your password here (link expires in {RESET_TOKEN_TTL_MINUTES} minutes "
         f"and can only be used once):\n\n{link}\n\n"
         f"If you didn't request this, you can safely ignore this email — "
         f"your password will not change.\n\n"
-        f"— Emergency Exit"
+        f"— Kinlight"
     )
-    sent = _send_email(user.get("email", ""), "Reset your Emergency Exit password", body)
+    sent = _send_email(user.get("email", ""), "Reset your Kinlight password", body)
     if sent:
         print(f"F66: Reset email sent to {user.get('username')}")
     return sent
@@ -453,11 +458,11 @@ def generate_pdf_for_contact(contact: dict, vault_doc: dict, holder_name: str = 
 
     base = getSampleStyleSheet()
     styles = {
-        "heading":  ParagraphStyle("H", parent=base["Heading1"],  fontSize=18, spaceAfter=6,  textColor=colors.HexColor("#002147")),
-        "sub":      ParagraphStyle("S", parent=base["Normal"],    fontSize=10, spaceAfter=12, textColor=colors.HexColor("#54657d")),
+        "heading":  ParagraphStyle("H", parent=base["Heading1"],  fontSize=18, spaceAfter=6,  textColor=colors.HexColor("#2e2b26")),
+        "sub":      ParagraphStyle("S", parent=base["Normal"],    fontSize=10, spaceAfter=12, textColor=colors.HexColor("#5a7a6e")),
         "body":     ParagraphStyle("B", parent=base["Normal"],    fontSize=10, leading=15, spaceAfter=8),
-        "label":    ParagraphStyle("L", parent=base["Normal"],    fontSize=8,  spaceAfter=2,  textColor=colors.HexColor("#54657d"), fontName="Helvetica-Bold"),
-        "section":  ParagraphStyle("Sc", parent=base["Heading2"], fontSize=12, spaceAfter=6,  textColor=colors.HexColor("#002147")),
+        "label":    ParagraphStyle("L", parent=base["Normal"],    fontSize=8,  spaceAfter=2,  textColor=colors.HexColor("#5a7a6e"), fontName="Helvetica-Bold"),
+        "section":  ParagraphStyle("Sc", parent=base["Heading2"], fontSize=12, spaceAfter=6,  textColor=colors.HexColor("#2e2b26")),
     }
 
     def hr():
@@ -475,7 +480,7 @@ def generate_pdf_for_contact(contact: dict, vault_doc: dict, holder_name: str = 
     last  = contact.get("last", "")
 
     story = [
-        Paragraph("Emergency Exit", styles["heading"]),
+        Paragraph("Kinlight", styles["heading"]),
         Paragraph(f"Prepared for {first} {last}", styles["sub"]),
         Paragraph(f"From {holder_name}", styles["sub"]),
         Paragraph(f"Generated {datetime.now().strftime('%-d %B %Y')}", styles["sub"]),
