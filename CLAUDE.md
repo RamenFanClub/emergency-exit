@@ -149,7 +149,7 @@ The `index.html` includes a login wall:
 cd identity-service
 python3 -m pytest test_main.py -v
 ```
-Expected output: `99 passed` — if any fail, fix before pushing.
+Expected output: `113 passed` — if any fail, fix before pushing.
 
 ---
 
@@ -386,7 +386,7 @@ notes, isTester, createdAt, lastLogin
 
 **File:** `identity-service/test_main.py`
 **Run:** `python3 -m pytest test_main.py -v`
-**Expected:** 99 passed
+**Expected:** 113 passed
 
 ### Coverage by feature
 
@@ -405,6 +405,7 @@ notes, isTester, createdAt, lastLogin
 | `TestCompletenessLogic` | Completeness score (7 checks) | 6 |
 | `TestReminderLogic` | F60 reminder threshold + email | 11 |
 | `TestNominationEmail` | F63 nomination email | 5 |
+| `TestWarningLogic` | F64-2 escalating warning emails — should_send_warning, should_notify_contacts, email content, guard logic | 13 |
 | `TestPasswordReset` | F66 password reset — token hashing, expiry, single-use, email | 14 |
 
 ### Frontend test coverage
@@ -504,7 +505,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F55 | Hide unbuilt SMS/WhatsApp/Email+SMS notify options | Must | backlog | **Elevated from Could (UX review Jun 2026).** Remove the three unbuilt options from the contact "Notify via" dropdown (delete `<option>` tags + prune `NOTIFY_LABELS`/`NOTIFY_ICONS` if unused). A visible option that silently does nothing is a trust failure. Smallest item on the list — do first. |
 | F61 | Require a valid email address per contact | Must | done | `saveK()` now blocks save if email is blank or fails regex format check. Existing contact cards with missing/invalid email show a red "No valid email — can't be reached on delivery day" pill with an inline Fix → link. Playwright tests added in `email-validation-and-holder-name.spec.js`. Existing completeness test updated to include email. |
 | F62 | Vault holder's name in all delivery emails + PDF | Must | done | `send_notification_email`, `send_allclear_email`, and `generate_pdf_for_contact` now accept a `holder_name` parameter (default: "the vault holder" for backward safety). `run_pulse_scan` and the `POST /checkin` endpoint both pass `user["name"]`. jsPDF cover page reads `holderName` from `sessionStorage.getItem('ee_user')`. All-clear email subject now personalised: "All clear — {name} is okay". |
-| F63 | Nomination email when a contact is added | Must | done | `send_nomination_email()` + `POST /contact/nominate` endpoint. Frontend `saveK()` calls `nominateContact()` (fire-and-forget, non-blocking) on new contact add and on email change during edit. Email is warm/reassuring: "no action needed." Holder name personalised via `current_user["name"]`. No PDF attachment. 5 new pytest tests (85 total). |
+| F63 | Nomination email when a contact is added | Must | done | `send_nomination_email()` + `POST /contact/nominate` endpoint. Frontend `saveK()` calls `nominateContact()` (fire-and-forget, non-blocking) on new contact add and on email change during edit. Email is warm/reassuring: "no action needed." Holder name personalised via `current_user["name"]`. No PDF attachment. 5 new pytest tests (113 total). |
 | F64 | Fix "Warn me first" protocol promise mismatch | Must | done | Option B implemented: label renamed from "Warn me first (3 reminders, then notify contacts)" to "Wait 3 extra days, then notify contacts" across `PROTO_LABELS`, the Settings radio button, and the NQ modal fallback. Playwright test assertion updated to match. Option A (real warning emails) tracked as F64-2. |
 | F64-2 | Escalating warning emails during overdue window | Must | done | The right long-term fix for F64. When a vault becomes overdue and `ping_then_notify` is active, send the holder a warning email at day 1 (and optionally day 2) before contacts are notified on day 3. Requires: new `warningSent` flag on vault doc (or array of sent days), new `send_warning_email()` function, scheduler logic to fire during the overdue window (currently skipped), new pytest tests. Playwright test for NQ modal should verify the "days remaining" counter reflects actual warning state. Spec before building. |
 | F72 | Rebrand "Emergency Exit" → "Kinlight" | Must | done | **F72a ✅ (frontend, June 2026):** page title, Lantern SVG logo, status/hero/toast copy, milestone modal, "How Kinlight works" explainer, client-side jsPDF — name + full palette. Both `index.html` copies synced. Storage keys intentionally preserved. **F72b ✅ (backend, June 2026):** ReportLab PDF palette → charcoal/sage, PDF title + filename → Kinlight, all email functions (reminder, notification, all-clear, nomination, password reset) → Kinlight subjects/bodies/sign-off. **F72c ✅ (June 2026):** `kinlight.app` verified in Resend, `FROM_EMAIL` flipped, `APP_URL` updated to `https://kinlight.app`, backup filename updated to `kinlight-backup-*`, GitHub Pages custom domain live. F68 absorbed. F63 unblocked. |
@@ -598,7 +599,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 - [ ] Replace `identity-service/main.py` in VS Code
 - [ ] Replace `identity-service/test_main.py` in VS Code
 - [ ] `cp index.html frontend/index.html`
-- [ ] Run `python3 -m pytest test_main.py -v` — confirm 99 passed before pushing
+- [ ] Run `python3 -m pytest test_main.py -v` — confirm 113 passed before pushing
 - [ ] `git add -A`
 - [ ] `git commit -m "..."`
 - [ ] `git push`
