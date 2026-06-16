@@ -900,6 +900,17 @@ def contact_nominate(body: dict, current_user: dict = Depends(get_current_user))
     if not contact_email:
         return {"ok": False, "error": "contact_email required"}
 
+    # F79: Validate that this email belongs to a contact in the user's vault.
+    # Without this check, an attacker could use this endpoint to spam arbitrary
+    # email addresses from Kinlight's verified domain.
+    vault_doc = vaults_col.find_one({"userId": current_user["_id"]})
+    if not vault_doc:
+        return {"ok": False, "error": "no vault found"}
+    vault_contacts = vault_doc.get("content", {}).get("kin") or []
+    contact_emails = [c.get("email", "").strip().lower() for c in vault_contacts]
+    if contact_email.lower() not in contact_emails:
+        return {"ok": False, "error": "contact not found in vault"}
+
     sent = send_nomination_email(contact_email, contact_first, holder_name)
     return {"ok": sent}
 

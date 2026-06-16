@@ -1,7 +1,7 @@
 """
 Emergency Exit — Backend Test Suite
 Run: python3 -m pytest test_main.py -v
-Expected: 117 passed
+Expected: 122 passed
 """
 
 import pytest
@@ -30,6 +30,7 @@ from main import (
     should_notify_contacts,
     send_warning_email,
     send_contacts_notified_email,
+    contact_nominate,
 )
 
 
@@ -705,6 +706,79 @@ class TestNominationEmail:
         call_kwargs = mock_post.call_args
         payload = call_kwargs[1]["json"]
         assert "attachments" not in payload
+
+
+# ─── F79: NOMINATION EMAIL VALIDATION ─────────────────────────────────────────
+
+class TestNominationValidation:
+    """Tests for F79: validate nomination email against user's vault contacts."""
+
+    def _make_vault_doc(self, contacts):
+        """Helper: build a vault doc with the given contact list."""
+        return {"content": {"kin": contacts}}
+
+    def test_rejects_email_not_in_vault(self):
+        """Should return error if the email is not in the user's vault contacts."""
+        vault_doc = self._make_vault_doc([{"email": "alice@example.com", "first": "Alice"}])
+        with patch("main.vaults_col") as mock_col:
+            mock_col.find_one.return_value = vault_doc
+            result = contact_nominate(
+                {"contact_email": "attacker@evil.com", "contact_first": "Hax"},
+                {"_id": "user1", "name": "Test User"},
+            )
+        assert result["ok"] is False
+        assert "not found" in result["error"]
+
+    def test_accepts_email_in_vault(self):
+        """Should send the email when the contact exists in the user's vault."""
+        vault_doc = self._make_vault_doc([{"email": "jane@example.com", "first": "Jane"}])
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        with patch("main.vaults_col") as mock_col, \
+             patch("main.requests.post", return_value=mock_response):
+            mock_col.find_one.return_value = vault_doc
+            result = contact_nominate(
+                {"contact_email": "jane@example.com", "contact_first": "Jane"},
+                {"_id": "user1", "name": "Test User"},
+            )
+        assert result["ok"] is True
+
+    def test_case_insensitive_match(self):
+        """Email comparison should be case-insensitive."""
+        vault_doc = self._make_vault_doc([{"email": "Jane@Example.COM", "first": "Jane"}])
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        with patch("main.vaults_col") as mock_col, \
+             patch("main.requests.post", return_value=mock_response):
+            mock_col.find_one.return_value = vault_doc
+            result = contact_nominate(
+                {"contact_email": "jane@example.com", "contact_first": "Jane"},
+                {"_id": "user1", "name": "Test User"},
+            )
+        assert result["ok"] is True
+
+    def test_rejects_when_no_vault(self):
+        """Should return error if the user has no vault document at all."""
+        with patch("main.vaults_col") as mock_col:
+            mock_col.find_one.return_value = None
+            result = contact_nominate(
+                {"contact_email": "jane@example.com", "contact_first": "Jane"},
+                {"_id": "user1", "name": "Test User"},
+            )
+        assert result["ok"] is False
+        assert "no vault" in result["error"]
+
+    def test_rejects_when_vault_has_no_contacts(self):
+        """Should return error if the vault exists but has no contacts."""
+        vault_doc = self._make_vault_doc([])
+        with patch("main.vaults_col") as mock_col:
+            mock_col.find_one.return_value = vault_doc
+            result = contact_nominate(
+                {"contact_email": "jane@example.com", "contact_first": "Jane"},
+                {"_id": "user1", "name": "Test User"},
+            )
+        assert result["ok"] is False
+        assert "not found" in result["error"]
 
 
 # ─── F66: PASSWORD RESET ──────────────────────────────────────────────────────

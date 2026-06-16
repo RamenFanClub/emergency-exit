@@ -149,7 +149,7 @@ The `index.html` includes a login wall:
 cd identity-service
 python3 -m pytest test_main.py -v
 ```
-Expected output: `113 passed` — if any fail, fix before pushing.
+Expected output: `122 passed` — if any fail, fix before pushing.
 
 ---
 
@@ -386,7 +386,7 @@ notes, isTester, createdAt, lastLogin
 
 **File:** `identity-service/test_main.py`
 **Run:** `python3 -m pytest test_main.py -v`
-**Expected:** 113 passed
+**Expected:** 122 passed
 
 ### Coverage by feature
 
@@ -405,6 +405,7 @@ notes, isTester, createdAt, lastLogin
 | `TestCompletenessLogic` | Completeness score (7 checks) | 6 |
 | `TestReminderLogic` | F60 reminder threshold + email | 11 |
 | `TestNominationEmail` | F63 nomination email | 5 |
+| `TestNominationValidation` | F79 contact-in-vault check | 5 |
 | `TestWarningLogic` | F64-2 escalating warning emails — should_send_warning, should_notify_contacts, email content, guard logic | 13 |
 | `TestPasswordReset` | F66 password reset — token hashing, expiry, single-use, email | 14 |
 
@@ -515,7 +516,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F78 | Add JWT token expiry | Must | done | **OWASP A02 — Cryptographic Failures.** `create_token()` sets no `exp` claim — tokens never expire. A stolen token grants permanent access. Add `"exp": datetime.utcnow() + timedelta(hours=24)` and `"iat"` to payload. PyJWT auto-rejects expired tokens. ~10 min. **Tier 1.** |
 | F82 | Sanitise user data in innerHTML (XSS prevention) | Must | backlog | **OWASP A03 — Injection.** 25 `innerHTML` calls in `index.html`; several interpolate unsanitised user data (contact names, asset names, wish titles, details, beneficiaries). Create an `esc()` helper to replace `<>&"'` with HTML entities; apply to all user-data interpolations. Self-XSS today but attack surface changes with export/admin features. ~1 hr. **Tier 1.** |
 | F88 | Lock down CORS to allowed origins only | Must | done | **OWASP A05 — Security Misconfiguration.** `allow_origins=["*"]` with `allow_credentials=True` lets any website make authenticated API calls as a logged-in user. Change to `["https://kinlight.app", "https://ramenfanclub.github.io"]`. ~5 min. **Tier 1.** |
-| F79 | Validate nomination email against user's vault contacts | Must | backlog | **OWASP A01 — Broken Access Control.** `POST /contact/nominate` sends emails to any address without checking the contact exists in the user's vault. Could be abused to spam arbitrary emails from Kinlight's verified domain. Query `vaults_col` to verify contact email before sending. ~20 min. **Tier 1.** |
+| F79 | Validate nomination email against user's vault contacts | Must | done | **OWASP A01 — Broken Access Control.** `POST /contact/nominate` now checks the contact email exists in the user's vault before sending. Returns error if no vault, no contacts, or email not found. Case-insensitive match. 5 new tests in `TestNominationValidation`. |
 | F80 | Assign unique passwords to each tester | Must | backlog | **OWASP A04 — Insecure Design.** All 6 testers share password `Benny#07`. Any tester can log in as any other tester. Update each account with a unique password in MongoDB Atlas before expanding tester group. ~15 min (manual). **Tier 1.** |
 | F81 | Remove python-jose from requirements.txt | Must | done | **OWASP A05 — Security Misconfiguration.** `python-jose[cryptography]` is still listed despite project using PyJWT. Installs unnecessary dependencies with potential vulnerabilities. Delete the line. ~2 min. **Tier 1.** |
 
