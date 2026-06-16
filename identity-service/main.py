@@ -42,7 +42,7 @@ app.add_middleware(
 MONGO_URI = os.environ.get("MONGO_URI", "")
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
-APP_URL = "https://ramenfanclub.github.io/emergency-exit/"
+APP_URL = "https://kinlight.app"
 # F72b — SENDER ADDRESS: do NOT change until kinlight.app is verified in Resend.
 # Switching to an unverified domain causes SILENT email delivery failure for all users.
 # Once kinlight.app shows "Verified" in the Resend dashboard, change this line to:
