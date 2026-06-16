@@ -58,6 +58,7 @@ resets_col = db["password_resets"] if db is not None else None
 
 # Password reset configuration (F66)
 RESET_TOKEN_TTL_MINUTES = 60
+JWT_EXPIRY_HOURS = 24
 MIN_PASSWORD_LENGTH = 8
 
 # F64-2: Warning days for ping_then_notify protocol
@@ -150,7 +151,12 @@ def check_password(password: str, hashed: str) -> bool:
 
 
 def create_token(user_id: str) -> str:
-    return jwt.encode({"sub": user_id}, JWT_SECRET, algorithm="HS256")
+    payload = {
+        "sub": user_id,
+        "iat": now_utc(),
+        "exp": now_utc() + timedelta(hours=JWT_EXPIRY_HOURS),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
 
 # ─── F66: PASSWORD RESET HELPERS ─────────────────────────────────────────────
@@ -196,7 +202,7 @@ def get_current_user(authorization: str = Header(None)) -> dict:
         raise HTTPException(status_code=401, detail="Missing token")
     token = authorization.split(" ", 1)[1]
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"], options={"require": ["exp", "sub"]})
         user = users_col.find_one({"_id": ObjectId(payload["sub"])})
         if not user:
             raise HTTPException(status_code=401, detail="User not found")

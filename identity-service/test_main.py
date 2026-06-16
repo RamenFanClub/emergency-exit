@@ -1,10 +1,11 @@
 """
 Emergency Exit — Backend Test Suite
 Run: python3 -m pytest test_main.py -v
-Expected: 99 passed
+Expected: 117 passed
 """
 
 import pytest
+import jwt
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock
 
@@ -16,6 +17,7 @@ from main import (
     hash_password, check_password,
     create_token,
     clean_user,
+    JWT_SECRET,
     is_overdue,
     is_reminder_due,
     send_reminder_email,
@@ -286,6 +288,38 @@ class TestCreateToken:
 
     def test_different_ids_different_tokens(self):
         assert create_token("id1") != create_token("id2")
+
+    def test_token_contains_exp_claim(self):
+        token = create_token("abc123")
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"],
+                             options={"verify_exp": False})
+        assert "exp" in payload
+
+    def test_token_contains_iat_claim(self):
+        token = create_token("abc123")
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"],
+                             options={"verify_exp": False})
+        assert "iat" in payload
+
+    def test_token_expires_in_24_hours(self):
+        token = create_token("abc123")
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"],
+                             options={"verify_exp": False})
+        exp = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+        iat = datetime.fromtimestamp(payload["iat"], tz=timezone.utc)
+        delta = exp - iat
+        assert 23 <= delta.total_seconds() / 3600 <= 25  # ~24 hours
+
+    def test_expired_token_rejected(self):
+        """A token with exp in the past should raise DecodeError."""
+        expired_payload = {
+            "sub": "abc123",
+            "iat": datetime.now(timezone.utc) - timedelta(hours=48),
+            "exp": datetime.now(timezone.utc) - timedelta(hours=24),
+        }
+        expired_token = jwt.encode(expired_payload, JWT_SECRET, algorithm="HS256")
+        with pytest.raises(jwt.ExpiredSignatureError):
+            jwt.decode(expired_token, JWT_SECRET, algorithms=["HS256"])
 
 
 # ─── CLEAN USER ───────────────────────────────────────────────────────────────

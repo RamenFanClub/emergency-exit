@@ -850,6 +850,7 @@ async function loadFromServer(){
   if(token){
     try{
       const res=await fetch(API+'/vault',{headers:authHeader()});
+      if(res.status===401){doLogout();return;}
       if(res.ok){
         const data=await res.json();
         if(data.ok&&data.vault){
@@ -875,11 +876,12 @@ function save(){
 async function syncVault(){
   if(!sessionStorage.getItem('ee_token'))return;
   try{
-    await fetch(API+'/vault/sync',{
+    const res=await fetch(API+'/vault/sync',{
       method:'POST',
       headers:{'Content-Type':'application/json',...authHeader()},
       body:JSON.stringify({vault:S})
     });
+    if(res.status===401){doLogout();return;}
   }catch(e){console.warn('Vault sync failed:',e);}
 }
 
