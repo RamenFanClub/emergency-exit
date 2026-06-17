@@ -1,7 +1,7 @@
 """
 Emergency Exit — Backend Test Suite
 Run: python3 -m pytest test_main.py -v
-Expected: 122 passed
+Expected: 128 passed
 """
 
 import pytest
@@ -31,6 +31,7 @@ from main import (
     send_warning_email,
     send_contacts_notified_email,
     contact_nominate,
+    require_admin,
 )
 
 
@@ -966,3 +967,49 @@ class TestWarningLogic:
             result = send_contacts_notified_email(user, contact_count=2)
         assert result is False
         mock_post.assert_not_called()
+
+
+# ─── ADMIN ROLE CHECK (F77) ──────────────────────────────────────────────────
+
+class TestRequireAdmin:
+    """F77: require_admin() must block non-admin users with 403."""
+
+    def test_admin_user_passes(self):
+        """User with isAdmin=True should not raise."""
+        user = {"_id": "abc", "username": "admin_user", "isAdmin": True}
+        # Should not raise
+        require_admin(user)
+
+    def test_non_admin_user_blocked(self):
+        """User without isAdmin should get 403."""
+        user = {"_id": "abc", "username": "tester_01", "isTester": True}
+        with pytest.raises(Exception) as exc_info:
+            require_admin(user)
+        assert exc_info.value.status_code == 403
+        assert "Admin access required" in str(exc_info.value.detail)
+
+    def test_missing_isAdmin_field_blocked(self):
+        """User document with no isAdmin field at all should get 403 (defaults to False)."""
+        user = {"_id": "abc", "username": "old_user"}
+        with pytest.raises(Exception) as exc_info:
+            require_admin(user)
+        assert exc_info.value.status_code == 403
+
+    def test_isAdmin_false_blocked(self):
+        """Explicit isAdmin=False should get 403."""
+        user = {"_id": "abc", "username": "tester_02", "isAdmin": False}
+        with pytest.raises(Exception) as exc_info:
+            require_admin(user)
+        assert exc_info.value.status_code == 403
+
+    def test_clean_user_includes_isAdmin(self):
+        """clean_user() should expose isAdmin in its output."""
+        user = {"_id": "abc", "username": "admin", "isAdmin": True, "password": "secret"}
+        cleaned = clean_user(user)
+        assert cleaned["isAdmin"] is True
+
+    def test_clean_user_defaults_isAdmin_false(self):
+        """clean_user() should default isAdmin to False if missing."""
+        user = {"_id": "abc", "username": "regular"}
+        cleaned = clean_user(user)
+        assert cleaned["isAdmin"] is False

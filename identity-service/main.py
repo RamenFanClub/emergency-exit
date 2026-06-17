@@ -197,6 +197,7 @@ def clean_user(user: dict) -> dict:
         "ageGroup": user.get("ageGroup", ""),
         "hasWill":  user.get("hasWill", False),
         "isTester": user.get("isTester", False),
+        "isAdmin":  user.get("isAdmin", False),
     }
 
 
@@ -212,6 +213,12 @@ def get_current_user(authorization: str = Header(None)) -> dict:
         return user
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def require_admin(current_user: dict) -> None:
+    """Raise 403 if the current user does not have the isAdmin flag."""
+    if not current_user.get("isAdmin", False):
+        raise HTTPException(status_code=403, detail="Admin access required")
 
 
 # ─── CHECKIN WINDOW CALCULATIONS ─────────────────────────────────────────────
@@ -840,6 +847,7 @@ def reset_password(body: dict):
 
 @app.get("/admin/testers")
 def list_testers(current_user: dict = Depends(get_current_user)):
+    require_admin(current_user)
     testers = list(users_col.find({"isTester": True}))
     return {"ok": True, "testers": [clean_user(t) for t in testers]}
 
@@ -958,6 +966,7 @@ def checkin(current_user: dict = Depends(get_current_user)):
 @app.post("/admin/trigger-pulse")
 def trigger_pulse(current_user: dict = Depends(get_current_user)):
     """Manually trigger the pulse scan. For testing."""
+    require_admin(current_user)
     run_pulse_scan()
     return {"ok": True, "message": "Pulse scan triggered"}
 
@@ -965,6 +974,7 @@ def trigger_pulse(current_user: dict = Depends(get_current_user)):
 @app.post("/admin/force-overdue")
 def force_overdue(current_user: dict = Depends(get_current_user)):
     """Set vault lastCheckin to 2020 to simulate an overdue state. For testing."""
+    require_admin(current_user)
     vaults_col.update_one(
         {"userId": current_user["_id"]},
         {"$set": {
@@ -986,6 +996,7 @@ def force_reminder(current_user: dict = Depends(get_current_user)):
     Places lastCheckin so exactly (threshold - 1) days remain until due.
     For testing only.
     """
+    require_admin(current_user)
     vault_doc = vaults_col.find_one({"userId": current_user["_id"]})
     interval = _interval_days(vault_doc) if vault_doc else 60
     threshold = max(7, round(interval * 0.25))
@@ -1008,6 +1019,7 @@ def force_reminder(current_user: dict = Depends(get_current_user)):
 @app.post("/admin/force-warning")
 def force_warning(current_user: dict = Depends(get_current_user)):
     """F64-2: Set vault to day 1 of overdue (just inside warning window). For testing."""
+    require_admin(current_user)
     vault_doc = vaults_col.find_one({"userId": current_user["_id"]})
     interval = _interval_days(vault_doc) if vault_doc else 60
     grace = vault_doc.get("gracePeriodDays", 7) if vault_doc else 7

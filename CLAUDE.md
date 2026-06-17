@@ -23,6 +23,7 @@ The `index.html` includes a login wall:
 - **Enter key** submits the login form
 - **Session persistence** — if token exists in sessionStorage, login wall is skipped
 - **Tester accounts:** tester_01 through tester_06, all share password `Benny#07`
+- **Admin account:** `anggi` (F77) — separate from the tester pool, `isAdmin: true`, `isTester: false`. This is Anggi's personal/live account, used to build out a real vault and to access `/admin/*` endpoints. Currently uses the same temporary password as testers (`Benny#07`) — needs a unique password before launch.
 
 ### Key element IDs for login:
 - `#login-wall` — the full-screen login overlay
@@ -149,7 +150,7 @@ The `index.html` includes a login wall:
 cd identity-service
 python3 -m pytest test_main.py -v
 ```
-Expected output: `122 passed` — if any fail, fix before pushing.
+Expected output: `128 passed` — if any fail, fix before pushing.
 
 ---
 
@@ -376,9 +377,10 @@ ee_onboarded: 'true'   ← set on first dismissal of F44 explainer card. Persist
 ### MongoDB users collection
 ```
 _id, username, password (bcrypt hash), name, ageGroup, hasWill,
-notes, isTester, createdAt, lastLogin
+notes, isTester, isAdmin, createdAt, lastLogin
 ```
-**Tester accounts:** tester_01 through tester_06. All passwords updated to bcrypt hash of `Benny#07`.
+**Tester accounts:** tester_01 through tester_06. All passwords updated to bcrypt hash of `Benny#07`. No `isAdmin` field (defaults to `false`).
+**Admin account:** `anggi` — `isTester: false`, `isAdmin: true`. Added F77. ⚠️ Currently shares the same temporary password as testers (`Benny#07`) — change before launch.
 
 ---
 
@@ -386,7 +388,7 @@ notes, isTester, createdAt, lastLogin
 
 **File:** `identity-service/test_main.py`
 **Run:** `python3 -m pytest test_main.py -v`
-**Expected:** 122 passed
+**Expected:** 128 passed
 
 ### Coverage by feature
 
@@ -408,6 +410,7 @@ notes, isTester, createdAt, lastLogin
 | `TestNominationValidation` | F79 contact-in-vault check | 5 |
 | `TestWarningLogic` | F64-2 escalating warning emails — should_send_warning, should_notify_contacts, email content, guard logic | 13 |
 | `TestPasswordReset` | F66 password reset — token hashing, expiry, single-use, email | 14 |
+| `TestRequireAdmin` | F77 admin role check — require_admin(), clean_user isAdmin | 6 |
 
 ### Frontend test coverage
 F44, F45, and other frontend features are not covered by the pytest suite — pytest only covers the Python backend. Frontend test coverage requires a browser automation tool (e.g. Playwright). This is tracked as a future infrastructure task. See F58 in the backlog.
@@ -512,12 +515,12 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 | F64 | Fix "Warn me first" protocol promise mismatch | Must | done | Option B implemented: label renamed from "Warn me first (3 reminders, then notify contacts)" to "Wait 3 extra days, then notify contacts" across `PROTO_LABELS`, the Settings radio button, and the NQ modal fallback. Playwright test assertion updated to match. Option A (real warning emails) tracked as F64-2. |
 | F64-2 | Escalating warning emails during overdue window | Must | done | The right long-term fix for F64. When a vault becomes overdue and `ping_then_notify` is active, send the holder a warning email at day 1 (and optionally day 2) before contacts are notified on day 3. Requires: new `warningSent` flag on vault doc (or array of sent days), new `send_warning_email()` function, scheduler logic to fire during the overdue window (currently skipped), new pytest tests. Playwright test for NQ modal should verify the "days remaining" counter reflects actual warning state. Spec before building. |
 | F72 | Rebrand "Emergency Exit" → "Kinlight" | Must | done | **F72a ✅ (frontend, June 2026):** page title, Lantern SVG logo, status/hero/toast copy, milestone modal, "How Kinlight works" explainer, client-side jsPDF — name + full palette. Both `index.html` copies synced. Storage keys intentionally preserved. **F72b ✅ (backend, June 2026):** ReportLab PDF palette → charcoal/sage, PDF title + filename → Kinlight, all email functions (reminder, notification, all-clear, nomination, password reset) → Kinlight subjects/bodies/sign-off. **F72c ✅ (June 2026):** `kinlight.app` verified in Resend, `FROM_EMAIL` flipped, `APP_URL` updated to `https://kinlight.app`, backup filename updated to `kinlight-backup-*`, GitHub Pages custom domain live. F68 absorbed. F63 unblocked. |
-| F77 | Add admin role check to all `/admin/*` endpoints | Must | backlog | **OWASP A01 — Broken Access Control.** Any logged-in user can trigger pulse scan, force vaults overdue, or list all testers. Add `isAdmin` check function, apply to all admin routes. A tester forcing another vault overdue would cause a false-alarm notification — Kinlight's worst failure mode. ~30 min. **Tier 1.** |
+| F77 | Add admin role check to all `/admin/*` endpoints | Must | done | **OWASP A01 — Broken Access Control.** Added `require_admin()` helper that checks `isAdmin` flag on user doc; raises 403 if missing/false. Applied to all 5 admin routes: `/admin/testers`, `/admin/trigger-pulse`, `/admin/force-overdue`, `/admin/force-reminder`, `/admin/force-warning`. `clean_user()` now exposes `isAdmin` in API responses. 6 new pytest tests in `TestRequireAdmin` (128 total). **Admin account created:** new `anggi` user (separate from `tester_01`–`tester_06`) with `isAdmin: true`, `isTester: false` — used as Anggi's live/personal account, not a test account. Testers correctly have no `isAdmin` field (defaults to `false`). **⚠️ Open item:** `anggi` account currently uses the same temporary password as the testers (`Benny#07`) — must be changed to a unique password before launch (tracked under F80). |
 | F78 | Add JWT token expiry | Must | done | **OWASP A02 — Cryptographic Failures.** `create_token()` sets no `exp` claim — tokens never expire. A stolen token grants permanent access. Add `"exp": datetime.utcnow() + timedelta(hours=24)` and `"iat"` to payload. PyJWT auto-rejects expired tokens. ~10 min. **Tier 1.** |
 | F82 | Sanitise user data in innerHTML (XSS prevention) | Must | backlog | **OWASP A03 — Injection.** 25 `innerHTML` calls in `index.html`; several interpolate unsanitised user data (contact names, asset names, wish titles, details, beneficiaries). Create an `esc()` helper to replace `<>&"'` with HTML entities; apply to all user-data interpolations. Self-XSS today but attack surface changes with export/admin features. ~1 hr. **Tier 1.** |
 | F88 | Lock down CORS to allowed origins only | Must | done | **OWASP A05 — Security Misconfiguration.** `allow_origins=["*"]` with `allow_credentials=True` lets any website make authenticated API calls as a logged-in user. Change to `["https://kinlight.app", "https://ramenfanclub.github.io"]`. ~5 min. **Tier 1.** |
 | F79 | Validate nomination email against user's vault contacts | Must | done | **OWASP A01 — Broken Access Control.** `POST /contact/nominate` now checks the contact email exists in the user's vault before sending. Returns error if no vault, no contacts, or email not found. Case-insensitive match. 5 new tests in `TestNominationValidation`. |
-| F80 | Assign unique passwords to each tester | Must | backlog | **OWASP A04 — Insecure Design.** All 6 testers share password `Benny#07`. Any tester can log in as any other tester. Update each account with a unique password in MongoDB Atlas before expanding tester group. ~15 min (manual). **Tier 1.** |
+| F80 | Assign unique passwords to each tester | Must | backlog | **OWASP A04 — Insecure Design.** All 6 testers share password `Benny#07`. Any tester can log in as any other tester. Update each account with a unique password in MongoDB Atlas before expanding tester group. **Scope extended (F77):** also includes the `anggi` admin account, which currently shares this same password — highest priority of the batch, since it has `isAdmin: true`. ~15 min (manual). **Tier 1.** |
 | F81 | Remove python-jose from requirements.txt | Must | done | **OWASP A05 — Security Misconfiguration.** `python-jose[cryptography]` is still listed despite project using PyJWT. Installs unnecessary dependencies with potential vulnerabilities. Delete the line. ~2 min. **Tier 1.** |
 
 ---
@@ -623,7 +626,7 @@ Status key: `idea` → `specified` → `in-progress` → `done`
 - [ ] Replace `identity-service/main.py` in VS Code
 - [ ] Replace `identity-service/test_main.py` in VS Code
 - [ ] `cp index.html frontend/index.html`
-- [ ] Run `python3 -m pytest test_main.py -v` — confirm 113 passed before pushing
+- [ ] Run `python3 -m pytest test_main.py -v` — confirm 128 passed before pushing
 - [ ] `git add -A`
 - [ ] `git commit -m "..."`
 - [ ] `git push`
