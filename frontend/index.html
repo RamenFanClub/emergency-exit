@@ -735,6 +735,11 @@ const authHeader = () => {
   const t = sessionStorage.getItem('ee_token');
   return t ? {'Authorization':'Bearer '+t} : {};
 };
+// F82: HTML entity escaping — prevents XSS when user data is placed in innerHTML
+const esc = s => {
+  if(s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+};
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 async function doLogin(){
@@ -1187,7 +1192,7 @@ function renderNQModal(){
     const sc=k.queueStatus==='queued'?'nq-queued':'nq-waiting';
     const sl=k.queueStatus==='queued'?'Queued':'Waiting';
     const timing=S.notifyProto==='escalate'?(k.queueStatus==='queued'?' — would be sent now':' — day '+(i+1)):'';
-    return`<div class="nq-item"><div class="nq-avatar">${initials(k)}</div><div style="flex:1;"><div class="nq-name">#${i+1} ${k.first} ${k.last||''}</div><div class="nq-method">via ${NOTIFY_LABELS[k.notifyVia]||'Email'}${timing}</div></div><span class="nq-status ${sc}">${sl}</span></div>`;
+    return`<div class="nq-item"><div class="nq-avatar">${initials(k)}</div><div style="flex:1;"><div class="nq-name">#${i+1} ${esc(k.first)} ${esc(k.last||'')} </div><div class="nq-method">via ${NOTIFY_LABELS[k.notifyVia]||'Email'}${timing}</div></div><span class="nq-status ${sc}">${sl}</span></div>`;
   }).join('');
 }
 
@@ -1326,7 +1331,7 @@ function render(){
       ${queue.slice(0,3).map((k,i)=>{
         const sc=k.queueStatus==='queued'?'nq-queued':'nq-waiting';
         const sl=k.queueStatus==='queued'?'Queued':'Waiting';
-        return`<div class="nq-item"><div class="nq-avatar">${initials(k)}</div><div style="flex:1;"><div class="nq-name">#${i+1} ${k.first} ${k.last||''}</div><div class="nq-method">via ${NOTIFY_LABELS[k.notifyVia]||'Email'}</div></div><span class="nq-status ${sc}">${sl}</span></div>`;
+        return`<div class="nq-item"><div class="nq-avatar">${initials(k)}</div><div style="flex:1;"><div class="nq-name">#${i+1} ${esc(k.first)} ${esc(k.last||'')}</div><div class="nq-method">via ${NOTIFY_LABELS[k.notifyVia]||'Email'}</div></div><span class="nq-status ${sc}">${sl}</span></div>`;
       }).join('')}
       ${queue.length>3?`<div style="text-align:center;font-size:11px;color:var(--ov);padding:4px 0;">+ ${queue.length-3} more contact${queue.length-3!==1?'s':''}</div>`:''}
       <button class="nq-generate" onclick="generateAllPDFs()"><span class="m" style="font-size:16px;">picture_as_pdf</span>Preview all packages (nothing is sent)</button>
@@ -1393,7 +1398,7 @@ function render(){
   // ── Activity log ──────────────────────────────────────────────────────────
   $('d-act').innerHTML=S.log.length===0
     ?'<div style="text-align:center;padding:18px 0;color:var(--ov);font-size:13px;">No activity yet</div>'
-    :S.log.slice(0,5).map(l=>'<div class="ai"><div class="aico"><span class="m">history</span></div><div><div style="font-weight:700;font-size:13px;color:var(--p);line-height:1.2;">'+l.msg+'</div><div style="font-size:11px;color:var(--ov);margin-top:1px;">'+l.time+'</div></div></div>').join('');
+    :S.log.slice(0,5).map(l=>'<div class="ai"><div class="aico"><span class="m">history</span></div><div><div style="font-weight:700;font-size:13px;color:var(--p);line-height:1.2;">'+esc(l.msg)+'</div><div style="font-size:11px;color:var(--ov);margin-top:1px;">'+esc(l.time)+'</div></div></div>').join('');
 
   // ── Assets ledger ─────────────────────────────────────────────────────────
   const lel=$('l-content');
@@ -1402,7 +1407,7 @@ function render(){
   }else{
     lel.innerHTML=ASSET_CATS.filter(c=>S.assets.some(a=>a.category===c)).map(cat=>{
       const items=S.assets.filter(a=>a.category===cat);
-      return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(ASSET_ICONS[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+pl(items.length,'ITEM').toUpperCase()+'</span></div>'+items.map(a=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(ASSET_ICONS[a.category]||'category')+'</span></div><div class="lib"><div class="lit">'+a.name+'</div><div class="lis">'+trunc(a.details||a.category)+(a.beneficiary?' · '+a.beneficiary:'')+'</div></div><div style="display:flex;align-items:center;gap:6px;">'+(a.value?'<span style="font-size:12px;font-weight:700;color:var(--p);">$'+Math.round(a.value).toLocaleString()+'</span>':'')+'<button onclick="editA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button class="del-btn" onclick="delA('+a.id+')"><span class="m">delete</span></button></div></div>').join('')+'</div>';
+      return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(ASSET_ICONS[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+pl(items.length,'ITEM').toUpperCase()+'</span></div>'+items.map(a=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(ASSET_ICONS[a.category]||'category')+'</span></div><div class="lib"><div class="lit">'+esc(a.name)+'</div><div class="lis">'+esc(trunc(a.details||a.category))+(a.beneficiary?' · '+esc(a.beneficiary):'')+'</div></div><div style="display:flex;align-items:center;gap:6px;">'+(a.value?'<span style="font-size:12px;font-weight:700;color:var(--p);">$'+Math.round(a.value).toLocaleString()+'</span>':'')+'<button onclick="editA('+a.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button class="del-btn" onclick="delA('+a.id+')"><span class="m">delete</span></button></div></div>').join('')+'</div>';
     }).join('');
   }
   $('l-pct').textContent=pct+'%';
@@ -1423,7 +1428,7 @@ function render(){
 
   // ── Supporting docs ───────────────────────────────────────────────────────
   const docs=S.suppDocs||[];
-  $('supp-docs').innerHTML=docs.map(d=>'<div class="attach-row"><span class="m mf" style="font-size:18px;color:var(--ac);">description</span><div style="flex:1;"><div class="attach-name">'+d.name+'</div><div class="attach-size">'+d.type+(d.loc?' · '+d.loc:'')+'</div></div><button class="del-btn" onclick="delSupp('+d.id+')"><span class="m">delete</span></button></div>').join('');
+  $('supp-docs').innerHTML=docs.map(d=>'<div class="attach-row"><span class="m mf" style="font-size:18px;color:var(--ac);">description</span><div style="flex:1;"><div class="attach-name">'+esc(d.name)+'</div><div class="attach-size">'+esc(d.type)+(d.loc?' · '+esc(d.loc):'')+'</div></div><button class="del-btn" onclick="delSupp('+d.id+')"><span class="m">delete</span></button></div>').join('');
   const sowDoc=docs.find(d=>d.type==='Statement of Wishes');
   $('sow-nudge').style.display=sowDoc?'none':'block';
   $('sow-done').style.display=sowDoc?'block':'none';
@@ -1436,7 +1441,7 @@ function render(){
   }else{
     wel.innerHTML=WISH_CATS.filter(c=>S.wishes.some(w=>w.category===c)).map(cat=>{
       const items=S.wishes.filter(w=>w.category===cat);
-      return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(WISH_ICONS[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+pl(items.length,'ITEM').toUpperCase()+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(WISH_ICONS[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+w.title+'</div><div class="lis">'+trunc(w.details||w.category)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(PRI_COLORS[w.priority]||'ts')+'">'+w.priority+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button class="del-btn" onclick="delW('+w.id+')"><span class="m">delete</span></button></div></div>').join('')+'</div>';
+      return'<div class="card" style="margin-bottom:12px;"><div class="sh" style="margin-bottom:8px;"><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);display:flex;align-items:center;gap:5px;"><span class="m" style="font-size:15px;">'+(WISH_ICONS[cat]||'category')+'</span>'+cat.toUpperCase()+'</span><span style="font-size:11px;font-weight:700;color:var(--sec);">'+pl(items.length,'ITEM').toUpperCase()+'</span></div>'+items.map(w=>'<div class="li" style="padding-right:8px;"><div class="lic"><span class="m">'+(WISH_ICONS[w.category]||'category')+'</span></div><div class="lib"><div class="lit">'+esc(w.title)+'</div><div class="lis">'+esc(trunc(w.details||w.category))+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="tag '+(PRI_COLORS[w.priority]||'ts')+'">'+esc(w.priority)+'</span><button onclick="editW('+w.id+')" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="m" style="font-size:15px;color:var(--sec);">edit</span></button><button class="del-btn" onclick="delW('+w.id+')"><span class="m">delete</span></button></div></div>').join('')+'</div>';
     }).join('');
   }
 
@@ -1454,8 +1459,8 @@ function render(){
         <div class="kt">
           <div class="ka">${initials(k)}</div>
           <div style="flex:1;">
-            <div style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--p);line-height:1;">${k.first} ${k.last}</div>
-            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);margin-top:2px;">${k.rel||'Contact'}</div>
+            <div style="font-family:var(--fh);font-size:17px;font-weight:800;color:var(--p);line-height:1;">${esc(k.first)} ${esc(k.last)}</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sec);margin-top:2px;">${esc(k.rel)||'Contact'}</div>
           </div>
           ${letterPill}
         </div>
@@ -1464,8 +1469,8 @@ function render(){
           <span style="font-size:11px;color:var(--ov);">Notify via ${NOTIFY_LABELS[k.notifyVia]||'Email'}</span>
         </div>
         ${emailWarnPill}
-        ${k.email?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;"><span class="m" style="font-size:13px;color:var(--ov2);">mail</span><span style="font-size:11px;color:var(--ov);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${k.email}</span></div>`:''}
-        ${k.phone?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;"><span class="m" style="font-size:13px;color:var(--ov2);">phone</span><span style="font-size:11px;color:var(--ov);">${k.phone}</span></div>`:'<div style="margin-bottom:8px;"></div>'}
+        ${k.email?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;"><span class="m" style="font-size:13px;color:var(--ov2);">mail</span><span style="font-size:11px;color:var(--ov);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(k.email)}</span></div>`:''}
+        ${k.phone?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;"><span class="m" style="font-size:13px;color:var(--ov2);">phone</span><span style="font-size:11px;color:var(--ov);">${esc(k.phone)}</span></div>`:'<div style="margin-bottom:8px;"></div>'}
         <div style="display:flex;gap:10px;align-items:center;">
           <span style="font-size:11px;font-weight:700;color:var(--sec);background:var(--sl);padding:3px 10px;border-radius:99px;">#${i+1}</span>
           <button onclick="moveK(${k.id},-1)" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="m" style="font-size:16px;color:var(--sec);">arrow_upward</span></button>
@@ -1476,11 +1481,11 @@ function render(){
         </div>
         <button class="letter-btn ${hasLetter?'written':''}" onclick="openLetter(${k.id})">
           <span class="m" style="font-size:16px;">${hasLetter?'edit':'edit_note'}</span>
-          ${hasLetter?'Edit personal letter':`Write ${k.first} a personal message — it\u2019ll be the first thing they read`}
+          ${hasLetter?'Edit personal letter':`Write ${esc(k.first)} a personal message — it\u2019ll be the first thing they read`}
         </button>
         <button class="preview-btn" onclick="generatePDF(${k.id})">
           <span class="m" style="font-size:16px;color:var(--ac);">draft</span>
-          Preview what ${k.first} will receive
+          Preview what ${esc(k.first)} will receive
         </button>
       </div>`;
     }).join('');
