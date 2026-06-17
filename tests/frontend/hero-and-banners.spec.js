@@ -103,3 +103,69 @@ test.describe('Reminder Banner (F05)', () => {
   });
 
 });
+
+test.describe('Grace Period Banner (F98)', () => {
+  // Default vault: 2-month (60-day) interval + 7-day grace = 67-day overdue threshold.
+  // The grace window is the gap between day 60 (due date) and day 67 (overdue threshold).
+
+  test('grace banner shows once the due date has passed but grace has not expired', async ({ page }) => {
+    // 63 days ago: 3 days past due date, 4 days before grace expires
+    const vault = buildFullVault({
+      lastCheckin: Date.now() - (63 * 24 * 60 * 60 * 1000),
+    });
+    await setupPage(page, { vault });
+    await loginViaUI(page);
+    await expect(page.locator('#grace-banner')).toBeVisible();
+    await expect(page.locator('#overdue-banner')).toBeHidden();
+    await expect(page.locator('#reminder-banner')).toBeHidden();
+  });
+
+  test('grace banner is hidden before the due date (reminder window instead)', async ({ page }) => {
+    const vault = buildFullVault({
+      lastCheckin: Date.now() - (50 * 24 * 60 * 60 * 1000),
+    });
+    await setupPage(page, { vault });
+    await loginViaUI(page);
+    await expect(page.locator('#grace-banner')).toBeHidden();
+  });
+
+  test('grace banner is hidden once truly overdue (overdue banner instead)', async ({ page }) => {
+    const vault = buildFullVault({
+      lastCheckin: Date.now() - (90 * 24 * 60 * 60 * 1000),
+    });
+    await setupPage(page, { vault });
+    await loginViaUI(page);
+    await expect(page.locator('#grace-banner')).toBeHidden();
+    await expect(page.locator('#overdue-banner')).toBeVisible();
+  });
+
+  test('hero headline reads "flickering" during the grace period', async ({ page }) => {
+    const vault = buildFullVault({
+      lastCheckin: Date.now() - (63 * 24 * 60 * 60 * 1000),
+    });
+    await setupPage(page, { vault });
+    await loginViaUI(page);
+    await expect(page.locator('#home-hero')).toContainText('flickering');
+  });
+
+  test('status badge reads "Grace Period" during the grace period', async ({ page }) => {
+    const vault = buildFullVault({
+      lastCheckin: Date.now() - (63 * 24 * 60 * 60 * 1000),
+    });
+    await setupPage(page, { vault });
+    await loginViaUI(page);
+    await expect(page.locator('#status-badge')).toContainText('Grace Period');
+  });
+
+  test('pulse card title reads "Grace period active" and days label reflects days until notified', async ({ page }) => {
+    // 63 days ago -> graceEnd at day 67 -> 4 days until contacts notified
+    const vault = buildFullVault({
+      lastCheckin: Date.now() - (63 * 24 * 60 * 60 * 1000),
+    });
+    await setupPage(page, { vault });
+    await loginViaUI(page);
+    await expect(page.locator('#pulse-title')).toHaveText('Grace period active');
+    await expect(page.locator('#days-label')).toContainText('until notified');
+  });
+
+});

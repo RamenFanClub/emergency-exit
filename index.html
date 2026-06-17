@@ -20,6 +20,7 @@ const API='https://emergency-exit-production.up.railway.app';
   --sec:#8a7d6e; --scc:#ddd5c8;
   --er:#ba1a1a;
   --am:#c47a20; --am-bg:rgba(196,122,32,.08); --am-border:rgba(196,122,32,.25);
+  --gr:#a8501e; --gr-bg:rgba(168,80,30,.08); --gr-border:rgba(168,80,30,.25);
   /* Typography */
   --fh:'Manrope',sans-serif; --fb:'Public Sans',sans-serif;
   /* Gradients & shadows */
@@ -178,6 +179,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 #pulse-card.pulse-due-soon .vc{box-shadow:0 0 0 3px rgba(196,122,32,.25),0 8px 32px rgba(196,122,32,.14);}
 #pulse-card.pulse-due-soon .vr::before{background:rgba(196,122,32,.10);}
 #pulse-card.pulse-due-soon .vr::after{background:rgba(196,122,32,.08);}
+#pulse-card.pulse-grace .vc{box-shadow:0 0 0 3px rgba(168,80,30,.28),0 8px 32px rgba(168,80,30,.16);}
+#pulse-card.pulse-grace .vr::before{background:rgba(168,80,30,.12);}
+#pulse-card.pulse-grace .vr::after{background:rgba(168,80,30,.10);}
 #completeness-card.pulse-dimmed-focus{box-shadow:0 0 0 2px var(--ab),0 2px 12px rgba(46,43,38,.07);}
 .pulse-explainer{font-size:11px;color:var(--ov);line-height:1.4;margin-top:2px;padding:4px 0 0;opacity:.75;transition:opacity .3s ease,max-height .3s ease;max-height:40px;overflow:hidden;}
 .pulse-explainer.hidden{opacity:0;max-height:0;padding:0;margin:0;}
@@ -250,6 +254,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .reminder-banner .rb-detail{background:rgba(0,0,0,.12);border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,.9);line-height:1.5;}
 .reminder-banner .rb-btn{width:100%;padding:12px;border-radius:10px;border:none;background:#fff;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--am);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s;}
 .reminder-banner .rb-btn:active{transform:scale(.96);}
+.grace-banner{background:linear-gradient(135deg,#6e3711 0%,#a8501e 100%);border-radius:var(--rc);padding:16px 14px;margin-bottom:14px;box-shadow:0 4px 16px rgba(168,80,30,.22);border-bottom:3px solid rgba(0,0,0,.15);}
+.grace-banner .gb-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.grace-banner .gb-icon{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.grace-banner .gb-icon .m{font-size:22px;color:#fff;}
+.grace-banner .gb-title{font-family:var(--fh);font-size:16px;font-weight:800;color:#fff;line-height:1.2;}
+.grace-banner .gb-sub{font-size:12px;color:rgba(255,255,255,.75);font-weight:500;margin-top:2px;}
+.grace-banner .gb-detail{background:rgba(0,0,0,.12);border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,.9);line-height:1.5;}
+.grace-banner .gb-btn{width:100%;padding:12px;border-radius:10px;border:none;background:#fff;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--gr);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s;}
+.grace-banner .gb-btn:active{transform:scale(.96);}
 
 /* ─── EXPLAINER CARD ─────────────────────────────────────────────────────── */
 .explainer-card{background:var(--w);border-radius:var(--rc);padding:16px;margin-bottom:14px;box-shadow:var(--cs);border:1.5px solid var(--ab);animation:fadeSlideIn .4s ease;}
@@ -406,6 +419,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
             Tap below to check in now and reset your timer. If you miss this window, your grace period will begin.
           </div>
           <button class="rb-btn" onclick="checkin()"><span class="m mf" style="font-size:16px;">favorite</span>Check in now</button>
+        </div>
+      </div>
+
+      <!-- F98: Grace-period banner — bridges the gap between "due soon" and "overdue" -->
+      <div id="grace-banner" style="display:none;">
+        <div class="grace-banner">
+          <div class="gb-header">
+            <div class="gb-icon"><span class="m mf">hourglass_top</span></div>
+            <div>
+              <div class="gb-title">Grace period active</div>
+              <div class="gb-sub" id="grace-sub">Your check-in window has closed</div>
+            </div>
+          </div>
+          <div class="gb-detail" id="grace-detail">
+            This is a safety buffer — your contacts haven't been notified yet. Check in now to reset everything immediately.
+          </div>
+          <button class="gb-btn" onclick="checkin()"><span class="m mf" style="font-size:16px;">favorite</span>I'm okay — check in now</button>
         </div>
       </div>
 
@@ -1257,8 +1287,18 @@ function render(){
   const {dueSoon, daysLeft} = getReminderStatus();
   const showReminder = dueSoon && !showOverdue && !overdue;
 
+  // F98: Grace period — the window between the due date passing and the
+  // grace period actually expiring. Previously invisible to the user: the
+  // due-soon reminder turns off at the due date, but the overdue banner
+  // doesn't turn on until graceEnd, leaving a silent gap.
+  const dueDatePassed = !!(dueDate && Date.now() > dueDate.getTime());
+  const showGrace = dueDatePassed && !overdue && hasContacts;
+  const daysUntilNotify = (showGrace && graceEnd) ? Math.max(0,Math.ceil((graceEnd.getTime()-Date.now())/86400000)) : 0;
+  const daysIntoGrace = (showGrace && dueDate) ? Math.max(0,Math.floor((Date.now()-dueDate.getTime())/86400000)) : 0;
+
   $('overdue-banner').style.display = showOverdue ? 'block' : 'none';
   $('reminder-banner').style.display = showReminder ? 'block' : 'none';
+  $('grace-banner').style.display = showGrace ? 'block' : 'none';
 
   if(showReminder){
     const graceDays = S.gp || 7;
@@ -1274,11 +1314,21 @@ function render(){
     }
   }
 
+  if(showGrace){
+    $('grace-sub').textContent = daysUntilNotify === 0
+      ? 'Contacts will be notified today if you don\'t check in'
+      : pl(daysUntilNotify,'day') + ' until your contacts are notified';
+    $('grace-detail').textContent = 'Your check-in window closed ' + pl(daysIntoGrace,'day') + ' ago. This is a safety buffer, not a notification — checking in now resets everything immediately.';
+  }
+
   // ── Hero headline (F45 — 5 states) ───────────────────────────────────────
   const heroEl = $('home-hero');
   if(showOverdue){
     heroEl.style.color = 'var(--er)';
     heroEl.innerHTML = 'Action needed.';
+  } else if(showGrace){
+    heroEl.style.color = 'var(--gr)';
+    heroEl.innerHTML = 'Your light is <span style="color:var(--gr);">flickering.</span>';
   } else if(pct < 30){
     heroEl.style.color = 'var(--p)';
     heroEl.innerHTML = 'Let\'s get you <span style="color:var(--ac);">set up.</span>';
@@ -1297,6 +1347,8 @@ function render(){
   const badge = $('status-badge');
   if(showOverdue){
     badge.innerHTML = '<div class="tag" style="background:rgba(186,26,26,.08);color:var(--er);border:1px solid rgba(186,26,26,.2);"><span class="m mf" style="font-size:10px;vertical-align:-1px;">warning</span> Overdue</div>';
+  } else if(showGrace){
+    badge.innerHTML = '<div class="tag" style="background:var(--gr-bg);color:var(--gr);border:1px solid var(--gr-border);"><span class="m mf" style="font-size:10px;vertical-align:-1px;">hourglass_top</span> Grace Period</div>';
   } else if(showReminder){
     badge.innerHTML = '<div class="tag" style="background:var(--am-bg);color:var(--am);border:1px solid var(--am-border);"><span class="m mf" style="font-size:10px;vertical-align:-1px;">schedule</span> Due Soon</div>';
   } else if(!S.lastCheckin){
@@ -1344,11 +1396,17 @@ function render(){
   const pulseIcon=$('pulse-icon'), pulseLabel=$('pulse-label'), pulseTitle=$('pulse-title');
   const daysIcon=$('days-icon'), daysLabel=$('days-label'), pulseCard=$('pulse-card');
   pulseCard.classList.toggle('pulse-due-soon',showReminder);
+  pulseCard.classList.toggle('pulse-grace',showGrace);
   if(showOverdue){
     pulseIcon.style.color='var(--er)';pulseIcon.textContent='heart_broken';
     pulseLabel.textContent='TAP TO CHECK IN';pulseTitle.textContent='Check-in overdue';pulseTitle.style.color='var(--er)';
     daysIcon.style.color='var(--er)';daysLabel.style.color='var(--er)';
     daysLabel.innerHTML=pl(daysOverdue,'day')+' overdue';
+  } else if(showGrace){
+    pulseIcon.style.color='var(--gr)';pulseIcon.textContent='hourglass_top';
+    pulseLabel.textContent='TAP TO CHECK IN';pulseTitle.textContent='Grace period active';pulseTitle.style.color='var(--gr)';
+    daysIcon.style.color='var(--gr)';daysLabel.style.color='var(--gr)';
+    daysLabel.innerHTML=pl(daysUntilNotify,'day')+' until notified';
   } else if(showReminder){
     pulseIcon.style.color='var(--am)';pulseIcon.textContent='favorite';
     pulseLabel.textContent='TAP TO CHECK IN';pulseTitle.textContent='Check-in due soon';pulseTitle.style.color='var(--am)';
@@ -1365,7 +1423,7 @@ function render(){
   if(pulseEx) pulseEx.classList.toggle('hidden',!!localStorage.getItem('ee_first_checkin_done'));
 
   // ── Pulse dimming (F30) ───────────────────────────────────────────────────
-  const isDimmed=pct<40&&!showOverdue&&!showReminder;
+  const isDimmed=pct<40&&!showOverdue&&!showReminder&&!showGrace;
   pulseCard.classList.toggle('pulse-dimmed',isDimmed);
   $('completeness-card').classList.toggle('pulse-dimmed-focus',isDimmed);
   $('pulse-hint').style.display=isDimmed?'block':'none';
@@ -1378,7 +1436,7 @@ function render(){
     :tips.map(t=>'<div class="ct"><span class="m" style="font-size:14px;color:var(--ac);flex-shrink:0;">arrow_circle_right</span><span>'+t+'</span></div>').join('');
 
   // ── Check-in timing ───────────────────────────────────────────────────────
-  if(S.lastCheckin && !showOverdue){
+  if(S.lastCheckin && !showOverdue && !showGrace){
     const dU=getIntervalDays();
     $('d-next').textContent=new Date(S.lastCheckin+dU*86400000).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
     if(!showReminder){
@@ -1387,6 +1445,10 @@ function render(){
     }
     const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);
     $('lc-lbl').textContent=ago===0?'Confirmed today':'Confirmed '+pl(ago,'day')+' ago';
+  } else if(S.lastCheckin && showGrace){
+    $('d-next').textContent='Grace ends '+graceEnd.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);
+    $('lc-lbl').textContent='Confirmed '+pl(ago,'day')+' ago';
   } else if(S.lastCheckin && showOverdue){
     $('d-next').textContent='Overdue';
     const ago=Math.floor((Date.now()-S.lastCheckin)/86400000);
