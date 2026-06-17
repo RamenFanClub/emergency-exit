@@ -44,7 +44,12 @@ app.add_middleware(
 )
 
 MONGO_URI = os.environ.get("MONGO_URI", "")
-JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret")
+JWT_SECRET = os.environ.get("JWT_SECRET", "")
+if not JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET environment variable is not set. "
+        "Set it in Railway (or your .env) before starting the server."
+    )
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 APP_URL = "https://kinlight.app"
 # F72b — SENDER ADDRESS: do NOT change until kinlight.app is verified in Resend.

@@ -1,7 +1,7 @@
 """
 Emergency Exit — Backend Test Suite
 Run: python3 -m pytest test_main.py -v
-Expected: 136 passed
+Expected: 139 passed
 """
 
 import pytest
@@ -1096,3 +1096,45 @@ class TestPdfEscaping:
             self._vault(kin=[{"first": "<b>Bob</b>", "last": "O'<Brien>", "rel": "Brother", "email": "b@e.com"}]),
         )
         assert isinstance(pdf, bytes) and len(pdf) > 0
+
+
+# ─── F84: JWT_SECRET STARTUP VALIDATION ───────────────────────────────────────
+
+import os
+
+class TestJwtSecretValidation:
+    """F84 — app must refuse to start if JWT_SECRET is missing or empty."""
+
+    def test_missing_jwt_secret_raises(self):
+        """If JWT_SECRET env var is completely absent, startup must crash."""
+        import importlib
+        import sys
+        env_copy = os.environ.copy()
+        env_copy.pop("JWT_SECRET", None)
+        with patch.dict(os.environ, env_copy, clear=True):
+            saved = sys.modules.pop("main", None)
+            try:
+                with pytest.raises(RuntimeError, match="JWT_SECRET"):
+                    importlib.import_module("main")
+            finally:
+                sys.modules.pop("main", None)
+                if saved:
+                    sys.modules["main"] = saved
+
+    def test_empty_jwt_secret_raises(self):
+        """If JWT_SECRET is set to empty string, startup must crash."""
+        import importlib
+        import sys
+        with patch.dict(os.environ, {"JWT_SECRET": ""}):
+            saved = sys.modules.pop("main", None)
+            try:
+                with pytest.raises(RuntimeError, match="JWT_SECRET"):
+                    importlib.import_module("main")
+            finally:
+                sys.modules.pop("main", None)
+                if saved:
+                    sys.modules["main"] = saved
+
+    def test_valid_jwt_secret_works(self):
+        """A non-empty JWT_SECRET should let the module load normally."""
+        assert JWT_SECRET and len(JWT_SECRET) > 0
