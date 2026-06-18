@@ -1,7 +1,7 @@
 """
 Emergency Exit — Backend Test Suite
 Run: python3 -m pytest test_main.py -v
-Expected: 149 passed
+Expected: 159 passed
 """
 
 import pytest
@@ -40,6 +40,8 @@ from main import (
     MAX_LOGIN_ATTEMPTS,
     LOCKOUT_MINUTES,
     now_utc,
+    encrypt_content,
+    decrypt_content,
 )
 
 
@@ -1403,3 +1405,138 @@ class TestStrongerPasswordPolicy:
         from main import is_password_acceptable
         assert is_password_acceptable("") is False
         assert is_password_acceptable(None) is False
+
+
+# ─── F04: VAULT CONTENT ENCRYPTION ──────────────────────────────────────────
+
+class TestEncryptContent:
+    """Test the encrypt_content() helper."""
+
+    def test_round_trip(self):
+        """Encrypting then decrypting returns the original data."""
+        original = {"assets": [{"id": 1, "name": "House"}], "kin": [], "will": None}
+        encrypted = encrypt_content(original)
+        assert isinstance(encrypted, str), "encrypted output should be a base64 string"
+        decrypted = decrypt_content(encrypted)
+        assert decrypted == original
+
+    def test_different_nonce_each_time(self):
+        """Two encryptions of the same data produce different ciphertext."""
+        data = {"assets": [{"id": 1}]}
+        enc1 = encrypt_content(data)
+        enc2 = encrypt_content(data)
+        assert enc1 != enc2, "each encryption should use a unique random nonce"
+
+    def test_empty_content(self):
+        """Empty dict encrypts and decrypts correctly."""
+        original = {}
+        encrypted = encrypt_content(original)
+        assert decrypt_content(encrypted) == original
+
+    def test_unicode_content(self):
+        """Content with unicode characters (names, letters) survives round-trip."""
+        original = {"kin": [{"first": "Nguyễn", "letter": "Cảm ơn bạn 🙏"}]}
+        encrypted = encrypt_content(original)
+        assert decrypt_content(encrypted) == original
+
+    def test_large_content(self):
+        """Realistic vault size encrypts and decrypts correctly."""
+        original = {
+            "assets": [{"id": i, "name": f"Asset {i}", "value": i * 1000} for i in range(100)],
+            "wishes": [{"id": i, "title": f"Wish {i}"} for i in range(50)],
+            "kin": [{"id": i, "first": f"Contact {i}", "email": f"c{i}@example.com"} for i in range(10)],
+        }
+        encrypted = encrypt_content(original)
+        assert decrypt_content(encrypted) == original
+
+
+class TestDecryptContent:
+    """Test the decrypt_content() helper — especially backward compatibility."""
+
+    def test_none_returns_empty_dict(self):
+        """None input (no vault yet) returns empty dict."""
+        assert decrypt_content(None) == {}
+
+    def test_dict_passthrough(self):
+        """Pre-F04 plaintext dict passes through unchanged (migration support)."""
+        plaintext = {"assets": [{"id": 1}], "kin": []}
+        result = decrypt_content(plaintext)
+        assert result == plaintext
+
+    def test_tampered_ciphertext_raises(self):
+        """Modified ciphertext is detected and raises an error."""
+        import base64
+        original = {"assets": [{"id": 1}]}
+        encrypted = encrypt_content(original)
+        raw = bytearray(base64.b64decode(encrypted))
+        raw[-1] ^= 0xFF  # flip a byte in the auth tag
+        tampered = base64.b64encode(bytes(raw)).decode("ascii")
+        with pytest.raises(Exception):
+            decrypt_content(tampered)
+
+    def test_truncated_ciphertext_raises(self):
+        """Truncated ciphertext raises an error."""
+        import base64
+        original = {"assets": []}
+        encrypted = encrypt_content(original)
+        raw = base64.b64decode(encrypted)
+        truncated = base64.b64encode(raw[:10]).decode("ascii")
+        with pytest.raises(Exception):
+            decrypt_content(truncated)
+
+
+class TestReconstructWithEncryption:
+    """Test that reconstruct_vault_blob works with encrypted content."""
+
+    def test_reconstruct_encrypted_vault(self):
+        """reconstruct_vault_blob correctly decrypts an encrypted vault doc."""
+        content = {
+            "assets": [{"id": 1, "name": "House"}],
+            "wishes": [],
+            "will": {"status": "signed"},
+            "suppDocs": [],
+            "kin": [{"id": 1, "first": "Anne"}],
+            "v": "pin",
+            "notifySeq": "in_order",
+            "saveCount": 5,
+        }
+        encrypted = encrypt_content(content)
+        doc = {
+            "content": encrypted,
+            "lastCheckin": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "checkInFrequency": 2,
+            "checkInUnit": "months",
+            "gracePeriodDays": 7,
+            "notifyProto": "ping_then_notify",
+            "log": [],
+        }
+        blob = reconstruct_vault_blob(doc)
+        assert blob["assets"] == [{"id": 1, "name": "House"}]
+        assert blob["kin"] == [{"id": 1, "first": "Anne"}]
+        assert blob["will"] == {"status": "signed"}
+        assert blob["v"] == "pin"
+        assert blob["saveCount"] == 5
+
+    def test_reconstruct_plaintext_vault(self):
+        """reconstruct_vault_blob still works with pre-F04 plaintext content."""
+        content = {
+            "assets": [{"id": 2}],
+            "wishes": [],
+            "will": None,
+            "suppDocs": [],
+            "kin": [],
+            "v": "face",
+            "notifySeq": "in_order",
+            "saveCount": 0,
+        }
+        doc = {
+            "content": content,
+            "lastCheckin": None,
+            "checkInFrequency": 2,
+            "checkInUnit": "months",
+            "gracePeriodDays": 7,
+            "notifyProto": "ping_then_notify",
+            "log": [],
+        }
+        blob = reconstruct_vault_blob(doc)
+        assert blob["assets"] == [{"id": 2}]

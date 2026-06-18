@@ -50,6 +50,7 @@ jobs:
           MONGO_URI: mongodb://localhost:27017
           JWT_SECRET: test-secret-key-for-ci
           RESEND_API_KEY: re_test_fake_key_for_ci
+          VAULT_ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
         run: |
           python -m pytest test_main.py -v --tb=short
 

@@ -9,6 +9,7 @@ from typing import Optional
 import base64
 import hashlib
 import io
+import json
 import os
 import secrets
 from xml.sax.saxutils import escape as xml_escape
@@ -18,6 +19,7 @@ import jwt
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from bson import ObjectId
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient, ASCENDING
@@ -62,6 +64,9 @@ if not JWT_SECRET:
         "Set it in Railway (or your .env) before starting the server."
     )
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+# F04: Application-level encryption key for vault content (AES-256-GCM).
+# 64-char hex string → 32 bytes. Set in Railway env vars, never in code.
+VAULT_ENCRYPTION_KEY = os.environ.get("VAULT_ENCRYPTION_KEY", "")
 APP_URL = "https://kinlight.app"
 # F72b — SENDER ADDRESS: do NOT change until kinlight.app is verified in Resend.
 # Switching to an unverified domain causes SILENT email delivery failure for all users.
@@ -144,6 +149,52 @@ def ensure_utc(dt: datetime) -> datetime:
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
+# ─── F04: VAULT CONTENT ENCRYPTION ───────────────────────────────────────────
+
+def _get_aesgcm() -> Optional[AESGCM]:
+    """Return an AESGCM cipher from VAULT_ENCRYPTION_KEY, or None if not set."""
+    if not VAULT_ENCRYPTION_KEY:
+        return None
+    return AESGCM(bytes.fromhex(VAULT_ENCRYPTION_KEY))
+
+
+def encrypt_content(content_dict: dict) -> str:
+    """
+    Encrypt a vault content dict → base64 string for MongoDB storage.
+    If no encryption key is configured, returns the dict unchanged (passthrough).
+    Format: base64( nonce_12_bytes + ciphertext_with_tag )
+    """
+    cipher = _get_aesgcm()
+    if cipher is None:
+        return content_dict  # type: ignore[return-value]
+    plaintext = json.dumps(content_dict, separators=(",", ":")).encode("utf-8")
+    nonce = os.urandom(12)
+    ciphertext = cipher.encrypt(nonce, plaintext, None)
+    return base64.b64encode(nonce + ciphertext).decode("ascii")
+
+
+def decrypt_content(stored) -> dict:
+    """
+    Decrypt vault content from MongoDB.
+    Handles three cases:
+    1. dict  → plaintext (pre-F04 migration); return as-is
+    2. str   → encrypted base64 blob; decrypt and return dict
+    3. None  → return empty dict
+    """
+    if stored is None:
+        return {}
+    if isinstance(stored, dict):
+        return stored
+    cipher = _get_aesgcm()
+    if cipher is None:
+        raise RuntimeError("Encrypted vault found but VAULT_ENCRYPTION_KEY is not set.")
+    raw = base64.b64decode(stored)
+    nonce = raw[:12]
+    ciphertext = raw[12:]
+    plaintext = cipher.decrypt(nonce, ciphertext, None)
+    return json.loads(plaintext.decode("utf-8"))
+
+
 # ─── VAULT SCHEMA HELPERS ─────────────────────────────────────────────────────
 
 def extract_vault_fields(vault_blob: dict) -> dict:
@@ -171,13 +222,16 @@ def _get_content_or_legacy(doc: dict, key: str, fallback):
 
 def reconstruct_vault_blob(doc: dict) -> dict:
     """Rebuild the frontend vault blob from a MongoDB vault document."""
-    content = doc.get("content", {})
+    # F04: decrypt content if encrypted (string), passthrough if plaintext (dict)
+    content = decrypt_content(doc.get("content"))
+    # Temporarily inject decrypted content back so _get_content_or_legacy works
+    doc_with_content = {**doc, "content": content}
     return {
-        "assets":      _get_content_or_legacy(doc, "assets", []),
-        "wishes":      _get_content_or_legacy(doc, "wishes", []),
-        "will":        _get_content_or_legacy(doc, "will", None),
-        "suppDocs":    _get_content_or_legacy(doc, "suppDocs", []),
-        "kin":         _get_content_or_legacy(doc, "kin", []),
+        "assets":      _get_content_or_legacy(doc_with_content, "assets", []),
+        "wishes":      _get_content_or_legacy(doc_with_content, "wishes", []),
+        "will":        _get_content_or_legacy(doc_with_content, "will", None),
+        "suppDocs":    _get_content_or_legacy(doc_with_content, "suppDocs", []),
+        "kin":         _get_content_or_legacy(doc_with_content, "kin", []),
         "v":           content.get("v", "face"),
         "notifySeq":   content.get("notifySeq", "in_order"),
         "saveCount":   content.get("saveCount", 0),
@@ -407,7 +461,9 @@ def should_notify_contacts(vault_doc: dict, days_overdue: int) -> bool:
 
 def get_contacts_to_notify(vault_doc: dict, days_overdue: int) -> list:
     """Return the slice of contacts to notify based on protocol and days overdue."""
-    contacts = vault_doc.get("content", {}).get("kin") or []
+    # F04: decrypt content if encrypted
+    content = decrypt_content(vault_doc.get("content"))
+    contacts = content.get("kin") or []
     if not contacts:
         return []
 
@@ -685,7 +741,8 @@ def send_reset_email(user: dict, token: str) -> bool:
 
 def generate_pdf_for_contact(contact: dict, vault_doc: dict, holder_name: str = "the vault holder") -> bytes:
     """Generate a PDF package for a single contact. Returns raw bytes."""
-    content = vault_doc.get("content", {})
+    # F04: decrypt content if encrypted
+    content = decrypt_content(vault_doc.get("content"))
     assets    = content.get("assets") or []
     wishes    = content.get("wishes") or []
     all_kin   = content.get("kin") or []
@@ -1009,12 +1066,15 @@ def vault_sync(body: dict, current_user: dict = Depends(get_current_user)):
         "saveCount": vault_blob.get("saveCount", 0),
     }
 
+    # F04: encrypt vault content before storage
+    stored_content = encrypt_content(content)
+
     vaults_col.update_one(
         {"userId": current_user["_id"]},
         {
             "$set": {
                 **extract_vault_fields(vault_blob),
-                "content":   content,
+                "content":   stored_content,
                 "log":       vault_blob.get("log", [])[-20:],
                 "syncedAt":  now,
                 "updatedAt": now,
@@ -1055,7 +1115,9 @@ def contact_nominate(body: dict, current_user: dict = Depends(get_current_user))
     vault_doc = vaults_col.find_one({"userId": current_user["_id"]})
     if not vault_doc:
         return {"ok": False, "error": "no vault found"}
-    vault_contacts = vault_doc.get("content", {}).get("kin") or []
+    # F04: decrypt content if encrypted
+    vault_content = decrypt_content(vault_doc.get("content"))
+    vault_contacts = vault_content.get("kin") or []
     contact_emails = [c.get("email", "").strip().lower() for c in vault_contacts]
     if contact_email.lower() not in contact_emails:
         return {"ok": False, "error": "contact not found in vault"}
@@ -1089,7 +1151,8 @@ def checkin(current_user: dict = Depends(get_current_user)):
     allclear_count = 0
     if was_overdue and existing:
         holder_name = current_user.get("name", "the vault holder")
-        contacts = existing.get("content", {}).get("kin") or []
+        # F04: decrypt content if encrypted
+        contacts = decrypt_content(existing.get("content")).get("kin") or []
         for contact in contacts:
             if send_allclear_email(contact, holder_name):
                 allclear_count += 1
