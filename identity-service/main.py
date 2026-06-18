@@ -20,7 +20,7 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from bson import ObjectId
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient, ASCENDING
 from reportlab.lib import colors
@@ -28,11 +28,53 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 
 # ─── APP & CONFIG ─────────────────────────────────────────────────────────────
 
+# ─── F91: RATE LIMITING ───────────────────────────────────────────────────────
+#
+# Railway sits in front of this app as a proxy, so request.client.host sees
+# Railway's internal IP, not the real visitor — using it directly would put
+# every user in the same rate-limit bucket. Railway's own guidance (as of
+# 2026) is to read the X-Forwarded-For header and take the first (leftmost)
+# IP, since their edge proxy appends to that chain and it's the most
+# consistent signal across their routing changes. This can be spoofed by a
+# malicious client in theory, but Railway's proxy controls what gets
+# appended, so the leftmost entry is trustworthy for rate-limiting purposes
+# (this is not used for any authorization decision, only throttling).
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return get_remote_address(request)
+
+
+def get_user_or_ip(request: Request) -> str:
+    """
+    Key by the authenticated user's ID when available, falling back to IP.
+    Used for endpoints that require login, so a per-user limit can't be
+    sidestepped by switching networks, and unrelated users on the same
+    network (e.g. a shared office IP) don't share a bucket unfairly.
+    """
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth.split(" ", 1)[1]
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"], options={"require": ["exp", "sub"]})
+            return f"user:{payload['sub']}"
+        except Exception:
+            pass
+    return get_client_ip(request)
+
+
+limiter = Limiter(key_func=get_client_ip)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -941,7 +983,8 @@ def health():
 
 
 @app.post("/auth/login")
-def login(body: dict):
+@limiter.limit("5/minute")
+def login(request: Request, body: dict):
     username = body.get("username", "").strip().lower()
     password = body.get("password", "")
 
@@ -975,7 +1018,8 @@ def me(current_user: dict = Depends(get_current_user)):
 
 
 @app.post("/auth/request-reset")
-def request_reset(body: dict):
+@limiter.limit("3/minute")
+def request_reset(request: Request, body: dict):
     """
     F66: Start a password reset. ALWAYS returns the same generic response,
     whether or not the username exists or has an email — so this endpoint
@@ -1099,9 +1143,13 @@ def vault_get(current_user: dict = Depends(get_current_user)):
     return {"ok": True, "vault": reconstruct_vault_blob(doc)}
 
 
-@app.post("/contact/nominate")
-def contact_nominate(body: dict, current_user: dict = Depends(get_current_user)):
-    """F63: Send a nomination email to a contact. Called on new contact add or email change."""
+def contact_nominate(body: dict, current_user: dict) -> dict:
+    """
+    F63: Send a nomination email to a contact. Called on new contact add or
+    email change. Pure function (no FastAPI/Request dependency) so it stays
+    directly unit-testable — see TestNominationValidation in test_main.py.
+    The HTTP route wrapper below (contact_nominate_route) adds rate limiting.
+    """
     contact_email = body.get("contact_email", "").strip()
     contact_first = body.get("contact_first", "").strip()
     holder_name = current_user.get("name", "the vault holder")
@@ -1124,6 +1172,14 @@ def contact_nominate(body: dict, current_user: dict = Depends(get_current_user))
 
     sent = send_nomination_email(contact_email, contact_first, holder_name)
     return {"ok": sent}
+
+
+@app.post("/contact/nominate")
+@limiter.limit("10/minute", key_func=get_user_or_ip)
+def contact_nominate_route(request: Request, body: dict, current_user: dict = Depends(get_current_user)):
+    """F91: thin HTTP wrapper — rate limiting lives here, business logic in contact_nominate()."""
+    return contact_nominate(body, current_user)
+
 
 
 @app.post("/checkin")
@@ -1168,7 +1224,8 @@ def checkin(current_user: dict = Depends(get_current_user)):
 # ─── ADMIN / TESTING ROUTES ───────────────────────────────────────────────────
 
 @app.post("/admin/trigger-pulse")
-def trigger_pulse(current_user: dict = Depends(get_current_user)):
+@limiter.limit("5/minute", key_func=get_user_or_ip)
+def trigger_pulse(request: Request, current_user: dict = Depends(get_current_user)):
     """Manually trigger the pulse scan. For testing."""
     require_admin(current_user)
     run_pulse_scan()
@@ -1176,7 +1233,8 @@ def trigger_pulse(current_user: dict = Depends(get_current_user)):
 
 
 @app.post("/admin/force-overdue")
-def force_overdue(current_user: dict = Depends(get_current_user)):
+@limiter.limit("5/minute", key_func=get_user_or_ip)
+def force_overdue(request: Request, current_user: dict = Depends(get_current_user)):
     """Set vault lastCheckin to 2020 to simulate an overdue state. For testing."""
     require_admin(current_user)
     vaults_col.update_one(
@@ -1194,7 +1252,8 @@ def force_overdue(current_user: dict = Depends(get_current_user)):
 
 
 @app.post("/admin/force-reminder")
-def force_reminder(current_user: dict = Depends(get_current_user)):
+@limiter.limit("5/minute", key_func=get_user_or_ip)
+def force_reminder(request: Request, current_user: dict = Depends(get_current_user)):
     """
     Set vault lastCheckin so the reminder threshold triggers next scan.
     Places lastCheckin so exactly (threshold - 1) days remain until due.
@@ -1221,7 +1280,8 @@ def force_reminder(current_user: dict = Depends(get_current_user)):
 
 
 @app.post("/admin/force-warning")
-def force_warning(current_user: dict = Depends(get_current_user)):
+@limiter.limit("5/minute", key_func=get_user_or_ip)
+def force_warning(request: Request, current_user: dict = Depends(get_current_user)):
     """F64-2: Set vault to day 1 of overdue (just inside warning window). For testing."""
     require_admin(current_user)
     vault_doc = vaults_col.find_one({"userId": current_user["_id"]})

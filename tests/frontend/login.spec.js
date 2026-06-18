@@ -65,4 +65,21 @@ test.describe('Login Flow', () => {
     expect(token).toBeNull();
   });
 
+  test('logout clears the cached vault from localStorage (F99)', async ({ page }) => {
+    // F99: the vault content cache (ee_v3) previously survived logout in
+    // localStorage indefinitely, leaving plaintext vault data on a shared
+    // or stolen device even after the user signed out.
+    await setupPage(page);
+    await loginViaUI(page);
+    // Confirm the vault cache actually exists before logging out, so this
+    // test would fail loudly if the app stops caching at all.
+    const cachedBeforeLogout = await page.evaluate(() => localStorage.getItem('ee_v3'));
+    expect(cachedBeforeLogout).not.toBeNull();
+
+    await page.click('#logout-btn');
+
+    const cachedAfterLogout = await page.evaluate(() => localStorage.getItem('ee_v3'));
+    expect(cachedAfterLogout).toBeNull();
+  });
+
 });

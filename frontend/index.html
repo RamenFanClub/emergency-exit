@@ -808,6 +808,9 @@ async function showApp(user){
 function doLogout(){
   sessionStorage.removeItem('ee_token');
   sessionStorage.removeItem('ee_user');
+  // F99: clear the cached vault blob too — it was persisting in localStorage
+  // (which survives browser restarts) even after the user signed out.
+  localStorage.removeItem('ee_v3');
   $('login-wall').classList.remove('hidden');
   $('logout-btn').classList.remove('on');
   $('user-greeting').classList.remove('on');

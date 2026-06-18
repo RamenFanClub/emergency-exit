@@ -1,13 +1,17 @@
 """
 Emergency Exit — Backend Test Suite
 Run: python3 -m pytest test_main.py -v
-Expected: 159 passed
+Expected: 181 passed
 """
 
 import pytest
 import jwt
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock
+from fastapi.testclient import TestClient
+from bson import ObjectId
+
+import main
 
 # ─── Import helpers directly (no FastAPI server needed) ───────────────────────
 from main import (
@@ -1540,3 +1544,146 @@ class TestReconstructWithEncryption:
         }
         blob = reconstruct_vault_blob(doc)
         assert blob["assets"] == [{"id": 2}]
+
+
+# ─── F91: RATE LIMITING ──────────────────────────────────────────────────────
+#
+# These use FastAPI's TestClient to make real HTTP requests through the full
+# app (including the slowapi middleware), unlike most tests above which call
+# functions directly. This is necessary because rate limiting is a property
+# of the HTTP layer, not the business logic.
+
+class TestLoginRateLimit:
+    """F91: /auth/login is limited to 5 attempts/minute per IP."""
+
+    def test_sixth_attempt_in_a_minute_is_rejected(self):
+        client = TestClient(main.app)
+        with patch("main.users_col") as mock_users, \
+             patch("main.is_account_locked", return_value=False):
+            mock_users.find_one.return_value = None  # always "invalid credentials"
+            statuses = [
+                client.post("/auth/login", json={"username": "nouser", "password": "wrong"}).status_code
+                for _ in range(6)
+            ]
+        assert statuses[:5] == [401] * 5
+        assert statuses[5] == 429
+
+    def test_different_ips_have_separate_limits(self):
+        client = TestClient(main.app)
+        with patch("main.users_col") as mock_users, \
+             patch("main.is_account_locked", return_value=False):
+            mock_users.find_one.return_value = None
+            for _ in range(5):
+                client.post(
+                    "/auth/login",
+                    json={"username": "nouser", "password": "wrong"},
+                    headers={"X-Forwarded-For": "1.1.1.1"},
+                )
+            # A different IP should not be affected by IP 1.1.1.1's limit
+            r = client.post(
+                "/auth/login",
+                json={"username": "nouser", "password": "wrong"},
+                headers={"X-Forwarded-For": "2.2.2.2"},
+            )
+        assert r.status_code == 401  # not 429 — separate bucket
+
+    def test_uses_leftmost_ip_in_forwarded_for_chain(self):
+        """Railway's edge proxy appends to X-Forwarded-For; the leftmost
+        entry is the real client. A multi-hop chain with a fresh leftmost
+        IP should not inherit another IP's exhausted limit."""
+        client = TestClient(main.app)
+        with patch("main.users_col") as mock_users, \
+             patch("main.is_account_locked", return_value=False):
+            mock_users.find_one.return_value = None
+            for _ in range(5):
+                client.post(
+                    "/auth/login",
+                    json={"username": "nouser", "password": "wrong"},
+                    headers={"X-Forwarded-For": "9.9.9.9"},
+                )
+            r = client.post(
+                "/auth/login",
+                json={"username": "nouser", "password": "wrong"},
+                headers={"X-Forwarded-For": "8.8.8.8, 9.9.9.9"},  # leftmost = 8.8.8.8
+            )
+        assert r.status_code == 401  # 8.8.8.8 hasn't been limited yet
+
+
+class TestPasswordResetRateLimit:
+    """F91: /auth/request-reset is limited to 3/minute per IP — this is the
+    endpoint identified in the June 2026 security review as the highest-
+    priority gap (no cooldown previously meant unlimited reset emails)."""
+
+    def test_fourth_attempt_in_a_minute_is_rejected(self):
+        client = TestClient(main.app)
+        with patch("main.users_col") as mock_users:
+            mock_users.find_one.return_value = None  # generic response either way
+            statuses = [
+                client.post("/auth/request-reset", json={"username": "anyone"}).status_code
+                for _ in range(4)
+            ]
+        assert statuses[:3] == [200, 200, 200]
+        assert statuses[3] == 429
+
+
+class TestNominateRateLimit:
+    """F91: /contact/nominate is limited to 10/minute per authenticated
+    user (not per IP) — so unrelated users sharing a network don't share
+    a bucket, and a malicious user can't bypass the limit by changing IP."""
+
+    def _setup_user(self, mock_users, oid, name):
+        user = {"_id": ObjectId(oid), "name": name}
+        return user
+
+    def test_eleventh_attempt_in_a_minute_is_rejected(self):
+        client = TestClient(main.app)
+        oid = str(ObjectId())
+        vault_doc = {"content": {"kin": [{"email": "jane@example.com", "first": "Jane"}]}}
+        with patch("main.vaults_col") as mock_vaults, \
+             patch("main.users_col") as mock_users, \
+             patch("main.requests.post") as mock_post:
+            mock_vaults.find_one.return_value = vault_doc
+            mock_post.return_value = MagicMock(raise_for_status=lambda: None)
+            mock_users.find_one.return_value = {"_id": ObjectId(oid), "name": "User One"}
+            token = main.create_token(oid)
+
+            statuses = [
+                client.post(
+                    "/contact/nominate",
+                    json={"contact_email": "jane@example.com", "contact_first": "Jane"},
+                    headers={"Authorization": f"Bearer {token}"},
+                ).status_code
+                for _ in range(11)
+            ]
+        assert statuses[:10] == [200] * 10
+        assert statuses[10] == 429
+
+    def test_different_users_have_separate_limits(self):
+        """Two different authenticated users must not share a rate-limit
+        bucket just because they happen to share an IP (e.g. same office)."""
+        client = TestClient(main.app)
+        oid1, oid2 = str(ObjectId()), str(ObjectId())
+        vault_doc = {"content": {"kin": [{"email": "jane@example.com", "first": "Jane"}]}}
+        with patch("main.vaults_col") as mock_vaults, \
+             patch("main.users_col") as mock_users, \
+             patch("main.requests.post") as mock_post:
+            mock_vaults.find_one.return_value = vault_doc
+            mock_post.return_value = MagicMock(raise_for_status=lambda: None)
+            user1 = {"_id": ObjectId(oid1), "name": "User One"}
+            user2 = {"_id": ObjectId(oid2), "name": "User Two"}
+            mock_users.find_one.side_effect = lambda q: user1 if q.get("_id") == ObjectId(oid1) else user2
+            token1 = main.create_token(oid1)
+            token2 = main.create_token(oid2)
+
+            for _ in range(10):
+                client.post(
+                    "/contact/nominate",
+                    json={"contact_email": "jane@example.com", "contact_first": "Jane"},
+                    headers={"Authorization": f"Bearer {token1}"},
+                )
+            r = client.post(
+                "/contact/nominate",
+                json={"contact_email": "jane@example.com", "contact_first": "Jane"},
+                headers={"Authorization": f"Bearer {token2}"},
+            )
+        assert r.status_code == 200  # user2's own bucket, unaffected by user1
