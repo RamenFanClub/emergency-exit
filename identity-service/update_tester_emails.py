@@ -31,8 +31,8 @@ def main() -> None:
 
     print("Connecting to MongoDB...")
     client = MongoClient(mongo_uri)
-    db = client.get_database()
-    users = db.users
+    db = client["emergency-exit"]
+    users = db["users"]
 
     updated = 0
     for username in ACCOUNTS:
