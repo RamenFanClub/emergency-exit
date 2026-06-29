@@ -512,7 +512,7 @@ When building a new feature, add a new `class TestFeatureName` block to `test_ma
 - [ ] Replace `identity-service/main.py` in VS Code
 - [ ] Replace `identity-service/test_main.py` in VS Code
 - [ ] `cp index.html frontend/index.html`
-- [ ] Run `python3 -m pytest test_main.py -v` — confirm 197 passed before pushing
+- [ ] Run `./test.sh` — confirm 197 passed before pushing
 - [ ] `git add -A`
 - [ ] `git commit -m "..."`
 - [ ] `git push`

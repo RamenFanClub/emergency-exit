@@ -9,11 +9,9 @@
 ## Before pushing
 
 ```bash
-cd identity-service
-python3 -m pytest test_main.py -v   # Must be 197 passed
+./test.sh   # Runs pytest — must be 197 passed
+cp index.html frontend/index.html   # Keep both copies in sync
 ```
-
-Also run: `cp index.html frontend/index.html` (both copies must stay identical).
 
 ---
 
