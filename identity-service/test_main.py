@@ -1882,3 +1882,99 @@ class TestSecurityLogging:
                 assert secret_pw not in all_calls
         finally:
             main.limiter.enabled = True
+
+
+class TestUpdateAccount:
+    """PATCH /auth/me — update name and email."""
+
+    def _patch(self, body, token):
+        client = TestClient(main.app)
+        return client.patch("/auth/me", json=body, headers={"Authorization": f"Bearer {token}"})
+
+    def _make_token(self, user_id="aaaaaaaaaaaaaaaaaaaaaaaa"):
+        return create_token(user_id)
+
+    def test_updates_name(self):
+        uid = "aaaaaaaaaaaaaaaaaaaaaaaa"
+        user = {"_id": ObjectId(uid), "username": "tester", "name": "Old", "email": "old@test.com"}
+        updated = {**user, "name": "New Name"}
+        token = self._make_token(uid)
+        with patch("main.users_col") as mock_users:
+            mock_users.find_one.side_effect = [user, updated]
+            mock_users.update_one.return_value = None
+            r = self._patch({"name": "New Name"}, token)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["ok"] is True
+        assert data["user"]["name"] == "New Name"
+
+    def test_updates_email(self):
+        uid = "aaaaaaaaaaaaaaaaaaaaaaaa"
+        user = {"_id": ObjectId(uid), "username": "tester", "name": "Old", "email": "old@test.com"}
+        updated = {**user, "email": "new@test.com"}
+        token = self._make_token(uid)
+        with patch("main.users_col") as mock_users:
+            mock_users.find_one.side_effect = [user, updated]
+            mock_users.update_one.return_value = None
+            r = self._patch({"email": "new@test.com"}, token)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["ok"] is True
+        assert data["user"]["email"] == "new@test.com"
+
+    def test_updates_both(self):
+        uid = "aaaaaaaaaaaaaaaaaaaaaaaa"
+        user = {"_id": ObjectId(uid), "username": "tester", "name": "Old", "email": "old@test.com"}
+        updated = {**user, "name": "New", "email": "new@test.com"}
+        token = self._make_token(uid)
+        with patch("main.users_col") as mock_users:
+            mock_users.find_one.side_effect = [user, updated]
+            mock_users.update_one.return_value = None
+            r = self._patch({"name": "New", "email": "new@test.com"}, token)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["user"]["name"] == "New"
+        assert data["user"]["email"] == "new@test.com"
+
+    def test_rejects_invalid_email(self):
+        uid = "aaaaaaaaaaaaaaaaaaaaaaaa"
+        user = {"_id": ObjectId(uid), "username": "tester", "name": "Old"}
+        token = self._make_token(uid)
+        with patch("main.users_col") as mock_users:
+            mock_users.find_one.return_value = user
+            r = self._patch({"email": "not-an-email"}, token)
+        assert r.status_code == 400
+
+    def test_rejects_empty_body(self):
+        uid = "aaaaaaaaaaaaaaaaaaaaaaaa"
+        user = {"_id": ObjectId(uid), "username": "tester", "name": "Old"}
+        token = self._make_token(uid)
+        with patch("main.users_col") as mock_users:
+            mock_users.find_one.return_value = user
+            r = self._patch({}, token)
+        assert r.status_code == 400
+
+    def test_rejects_no_auth(self):
+        client = TestClient(main.app)
+        r = client.patch("/auth/me", json={"name": "X"})
+        assert r.status_code == 401
+
+    def test_ignores_empty_string_name(self):
+        uid = "aaaaaaaaaaaaaaaaaaaaaaaa"
+        user = {"_id": ObjectId(uid), "username": "tester", "name": "Old", "email": "old@test.com"}
+        token = self._make_token(uid)
+        with patch("main.users_col") as mock_users:
+            mock_users.find_one.return_value = user
+            r = self._patch({"name": "   "}, token)
+        assert r.status_code == 400
+
+    def test_normalizes_email_to_lowercase(self):
+        uid = "aaaaaaaaaaaaaaaaaaaaaaaa"
+        user = {"_id": ObjectId(uid), "username": "tester", "name": "Old", "email": "old@test.com"}
+        token = self._make_token(uid)
+        with patch("main.users_col") as mock_users:
+            mock_users.find_one.side_effect = [user, {**user, "email": "mixed.case@test.com"}]
+            mock_users.update_one.return_value = None
+            r = self._patch({"email": "Mixed.Case@Test.COM"}, token)
+        assert r.status_code == 200
+        assert r.json()["user"]["email"] == "mixed.case@test.com"

@@ -1106,6 +1106,34 @@ def me(current_user: dict = Depends(get_current_user)):
     return {"ok": True, "user": clean_user(current_user)}
 
 
+@app.patch("/auth/me")
+def update_me(body: dict, current_user: dict = Depends(get_current_user)):
+    """
+    Update the authenticated user's profile. Accepts optional name and email.
+    Returns the updated user object. Empty strings are treated as no change.
+    """
+    updates = {}
+
+    name = body.get("name")
+    if name is not None and isinstance(name, str) and name.strip():
+        updates["name"] = name.strip()
+
+    email = body.get("email")
+    if email is not None and isinstance(email, str) and email.strip():
+        email = email.strip().lower()
+        # Basic email format check
+        if not re_mod.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+            raise HTTPException(status_code=400, detail="Invalid email format")
+        updates["email"] = email
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    users_col.update_one({"_id": current_user["_id"]}, {"$set": updates})
+    updated_user = users_col.find_one({"_id": current_user["_id"]})
+    return {"ok": True, "user": clean_user(updated_user)}
+
+
 @app.post("/auth/request-reset")
 @limiter.limit("3/minute")
 def request_reset(request: Request, body: dict):

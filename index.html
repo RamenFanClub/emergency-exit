@@ -616,7 +616,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div id="s-config" class="scr">
       <div class="ph">Settings</div>
       <div class="ps">Set how often you check in and what happens if you don't.</div>
-      <div class="card"><div class="st" style="margin-bottom:10px;"><span class="m mf" style="font-size:17px;color:var(--sec);">person</span>Account</div>
+      <div class="card"><div class="st" style="margin-bottom:10px;"><span class="m mf" style="font-size:17px;color:var(--sec);">person</span>Account <button class="ob" onclick="openAcctM()" style="padding:4px 10px;font-size:11px;margin-left:auto;"><span class="m" style="font-size:13px;">edit</span>Edit</button></div>
         <div style="background:var(--w);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;">
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:var(--ov);">Username</span><span id="acct-user" style="font-size:13px;font-weight:600;color:var(--p);">—</span></div>
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:var(--ov);">Name</span><span id="acct-name" style="font-size:13px;font-weight:600;color:var(--p);">—</span></div>
@@ -694,6 +694,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
   </div>
 </div>
+
+<!-- Edit Account modal -->
+<div id="acctm" class="mo"><div class="ms"><div class="mh"></div><div class="mt">Edit Account</div><div class="fi"><label>Name</label><input id="acctm-name" type="text" placeholder="Your name"/></div><div class="fi"><label>Email</label><input id="acctm-email" type="email" placeholder="you@email.com"/></div><div class="mr"><button class="cxb" onclick="closeM()">Cancel</button><button class="cfb" onclick="saveAccount()" id="acctm-save-btn">Save</button></div></div></div>
 
 <!-- F01: Notification Queue modal -->
 <div id="nqm" class="mo">
@@ -955,6 +958,37 @@ function openM(id,cat){
 }
 function closeM(){document.querySelectorAll('.mo').forEach(e=>e.classList.remove('on'));}
 document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeM();}));
+
+// ─── EDIT ACCOUNT ──────────────────────────────────────────────────────────────
+function openAcctM(){
+  try{
+    const u=JSON.parse(sessionStorage.getItem('ee_user')||'{}');
+    $('acctm-name').value=u.name||'';
+    $('acctm-email').value=u.email||'';
+  }catch(e){}
+  $('acctm').classList.add('on');
+}
+async function saveAccount(){
+  const name=$('acctm-name').value.trim();
+  const email=$('acctm-email').value.trim();
+  if(!name&&!email){closeM();return;}
+  const token=sessionStorage.getItem('ee_token');
+  if(!token){toast('Please log in first');return;}
+  try{
+    const body={};
+    if(name)body.name=name;
+    if(email)body.email=email;
+    const res=await fetch(API+'/auth/me',{method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await res.json();
+    if(!res.ok){toast(data.detail||'Failed to update account');return;}
+    sessionStorage.setItem('ee_user',JSON.stringify(data.user));
+    const g=$('user-greeting');
+    if(g&&data.user.name)g.textContent='Hi, '+data.user.name.split(' ')[0];
+    closeM();
+    render();
+    toast('Account updated ✓');
+  }catch(e){toast('Could not reach server');}
+}
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 function dismissExplainer(){
